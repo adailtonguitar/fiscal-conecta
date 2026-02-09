@@ -14,16 +14,421 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      companies: {
+        Row: {
+          address_city: string | null
+          address_complement: string | null
+          address_ibge_code: string | null
+          address_neighborhood: string | null
+          address_number: string | null
+          address_state: string | null
+          address_street: string | null
+          address_zip: string | null
+          cnpj: string
+          created_at: string
+          email: string | null
+          id: string
+          ie: string | null
+          im: string | null
+          name: string
+          phone: string | null
+          tax_regime: string | null
+          trade_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          address_city?: string | null
+          address_complement?: string | null
+          address_ibge_code?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          cnpj: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          ie?: string | null
+          im?: string | null
+          name: string
+          phone?: string | null
+          tax_regime?: string | null
+          trade_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address_city?: string | null
+          address_complement?: string | null
+          address_ibge_code?: string | null
+          address_neighborhood?: string | null
+          address_number?: string | null
+          address_state?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          cnpj?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          ie?: string | null
+          im?: string | null
+          name?: string
+          phone?: string | null
+          tax_regime?: string | null
+          trade_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_users: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          role: Database["public"]["Enums"]["company_role"]
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          role?: Database["public"]["Enums"]["company_role"]
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          role?: Database["public"]["Enums"]["company_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_users_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contingencies: {
+        Row: {
+          auto_detected: boolean
+          company_id: string
+          created_at: string
+          doc_type: Database["public"]["Enums"]["fiscal_doc_type"]
+          documents_count: number
+          ended_at: string | null
+          id: string
+          reason: string
+          resolved_by: string | null
+          started_at: string
+        }
+        Insert: {
+          auto_detected?: boolean
+          company_id: string
+          created_at?: string
+          doc_type: Database["public"]["Enums"]["fiscal_doc_type"]
+          documents_count?: number
+          ended_at?: string | null
+          id?: string
+          reason: string
+          resolved_by?: string | null
+          started_at?: string
+        }
+        Update: {
+          auto_detected?: boolean
+          company_id?: string
+          created_at?: string
+          doc_type?: Database["public"]["Enums"]["fiscal_doc_type"]
+          documents_count?: number
+          ended_at?: string | null
+          id?: string
+          reason?: string
+          resolved_by?: string | null
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contingencies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fiscal_audit_logs: {
+        Row: {
+          action: string
+          company_id: string
+          created_at: string
+          details: Json | null
+          doc_type: Database["public"]["Enums"]["fiscal_doc_type"] | null
+          document_id: string | null
+          id: string
+          ip_address: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          company_id: string
+          created_at?: string
+          details?: Json | null
+          doc_type?: Database["public"]["Enums"]["fiscal_doc_type"] | null
+          document_id?: string | null
+          id?: string
+          ip_address?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          company_id?: string
+          created_at?: string
+          details?: Json | null
+          doc_type?: Database["public"]["Enums"]["fiscal_doc_type"] | null
+          document_id?: string | null
+          id?: string
+          ip_address?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_audit_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_audit_logs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fiscal_configs: {
+        Row: {
+          certificate_expires_at: string | null
+          certificate_password_hash: string | null
+          certificate_path: string | null
+          company_id: string
+          created_at: string
+          csc_id: string | null
+          csc_token: string | null
+          doc_type: Database["public"]["Enums"]["fiscal_doc_type"]
+          environment: Database["public"]["Enums"]["sefaz_environment"]
+          id: string
+          is_active: boolean
+          next_number: number
+          sat_activation_code: string | null
+          sat_serial_number: string | null
+          serie: number
+          updated_at: string
+        }
+        Insert: {
+          certificate_expires_at?: string | null
+          certificate_password_hash?: string | null
+          certificate_path?: string | null
+          company_id: string
+          created_at?: string
+          csc_id?: string | null
+          csc_token?: string | null
+          doc_type: Database["public"]["Enums"]["fiscal_doc_type"]
+          environment?: Database["public"]["Enums"]["sefaz_environment"]
+          id?: string
+          is_active?: boolean
+          next_number?: number
+          sat_activation_code?: string | null
+          sat_serial_number?: string | null
+          serie?: number
+          updated_at?: string
+        }
+        Update: {
+          certificate_expires_at?: string | null
+          certificate_password_hash?: string | null
+          certificate_path?: string | null
+          company_id?: string
+          created_at?: string
+          csc_id?: string | null
+          csc_token?: string | null
+          doc_type?: Database["public"]["Enums"]["fiscal_doc_type"]
+          environment?: Database["public"]["Enums"]["sefaz_environment"]
+          id?: string
+          is_active?: boolean
+          next_number?: number
+          sat_activation_code?: string | null
+          sat_serial_number?: string | null
+          serie?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_configs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fiscal_documents: {
+        Row: {
+          access_key: string | null
+          cancel_protocol: string | null
+          cancel_reason: string | null
+          canceled_at: string | null
+          canceled_by: string | null
+          company_id: string
+          contingency_reason: string | null
+          contingency_type: string | null
+          created_at: string
+          customer_cpf_cnpj: string | null
+          customer_name: string | null
+          doc_type: Database["public"]["Enums"]["fiscal_doc_type"]
+          environment: Database["public"]["Enums"]["sefaz_environment"]
+          id: string
+          is_contingency: boolean
+          issued_by: string | null
+          items_json: Json | null
+          number: number | null
+          payment_method: string | null
+          protocol_date: string | null
+          protocol_number: string | null
+          rejection_reason: string | null
+          serie: number | null
+          status: Database["public"]["Enums"]["fiscal_doc_status"]
+          synced_at: string | null
+          total_value: number
+          updated_at: string
+          xml_response: string | null
+          xml_sent: string | null
+        }
+        Insert: {
+          access_key?: string | null
+          cancel_protocol?: string | null
+          cancel_reason?: string | null
+          canceled_at?: string | null
+          canceled_by?: string | null
+          company_id: string
+          contingency_reason?: string | null
+          contingency_type?: string | null
+          created_at?: string
+          customer_cpf_cnpj?: string | null
+          customer_name?: string | null
+          doc_type: Database["public"]["Enums"]["fiscal_doc_type"]
+          environment?: Database["public"]["Enums"]["sefaz_environment"]
+          id?: string
+          is_contingency?: boolean
+          issued_by?: string | null
+          items_json?: Json | null
+          number?: number | null
+          payment_method?: string | null
+          protocol_date?: string | null
+          protocol_number?: string | null
+          rejection_reason?: string | null
+          serie?: number | null
+          status?: Database["public"]["Enums"]["fiscal_doc_status"]
+          synced_at?: string | null
+          total_value?: number
+          updated_at?: string
+          xml_response?: string | null
+          xml_sent?: string | null
+        }
+        Update: {
+          access_key?: string | null
+          cancel_protocol?: string | null
+          cancel_reason?: string | null
+          canceled_at?: string | null
+          canceled_by?: string | null
+          company_id?: string
+          contingency_reason?: string | null
+          contingency_type?: string | null
+          created_at?: string
+          customer_cpf_cnpj?: string | null
+          customer_name?: string | null
+          doc_type?: Database["public"]["Enums"]["fiscal_doc_type"]
+          environment?: Database["public"]["Enums"]["sefaz_environment"]
+          id?: string
+          is_contingency?: boolean
+          issued_by?: string | null
+          items_json?: Json | null
+          number?: number | null
+          payment_method?: string | null
+          protocol_date?: string | null
+          protocol_number?: string | null
+          rejection_reason?: string | null
+          serie?: number | null
+          status?: Database["public"]["Enums"]["fiscal_doc_status"]
+          synced_at?: string | null
+          total_value?: number
+          updated_at?: string
+          xml_response?: string | null
+          xml_sent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_company_ids: { Args: never; Returns: string[] }
+      is_company_admin_or_manager: {
+        Args: { _company_id: string }
+        Returns: boolean
+      }
+      is_company_member: { Args: { _company_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      company_role: "admin" | "gerente" | "caixa"
+      fiscal_doc_status:
+        | "pendente"
+        | "autorizada"
+        | "cancelada"
+        | "rejeitada"
+        | "contingencia"
+        | "inutilizada"
+      fiscal_doc_type: "nfce" | "nfe" | "sat"
+      sefaz_environment: "homologacao" | "producao"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +555,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      company_role: ["admin", "gerente", "caixa"],
+      fiscal_doc_status: [
+        "pendente",
+        "autorizada",
+        "cancelada",
+        "rejeitada",
+        "contingencia",
+        "inutilizada",
+      ],
+      fiscal_doc_type: ["nfce", "nfe", "sat"],
+      sefaz_environment: ["homologacao", "producao"],
+    },
   },
 } as const
