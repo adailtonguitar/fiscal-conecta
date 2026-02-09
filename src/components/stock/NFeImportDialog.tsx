@@ -447,9 +447,14 @@ function EditItemForm({
   onUpdate: (updates: Partial<ReviewItem>) => void;
   onClose: () => void;
 }) {
+  const calcMargin = () => {
+    if (item.costPrice > 0) return (((item.price - item.costPrice) / item.costPrice) * 100).toFixed(1);
+    return "0.0";
+  };
+  const [marginStr, setMarginStr] = useState(calcMargin());
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
           <Label className="text-xs">Nome do Produto</Label>
           <Input
@@ -516,7 +521,28 @@ function EditItemForm({
             type="number"
             step="0.01"
             value={item.costPrice}
-            onChange={(e) => onUpdate({ costPrice: parseFloat(e.target.value) || 0 })}
+            onChange={(e) => {
+              const cost = parseFloat(e.target.value) || 0;
+              const margin = parseFloat(marginStr) || 0;
+              const newPrice = cost * (1 + margin / 100);
+              onUpdate({ costPrice: cost, price: parseFloat(newPrice.toFixed(2)) });
+            }}
+            className="h-8 text-sm"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Margem %</Label>
+          <Input
+            type="text"
+            value={marginStr}
+            onChange={(e) => {
+              setMarginStr(e.target.value);
+              const margin = parseFloat(e.target.value);
+              if (!isNaN(margin) && item.costPrice > 0) {
+                const newPrice = item.costPrice * (1 + margin / 100);
+                onUpdate({ price: parseFloat(newPrice.toFixed(2)) });
+              }
+            }}
             className="h-8 text-sm"
           />
         </div>
@@ -526,7 +552,13 @@ function EditItemForm({
             type="number"
             step="0.01"
             value={item.price}
-            onChange={(e) => onUpdate({ price: parseFloat(e.target.value) || 0 })}
+            onChange={(e) => {
+              const price = parseFloat(e.target.value) || 0;
+              onUpdate({ price });
+              if (item.costPrice > 0) {
+                setMarginStr((((price - item.costPrice) / item.costPrice) * 100).toFixed(1));
+              }
+            }}
             className="h-8 text-sm"
           />
         </div>
