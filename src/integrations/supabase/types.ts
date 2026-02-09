@@ -940,7 +940,7 @@ export type Database = {
         | "venda"
         | "fechamento"
       cash_session_status: "aberto" | "fechado"
-      company_role: "admin" | "gerente" | "caixa"
+      company_role: "admin" | "gerente" | "supervisor" | "caixa"
       financial_category:
         | "fornecedor"
         | "aluguel"
@@ -1122,7 +1122,7 @@ export const Constants = {
         "fechamento",
       ],
       cash_session_status: ["aberto", "fechado"],
-      company_role: ["admin", "gerente", "caixa"],
+      company_role: ["admin", "gerente", "supervisor", "caixa"],
       financial_category: [
         "fornecedor",
         "aluguel",
