@@ -14,6 +14,165 @@ export type Database = {
   }
   public: {
     Tables: {
+      cash_movements: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          performed_by: string
+          sale_id: string | null
+          session_id: string
+          type: Database["public"]["Enums"]["cash_movement_type"]
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          performed_by: string
+          sale_id?: string | null
+          session_id: string
+          type: Database["public"]["Enums"]["cash_movement_type"]
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          performed_by?: string
+          sale_id?: string | null
+          session_id?: string
+          type?: Database["public"]["Enums"]["cash_movement_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_movements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_movements_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_movements_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_sessions: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          closing_balance: number | null
+          company_id: string
+          counted_credito: number | null
+          counted_debito: number | null
+          counted_dinheiro: number | null
+          counted_pix: number | null
+          created_at: string
+          difference: number | null
+          id: string
+          notes: string | null
+          opened_at: string
+          opened_by: string
+          opening_balance: number
+          sales_count: number | null
+          status: Database["public"]["Enums"]["cash_session_status"]
+          terminal_id: string
+          total_credito: number | null
+          total_debito: number | null
+          total_dinheiro: number | null
+          total_outros: number | null
+          total_pix: number | null
+          total_sangria: number | null
+          total_suprimento: number | null
+          total_vendas: number | null
+          total_voucher: number | null
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_balance?: number | null
+          company_id: string
+          counted_credito?: number | null
+          counted_debito?: number | null
+          counted_dinheiro?: number | null
+          counted_pix?: number | null
+          created_at?: string
+          difference?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opened_by: string
+          opening_balance?: number
+          sales_count?: number | null
+          status?: Database["public"]["Enums"]["cash_session_status"]
+          terminal_id?: string
+          total_credito?: number | null
+          total_debito?: number | null
+          total_dinheiro?: number | null
+          total_outros?: number | null
+          total_pix?: number | null
+          total_sangria?: number | null
+          total_suprimento?: number | null
+          total_vendas?: number | null
+          total_voucher?: number | null
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_balance?: number | null
+          company_id?: string
+          counted_credito?: number | null
+          counted_debito?: number | null
+          counted_dinheiro?: number | null
+          counted_pix?: number | null
+          created_at?: string
+          difference?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opened_by?: string
+          opening_balance?: number
+          sales_count?: number | null
+          status?: Database["public"]["Enums"]["cash_session_status"]
+          terminal_id?: string
+          total_credito?: number | null
+          total_debito?: number | null
+          total_dinheiro?: number | null
+          total_outros?: number | null
+          total_pix?: number | null
+          total_sangria?: number | null
+          total_suprimento?: number | null
+          total_vendas?: number | null
+          total_voucher?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_sessions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           address_city: string | null
@@ -406,6 +565,106 @@ export type Database = {
         }
         Relationships: []
       }
+      tef_transactions: {
+        Row: {
+          acquirer: string | null
+          amount: number
+          authorization_code: string | null
+          card_brand: string | null
+          card_last_digits: string | null
+          company_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          installments: number | null
+          nsu: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          pix_qrcode: string | null
+          pix_txid: string | null
+          pix_url: string | null
+          processed_by: string | null
+          receipt_customer: string | null
+          receipt_merchant: string | null
+          sale_id: string | null
+          session_id: string | null
+          status: Database["public"]["Enums"]["tef_status"]
+          transaction_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          acquirer?: string | null
+          amount: number
+          authorization_code?: string | null
+          card_brand?: string | null
+          card_last_digits?: string | null
+          company_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          installments?: number | null
+          nsu?: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          pix_qrcode?: string | null
+          pix_txid?: string | null
+          pix_url?: string | null
+          processed_by?: string | null
+          receipt_customer?: string | null
+          receipt_merchant?: string | null
+          sale_id?: string | null
+          session_id?: string | null
+          status?: Database["public"]["Enums"]["tef_status"]
+          transaction_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acquirer?: string | null
+          amount?: number
+          authorization_code?: string | null
+          card_brand?: string | null
+          card_last_digits?: string | null
+          company_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          installments?: number | null
+          nsu?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          pix_qrcode?: string | null
+          pix_txid?: string | null
+          pix_url?: string | null
+          processed_by?: string | null
+          receipt_customer?: string | null
+          receipt_merchant?: string | null
+          sale_id?: string | null
+          session_id?: string | null
+          status?: Database["public"]["Enums"]["tef_status"]
+          transaction_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tef_transactions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tef_transactions_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tef_transactions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -419,6 +678,13 @@ export type Database = {
       is_company_member: { Args: { _company_id: string }; Returns: boolean }
     }
     Enums: {
+      cash_movement_type:
+        | "abertura"
+        | "sangria"
+        | "suprimento"
+        | "venda"
+        | "fechamento"
+      cash_session_status: "aberto" | "fechado"
       company_role: "admin" | "gerente" | "caixa"
       fiscal_doc_status:
         | "pendente"
@@ -428,7 +694,22 @@ export type Database = {
         | "contingencia"
         | "inutilizada"
       fiscal_doc_type: "nfce" | "nfe" | "sat"
+      payment_method:
+        | "dinheiro"
+        | "debito"
+        | "credito"
+        | "pix"
+        | "voucher"
+        | "outros"
       sefaz_environment: "homologacao" | "producao"
+      tef_status:
+        | "iniciado"
+        | "aguardando_pinpad"
+        | "processando"
+        | "aprovado"
+        | "negado"
+        | "cancelado"
+        | "timeout"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -556,6 +837,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      cash_movement_type: [
+        "abertura",
+        "sangria",
+        "suprimento",
+        "venda",
+        "fechamento",
+      ],
+      cash_session_status: ["aberto", "fechado"],
       company_role: ["admin", "gerente", "caixa"],
       fiscal_doc_status: [
         "pendente",
@@ -566,7 +855,24 @@ export const Constants = {
         "inutilizada",
       ],
       fiscal_doc_type: ["nfce", "nfe", "sat"],
+      payment_method: [
+        "dinheiro",
+        "debito",
+        "credito",
+        "pix",
+        "voucher",
+        "outros",
+      ],
       sefaz_environment: ["homologacao", "producao"],
+      tef_status: [
+        "iniciado",
+        "aguardando_pinpad",
+        "processando",
+        "aprovado",
+        "negado",
+        "cancelado",
+        "timeout",
+      ],
     },
   },
 } as const

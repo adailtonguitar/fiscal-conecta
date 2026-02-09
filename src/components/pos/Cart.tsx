@@ -1,4 +1,4 @@
-import { Minus, Plus, Trash2, CreditCard, Banknote, QrCode, X } from "lucide-react";
+import { Minus, Plus, Trash2, X } from "lucide-react";
 import { formatCurrency, type CartItem } from "@/lib/mock-data";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -7,17 +7,10 @@ interface CartProps {
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemoveItem: (id: string) => void;
   onClearCart: () => void;
-  onFinishSale: (method: string) => void;
+  onCheckout: () => void;
 }
 
-const paymentMethods = [
-  { id: "dinheiro", label: "Dinheiro", icon: Banknote },
-  { id: "debito", label: "Débito", icon: CreditCard },
-  { id: "credito", label: "Crédito", icon: CreditCard },
-  { id: "pix", label: "PIX", icon: QrCode },
-];
-
-export function Cart({ items, onUpdateQuantity, onRemoveItem, onClearCart, onFinishSale }: CartProps) {
+export function Cart({ items, onUpdateQuantity, onRemoveItem, onClearCart, onCheckout }: CartProps) {
   const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -90,28 +83,19 @@ export function Cart({ items, onUpdateQuantity, onRemoveItem, onClearCart, onFin
         </AnimatePresence>
       </div>
 
-      {/* Footer / Payment */}
+      {/* Footer */}
       {items.length > 0 && (
         <div className="border-t border-pos-border p-4 space-y-4">
-          {/* Total */}
           <div className="flex items-end justify-between">
             <span className="text-sm text-pos-text-muted">Total</span>
             <span className="pos-price text-2xl">{formatCurrency(subtotal)}</span>
           </div>
-
-          {/* Payment methods */}
-          <div className="grid grid-cols-2 gap-2">
-            {paymentMethods.map((pm) => (
-              <button
-                key={pm.id}
-                onClick={() => onFinishSale(pm.label)}
-                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-pos-bg text-pos-text text-sm font-medium hover:bg-pos-accent hover:text-primary-foreground transition-all active:scale-[0.97]"
-              >
-                <pm.icon className="w-4 h-4" />
-                {pm.label}
-              </button>
-            ))}
-          </div>
+          <button
+            onClick={onCheckout}
+            className="w-full py-3.5 rounded-xl bg-pos-accent text-primary-foreground text-base font-semibold hover:opacity-90 transition-all active:scale-[0.98]"
+          >
+            Pagamento
+          </button>
         </div>
       )}
     </div>

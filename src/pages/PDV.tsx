@@ -2,17 +2,25 @@ import { useState, useCallback } from "react";
 import { ProductGrid } from "@/components/pos/ProductGrid";
 import { Cart } from "@/components/pos/Cart";
 import { SaleReceipt } from "@/components/pos/SaleReceipt";
+import { TEFProcessor, type TEFResult } from "@/components/pos/TEFProcessor";
+import { CashRegister } from "@/components/pos/CashRegister";
 import { type Product, type CartItem } from "@/lib/mock-data";
 import { AnimatePresence } from "framer-motion";
+import { DollarSign } from "lucide-react";
 
 export default function PDV() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [showTEF, setShowTEF] = useState(false);
+  const [showCashRegister, setShowCashRegister] = useState(false);
   const [receipt, setReceipt] = useState<{
     items: CartItem[];
     total: number;
     paymentMethod: string;
     nfceNumber: string;
+    tefResult?: TEFResult;
   } | null>(null);
+
+  const total = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   const addToCart = useCallback((product: Product) => {
     setCartItems((prev) => {
@@ -42,18 +50,42 @@ export default function PDV() {
 
   const clearCart = useCallback(() => setCartItems([]), []);
 
-  const finishSale = useCallback(
-    (method: string) => {
-      const total = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const handleCheckout = () => {
+    if (cartItems.length > 0) setShowTEF(true);
+  };
+
+  const handleTEFComplete = (result: TEFResult) => {
+    if (result.approved) {
+      const methodLabels: Record<string, string> = {
+        dinheiro: "Dinheiro",
+        debito: "Cartão Débito",
+        credito: "Cartão Crédito",
+        pix: "PIX",
+      };
       const nfceNumber = String(Math.floor(Math.random() * 999999)).padStart(6, "0");
-      setReceipt({ items: [...cartItems], total, paymentMethod: method, nfceNumber });
+      setReceipt({
+        items: [...cartItems],
+        total,
+        paymentMethod: methodLabels[result.method] || result.method,
+        nfceNumber,
+        tefResult: result,
+      });
       setCartItems([]);
-    },
-    [cartItems]
-  );
+    }
+    setShowTEF(false);
+  };
 
   return (
-    <div className="flex h-full pos-screen">
+    <div className="flex h-full pos-screen relative">
+      {/* Cash register button */}
+      <button
+        onClick={() => setShowCashRegister(true)}
+        className="absolute top-3 right-[354px] z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pos-surface border border-pos-border text-pos-text-muted hover:text-pos-text hover:bg-pos-surface-hover transition-all text-xs font-medium"
+      >
+        <DollarSign className="w-3.5 h-3.5" />
+        Caixa
+      </button>
+
       {/* Product area */}
       <div className="flex-1 min-w-0">
         <ProductGrid onAddToCart={addToCart} />
@@ -66,9 +98,20 @@ export default function PDV() {
           onUpdateQuantity={updateQuantity}
           onRemoveItem={removeItem}
           onClearCart={clearCart}
-          onFinishSale={finishSale}
+          onCheckout={handleCheckout}
         />
       </div>
+
+      {/* TEF Processor overlay */}
+      <AnimatePresence>
+        {showTEF && (
+          <TEFProcessor
+            total={total}
+            onComplete={handleTEFComplete}
+            onCancel={() => setShowTEF(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Receipt overlay */}
       <AnimatePresence>
@@ -78,8 +121,16 @@ export default function PDV() {
             total={receipt.total}
             paymentMethod={receipt.paymentMethod}
             nfceNumber={receipt.nfceNumber}
+            tefResult={receipt.tefResult}
             onClose={() => setReceipt(null)}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Cash Register overlay */}
+      <AnimatePresence>
+        {showCashRegister && (
+          <CashRegister onClose={() => setShowCashRegister(false)} />
         )}
       </AnimatePresence>
     </div>
