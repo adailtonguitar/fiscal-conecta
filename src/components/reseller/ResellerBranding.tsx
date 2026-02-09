@@ -35,12 +35,23 @@ export function ResellerBranding({ reseller, onUpdate }: Props) {
 
     setUploading(true);
     try {
+      // Verify auth
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Você precisa estar logado para enviar a logo");
+        setUploading(false);
+        return;
+      }
+
       const ext = file.name.split(".").pop();
       const path = `${reseller.id}/logo.${ext}`;
 
+      // Remove old file first to avoid conflicts
+      await supabase.storage.from("reseller-logos").remove([path]);
+
       const { error: uploadError } = await supabase.storage
         .from("reseller-logos")
-        .upload(path, file, { upsert: true });
+        .upload(path, file, { upsert: true, cacheControl: "0" });
 
       if (uploadError) throw uploadError;
 
