@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { webPKIService, type CertificateInfo } from "@/services/WebPKIService";
+import { localSignerService, type CertificateInfo } from "@/services/WebPKIService";
 
 interface FiscalConfigSection {
   docType: "nfce" | "nfe" | "sat";
@@ -51,12 +51,16 @@ export default function FiscalConfig() {
   const [a3Loading, setA3Loading] = useState(false);
   const [a3Initialized, setA3Initialized] = useState(false);
 
-  const initWebPKI = useCallback(async () => {
+  const initSigner = useCallback(async () => {
     setA3Loading(true);
     try {
-      await webPKIService.init();
+      const connected = await localSignerService.checkConnection();
+      if (!connected) {
+        toast.error(localSignerService.error || "Assinador não encontrado");
+        return;
+      }
       setA3Initialized(true);
-      const certs = await webPKIService.listCertificates();
+      const certs = await localSignerService.listCertificates();
       setA3Certificates(certs);
       if (certs.length === 0) {
         toast.info("Nenhum certificado digital encontrado. Verifique se o token está conectado.");
@@ -64,7 +68,7 @@ export default function FiscalConfig() {
         toast.success(`${certs.length} certificado(s) encontrado(s)`);
       }
     } catch (err: any) {
-      toast.error(err.message || "Erro ao inicializar Web PKI");
+      toast.error(err.message || "Erro ao conectar ao assinador");
     } finally {
       setA3Loading(false);
     }
@@ -74,7 +78,7 @@ export default function FiscalConfig() {
     if (!a3Initialized) return;
     setA3Loading(true);
     try {
-      const certs = await webPKIService.listCertificates();
+      const certs = await localSignerService.listCertificates();
       setA3Certificates(certs);
       toast.success(`${certs.length} certificado(s) encontrado(s)`);
     } catch (err: any) {
@@ -187,7 +191,7 @@ export default function FiscalConfig() {
 
               {!a3Initialized ? (
                 <button
-                  onClick={initWebPKI}
+                  onClick={initSigner}
                   disabled={a3Loading}
                   className="flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50"
                 >
