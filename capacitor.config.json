@@ -1,0 +1,9 @@
+{
+  "appId": "app.lovable.e5ef5c79efef4e2fb9c139921fc0a605",
+  "appName": "PDV Fiscal",
+  "webDir": "dist",
+  "server": {
+    "url": "https://e5ef5c79-efef-4e2f-b9c1-39921fc0a605.lovableproject.com?forceHideBadge=true",
+    "cleartext": true
+  }
+}
