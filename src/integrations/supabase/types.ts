@@ -58,6 +58,50 @@ export type Database = {
           },
         ]
       }
+      backup_history: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          file_path: string
+          file_size: number | null
+          id: string
+          records_count: Json | null
+          tables_included: string[]
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          file_path: string
+          file_size?: number | null
+          id?: string
+          records_count?: Json | null
+          tables_included: string[]
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          records_count?: Json | null
+          tables_included?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backup_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_movements: {
         Row: {
           amount: number

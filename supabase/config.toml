@@ -1,1 +1,4 @@
 project_id = "xvopwjwgvriisizysbkf"
+
+[functions.export-company-data]
+verify_jwt = false
