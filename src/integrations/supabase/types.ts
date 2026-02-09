@@ -541,6 +541,68 @@ export type Database = {
           },
         ]
       }
+      products: {
+        Row: {
+          barcode: string | null
+          category: string | null
+          company_id: string
+          cost_price: number | null
+          created_at: string
+          id: string
+          is_active: boolean
+          min_stock: number | null
+          name: string
+          ncm: string | null
+          price: number
+          sku: string
+          stock_quantity: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          barcode?: string | null
+          category?: string | null
+          company_id: string
+          cost_price?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          min_stock?: number | null
+          name: string
+          ncm?: string | null
+          price?: number
+          sku: string
+          stock_quantity?: number
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          barcode?: string | null
+          category?: string | null
+          company_id?: string
+          cost_price?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          min_stock?: number | null
+          name?: string
+          ncm?: string | null
+          price?: number
+          sku?: string
+          stock_quantity?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -564,6 +626,66 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      stock_movements: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          new_stock: number
+          performed_by: string
+          previous_stock: number
+          product_id: string
+          quantity: number
+          reason: string | null
+          reference: string | null
+          type: Database["public"]["Enums"]["stock_movement_type"]
+          unit_cost: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          new_stock?: number
+          performed_by: string
+          previous_stock?: number
+          product_id: string
+          quantity: number
+          reason?: string | null
+          reference?: string | null
+          type: Database["public"]["Enums"]["stock_movement_type"]
+          unit_cost?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          new_stock?: number
+          performed_by?: string
+          previous_stock?: number
+          product_id?: string
+          quantity?: number
+          reason?: string | null
+          reference?: string | null
+          type?: Database["public"]["Enums"]["stock_movement_type"]
+          unit_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tef_transactions: {
         Row: {
@@ -702,6 +824,12 @@ export type Database = {
         | "voucher"
         | "outros"
       sefaz_environment: "homologacao" | "producao"
+      stock_movement_type:
+        | "entrada"
+        | "saida"
+        | "ajuste"
+        | "venda"
+        | "devolucao"
       tef_status:
         | "iniciado"
         | "aguardando_pinpad"
@@ -864,6 +992,7 @@ export const Constants = {
         "outros",
       ],
       sefaz_environment: ["homologacao", "producao"],
+      stock_movement_type: ["entrada", "saida", "ajuste", "venda", "devolucao"],
       tef_status: [
         "iniciado",
         "aguardando_pinpad",
