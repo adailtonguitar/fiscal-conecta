@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Plus, Edit, Package, ArrowUpDown, Upload, Trash2, History } from "lucide-react";
+import { Search, Plus, Edit, Package, ArrowUpDown, Upload, Trash2, History, FileText } from "lucide-react";
 import { BatchMovementMode } from "@/components/stock/BatchMovementMode";
 import { formatCurrency } from "@/lib/mock-data";
 import { motion } from "framer-motion";
@@ -8,6 +8,7 @@ import { ProductFormDialog } from "@/components/stock/ProductFormDialog";
 import { StockMovementDialog } from "@/components/stock/StockMovementDialog";
 import { MovementHistoryDialog } from "@/components/stock/MovementHistoryDialog";
 import { CSVImportDialog } from "@/components/stock/CSVImportDialog";
+import { NFeImportDialog } from "@/components/stock/NFeImportDialog";
 import { LowStockAlert } from "@/components/stock/LowStockAlert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,6 +33,7 @@ export default function Produtos() {
   const [movementProduct, setMovementProduct] = useState<Product | null>(null);
   const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
   const [showImport, setShowImport] = useState(false);
+  const [showNFeImport, setShowNFeImport] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [batchMode, setBatchMode] = useState(false);
 
@@ -73,6 +75,10 @@ export default function Produtos() {
           <Button variant="outline" size="sm" onClick={() => setBatchMode(true)}>
             <ArrowUpDown className="w-4 h-4 mr-2" />
             Movimentações
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowNFeImport(true)}>
+            <FileText className="w-4 h-4 mr-2" />
+            Importar NF-e
           </Button>
           <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
             <Upload className="w-4 h-4 mr-2" />
@@ -230,6 +236,7 @@ export default function Produtos() {
       )}
 
       <CSVImportDialog open={showImport} onOpenChange={setShowImport} />
+      <NFeImportDialog open={showNFeImport} onOpenChange={setShowNFeImport} />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
         <AlertDialogContent>
