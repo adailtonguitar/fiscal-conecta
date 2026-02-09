@@ -1,8 +1,16 @@
 /**
- * WebPKIService — integration with Lacuna Web PKI for A3 certificate signing.
- * Handles certificate listing, selection, and XML signing via the local Web PKI agent.
+ * LocalSignerService — integração com assinadores digitais locais para certificado A3.
+ * 
+ * Suporta agentes que rodam em localhost (ex: Assinador SERPRO, agentes PKCS#11 genéricos).
+ * O agente local faz a ponte entre o navegador e o token/smartcard via REST API.
+ * 
+ * Fluxo:
+ *   Browser → HTTP localhost:porta → Agente local → Token USB/Smartcard → Assinatura
+ * 
+ * Configuração padrão:
+ *   - SERPRO: http://localhost:3003
+ *   - Genérico: http://localhost:5765
  */
-import LacunaWebPKI from "web-pki";
 
 export interface CertificateInfo {
   thumbprint: string;
@@ -10,6 +18,7 @@ export interface CertificateInfo {
   issuerName: string;
   validFrom: string;
   validTo: string;
+  serialNumber?: string;
   pkiBrazil?: {
     cpf?: string;
     cnpj?: string;
@@ -17,179 +26,246 @@ export interface CertificateInfo {
   };
 }
 
-type WebPKIStatus = "not_started" | "initializing" | "ready" | "not_installed" | "error";
+export interface SignerConfig {
+  /** URL base do agente local (ex: http://localhost:3003) */
+  baseUrl: string;
+  /** Nome do agente para exibição */
+  agentName: string;
+  /** Endpoints customizados */
+  endpoints?: {
+    status?: string;
+    certificates?: string;
+    sign?: string;
+  };
+}
 
-class WebPKIService {
-  private pki: any = null;
-  private _status: WebPKIStatus = "not_started";
+const DEFAULT_CONFIGS: Record<string, SignerConfig> = {
+  serpro: {
+    baseUrl: "http://localhost:3003",
+    agentName: "Assinador SERPRO",
+    endpoints: {
+      status: "/status",
+      certificates: "/certificados",
+      sign: "/assinar",
+    },
+  },
+  generic: {
+    baseUrl: "http://localhost:5765",
+    agentName: "Assinador Local",
+    endpoints: {
+      status: "/api/status",
+      certificates: "/api/certificates",
+      sign: "/api/sign",
+    },
+  },
+};
+
+type SignerStatus = "not_started" | "checking" | "connected" | "not_found" | "error";
+
+class LocalSignerService {
+  private _status: SignerStatus = "not_started";
   private _error: string | null = null;
-  private initPromise: Promise<void> | null = null;
+  private _config: SignerConfig = DEFAULT_CONFIGS.serpro;
 
   get status() {
     return this._status;
   }
-
   get error() {
     return this._error;
   }
-
   get isReady() {
-    return this._status === "ready";
+    return this._status === "connected";
+  }
+  get agentName() {
+    return this._config.agentName;
   }
 
   /**
-   * Initialize the Web PKI component. Safe to call multiple times.
+   * Configure which signer agent to use.
    */
-  async init(license?: string): Promise<void> {
-    if (this.initPromise) return this.initPromise;
+  setConfig(preset: "serpro" | "generic" | SignerConfig) {
+    if (typeof preset === "string") {
+      this._config = DEFAULT_CONFIGS[preset] || DEFAULT_CONFIGS.serpro;
+    } else {
+      this._config = preset;
+    }
+    this._status = "not_started";
+    this._error = null;
+  }
 
-    this._status = "initializing";
+  /**
+   * Check if the local signer agent is running.
+   */
+  async checkConnection(): Promise<boolean> {
+    this._status = "checking";
     this._error = null;
 
-    this.initPromise = new Promise<void>((resolve, reject) => {
-      this.pki = new LacunaWebPKI(license);
+    const endpoint = this._config.endpoints?.status || "/status";
+    const url = `${this._config.baseUrl}${endpoint}`;
 
-      this.pki.init({
-        ready: () => {
-          this._status = "ready";
-          resolve();
-        },
-        notInstalled: () => {
-          this._status = "not_installed";
-          this._error = "Web PKI não está instalado. Instale em https://get.webpkiplugin.com";
-          this.pki.redirectToInstallPage();
-          reject(new Error(this._error));
-        },
-        defaultFail: (ex: any) => {
-          this._status = "error";
-          this._error = ex?.message || "Erro ao inicializar Web PKI";
-          reject(new Error(this._error));
-        },
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+
+      const response = await fetch(url, {
+        method: "GET",
+        signal: controller.signal,
       });
-    });
 
-    return this.initPromise;
-  }
+      clearTimeout(timeout);
 
-  /**
-   * List all available digital certificates on the machine.
-   */
-  async listCertificates(): Promise<CertificateInfo[]> {
-    this.ensureReady();
+      if (response.ok) {
+        this._status = "connected";
+        return true;
+      }
 
-    return new Promise((resolve, reject) => {
-      this.pki.listCertificates({
-        selectId: "certificateSelect",
-        selectOptionFormatter: (cert: any) => cert.subjectName,
-      }).success((certs: any[]) => {
-        const mapped: CertificateInfo[] = certs.map((c) => ({
-          thumbprint: c.thumbprint,
-          subjectName: c.subjectName,
-          issuerName: c.issuerName,
-          validFrom: c.validityStart,
-          validTo: c.validityEnd,
-          pkiBrazil: c.pkiBrazil
-            ? {
-                cpf: c.pkiBrazil.cpf,
-                cnpj: c.pkiBrazil.cnpj,
-                companyName: c.pkiBrazil.companyName,
-              }
-            : undefined,
-        }));
-        resolve(mapped);
-      }).fail((err: any) => {
-        reject(new Error(err?.message || "Erro ao listar certificados"));
-      });
-    });
-  }
-
-  /**
-   * Sign data (hash or raw bytes) using the selected certificate.
-   * @param thumbprint Certificate thumbprint
-   * @param dataToSign Base64-encoded data to sign
-   * @param digestAlgorithm Algorithm (default: SHA-256)
-   */
-  async signHash(
-    thumbprint: string,
-    dataToSign: string,
-    digestAlgorithm = "SHA-256"
-  ): Promise<string> {
-    this.ensureReady();
-
-    return new Promise((resolve, reject) => {
-      this.pki
-        .signHash({
-          thumbprint,
-          hash: dataToSign,
-          digestAlgorithm,
-        })
-        .success((signature: string) => {
-          resolve(signature);
-        })
-        .fail((err: any) => {
-          reject(new Error(err?.message || "Erro ao assinar dados"));
-        });
-    });
-  }
-
-  /**
-   * Sign raw data using the selected certificate.
-   */
-  async signData(thumbprint: string, dataToSign: string): Promise<string> {
-    this.ensureReady();
-
-    return new Promise((resolve, reject) => {
-      this.pki
-        .signData({
-          thumbprint,
-          data: dataToSign,
-          digestAlgorithm: "SHA-256",
-        })
-        .success((signature: string) => {
-          resolve(signature);
-        })
-        .fail((err: any) => {
-          reject(new Error(err?.message || "Erro ao assinar dados"));
-        });
-    });
-  }
-
-  /**
-   * Read the full certificate encoding (Base64 DER).
-   */
-  async readCertificate(thumbprint: string): Promise<string> {
-    this.ensureReady();
-
-    return new Promise((resolve, reject) => {
-      this.pki
-        .readCertificate(thumbprint)
-        .success((certContent: string) => {
-          resolve(certContent);
-        })
-        .fail((err: any) => {
-          reject(new Error(err?.message || "Erro ao ler certificado"));
-        });
-    });
-  }
-
-  private ensureReady() {
-    if (this._status !== "ready") {
-      throw new Error(
-        "Web PKI não está inicializado. Chame init() primeiro."
-      );
+      this._status = "error";
+      this._error = `Agente respondeu com status ${response.status}`;
+      return false;
+    } catch (err: any) {
+      if (err.name === "AbortError") {
+        this._status = "not_found";
+        this._error = `${this._config.agentName} não encontrado em ${this._config.baseUrl}. Verifique se o programa está aberto.`;
+      } else {
+        this._status = "not_found";
+        this._error = `Não foi possível conectar ao ${this._config.agentName}. Verifique se está instalado e em execução.`;
+      }
+      return false;
     }
   }
 
   /**
-   * Reset the service state (e.g., on logout or page change).
+   * List certificates available on the connected token/smartcard.
    */
+  async listCertificates(): Promise<CertificateInfo[]> {
+    this.ensureReady();
+
+    const endpoint = this._config.endpoints?.certificates || "/certificados";
+    const url = `${this._config.baseUrl}${endpoint}`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Erro ao listar certificados: HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Normalize different agent response formats
+      const certs: any[] = Array.isArray(data) ? data : data.certificados || data.certificates || [];
+
+      return certs.map((c: any) => ({
+        thumbprint: c.thumbprint || c.serialNumber || c.serial || "",
+        subjectName: c.subjectName || c.subject || c.nome || c.cn || "",
+        issuerName: c.issuerName || c.issuer || c.emissor || "",
+        validFrom: c.validFrom || c.notBefore || c.validoDesde || "",
+        validTo: c.validTo || c.notAfter || c.validoAte || "",
+        serialNumber: c.serialNumber || c.serial || "",
+        pkiBrazil: {
+          cpf: c.cpf || c.pkiBrazil?.cpf || "",
+          cnpj: c.cnpj || c.pkiBrazil?.cnpj || "",
+          companyName: c.companyName || c.razaoSocial || c.pkiBrazil?.companyName || "",
+        },
+      }));
+    } catch (err: any) {
+      throw new Error(err.message || "Erro ao listar certificados do token");
+    }
+  }
+
+  /**
+   * Sign XML content using the selected certificate.
+   * @param thumbprint Certificate identifier
+   * @param xmlContent XML string or Base64 content to sign
+   * @param signatureType Type of signature (e.g., "xmldsig", "xades")
+   */
+  async signXml(
+    thumbprint: string,
+    xmlContent: string,
+    signatureType = "xmldsig"
+  ): Promise<string> {
+    this.ensureReady();
+
+    const endpoint = this._config.endpoints?.sign || "/assinar";
+    const url = `${this._config.baseUrl}${endpoint}`;
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          thumbprint,
+          certificado: thumbprint,
+          xml: xmlContent,
+          content: xmlContent,
+          type: signatureType,
+          algoritmo: "SHA-256",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || errorData.erro || `Erro ao assinar: HTTP ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+      return data.signedXml || data.xmlAssinado || data.signature || data.assinatura || "";
+    } catch (err: any) {
+      throw new Error(err.message || "Erro ao assinar XML");
+    }
+  }
+
+  /**
+   * Sign a hash using the selected certificate.
+   */
+  async signHash(
+    thumbprint: string,
+    hash: string,
+    algorithm = "SHA-256"
+  ): Promise<string> {
+    this.ensureReady();
+
+    const endpoint = this._config.endpoints?.sign || "/assinar";
+    const url = `${this._config.baseUrl}${endpoint}`;
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          thumbprint,
+          certificado: thumbprint,
+          hash,
+          algoritmo: algorithm,
+          tipo: "hash",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao assinar hash: HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.signature || data.assinatura || "";
+    } catch (err: any) {
+      throw new Error(err.message || "Erro ao assinar hash");
+    }
+  }
+
+  private ensureReady() {
+    if (this._status !== "connected") {
+      throw new Error(
+        `${this._config.agentName} não está conectado. Verifique a conexão primeiro.`
+      );
+    }
+  }
+
   reset() {
     this._status = "not_started";
     this._error = null;
-    this.initPromise = null;
-    this.pki = null;
   }
 }
 
-// Singleton instance
-export const webPKIService = new WebPKIService();
+// Singleton
+export const localSignerService = new LocalSignerService();
