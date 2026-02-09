@@ -11,12 +11,14 @@ import {
   ArrowLeft,
   Receipt,
   Copy,
+  Ticket,
+  MoreHorizontal,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/mock-data";
 import { motion, AnimatePresence } from "framer-motion";
 
 type PaymentStep = "select" | "details" | "processing" | "result";
-type PaymentMethodType = "dinheiro" | "debito" | "credito" | "pix";
+type PaymentMethodType = "dinheiro" | "debito" | "credito" | "pix" | "voucher" | "outros";
 
 interface TEFProcessorProps {
   total: number;
@@ -41,6 +43,8 @@ const paymentMethods = [
   { id: "debito" as const, label: "Cartão Débito", icon: CreditCard, color: "bg-blue-500/10 text-blue-500" },
   { id: "credito" as const, label: "Cartão Crédito", icon: CreditCard, color: "bg-purple-500/10 text-purple-500" },
   { id: "pix" as const, label: "PIX", icon: QrCode, color: "bg-teal-500/10 text-teal-500" },
+  { id: "voucher" as const, label: "Voucher", icon: Ticket, color: "bg-amber-500/10 text-amber-500" },
+  { id: "outros" as const, label: "Outros", icon: MoreHorizontal, color: "bg-gray-500/10 text-gray-500" },
 ];
 
 const cardBrands = ["Visa", "Mastercard", "Elo", "Amex", "Hipercard"];
@@ -114,6 +118,15 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
       setStep("details");
     } else if (m === "credito") {
       setStep("details");
+    } else if (m === "voucher" || m === "outros") {
+      // Instant approval for voucher/outros
+      const tefResult: TEFResult = {
+        method: m,
+        approved: true,
+        nsu: generateNSU(),
+      };
+      setResult(tefResult);
+      setStep("result");
     } else {
       processPayment();
       setMethod(m);
