@@ -17,6 +17,11 @@ import Financeiro from "./pages/Financeiro";
 import Configuracoes from "./pages/Configuracoes";
 import Usuarios from "./pages/Usuarios";
 import Revendas from "./pages/Revendas";
+import Clientes from "./pages/Clientes";
+import Fornecedores from "./pages/Fornecedores";
+import Funcionarios from "./pages/Funcionarios";
+import Transportadoras from "./pages/Transportadoras";
+import Categorias from "./pages/Categorias";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -69,6 +74,11 @@ function AppRoutes() {
                 <Route path="/configuracoes" element={<Configuracoes />} />
                 <Route path="/usuarios" element={<Usuarios />} />
                 <Route path="/revendas" element={<Revendas />} />
+                <Route path="/cadastro/clientes" element={<Clientes />} />
+                <Route path="/cadastro/fornecedores" element={<Fornecedores />} />
+                <Route path="/cadastro/funcionarios" element={<Funcionarios />} />
+                <Route path="/cadastro/transportadoras" element={<Transportadoras />} />
+                <Route path="/cadastro/categorias" element={<Categorias />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AppLayout>

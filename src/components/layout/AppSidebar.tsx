@@ -1,42 +1,57 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  ShoppingCart,
-  LayoutDashboard,
-  Package,
-  FileText,
-  Settings,
-  Wifi,
-  WifiOff,
-  RefreshCw,
-  ChevronLeft,
-  ChevronRight,
-  Store,
-  Receipt,
-  Shield,
-  ScrollText,
-  LogOut,
-  DollarSign,
-  Landmark,
-  Users,
-  Building2,
+  ShoppingCart, LayoutDashboard, Package, FileText, Settings,
+  Wifi, WifiOff, RefreshCw, ChevronLeft, ChevronRight, ChevronDown,
+  Store, Receipt, Shield, ScrollText, LogOut, DollarSign, Landmark,
+  Users, Building2, ClipboardList, UserCheck, Factory, Truck, Tags,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useSync } from "@/hooks/useSync";
 
-const navItems = [
+interface NavItem {
+  icon: any;
+  label: string;
+  path: string;
+}
+
+interface NavGroup {
+  icon: any;
+  label: string;
+  children: NavItem[];
+}
+
+type NavEntry = NavItem | NavGroup;
+
+function isGroup(entry: NavEntry): entry is NavGroup {
+  return "children" in entry;
+}
+
+const navItems: NavEntry[] = [
   { icon: ShoppingCart, label: "PDV", path: "/" },
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: Package, label: "Produtos", path: "/produtos" },
   { icon: FileText, label: "Vendas", path: "/vendas" },
   { icon: DollarSign, label: "Caixa", path: "/caixa" },
   { icon: Landmark, label: "Financeiro", path: "/financeiro" },
+  {
+    icon: ClipboardList,
+    label: "Cadastro",
+    children: [
+      { icon: Building2, label: "Empresa", path: "/configuracoes" },
+      { icon: Users, label: "Clientes", path: "/cadastro/clientes" },
+      { icon: Factory, label: "Fornecedores", path: "/cadastro/fornecedores" },
+      { icon: UserCheck, label: "Funcionários", path: "/cadastro/funcionarios" },
+      { icon: Truck, label: "Transportadoras", path: "/cadastro/transportadoras" },
+      { icon: Tags, label: "Categorias", path: "/cadastro/categorias" },
+      { icon: Users, label: "Usuários", path: "/usuarios" },
+    ],
+  },
   { icon: Receipt, label: "Fiscal", path: "/fiscal" },
   { icon: Shield, label: "Config. Fiscal", path: "/fiscal/config" },
   { icon: ScrollText, label: "Auditoria", path: "/fiscal/auditoria" },
-  { icon: Users, label: "Usuários", path: "/usuarios" },
   { icon: Building2, label: "Revendas", path: "/revendas" },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
 ];
@@ -46,6 +61,15 @@ export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { isOnline, pendingCount, syncing, syncAll } = useSync();
   const { signOut } = useAuth();
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ Cadastro: false });
+
+  const toggleGroup = (label: string) => {
+    if (collapsed) return;
+    setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
+  };
+
+  const isChildActive = (group: NavGroup) =>
+    group.children.some((c) => location.pathname === c.path);
 
   return (
     <aside
@@ -69,12 +93,70 @@ export function AppSidebar() {
       </div>
 
       <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+        {navItems.map((entry) => {
+          if (isGroup(entry)) {
+            const groupOpen = openGroups[entry.label] || isChildActive(entry);
+            return (
+              <div key={entry.label}>
+                <button
+                  onClick={() => toggleGroup(entry.label)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                    isChildActive(entry)
+                      ? "text-sidebar-primary"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  )}
+                >
+                  <entry.icon className="w-5 h-5 flex-shrink-0" />
+                  <AnimatePresence>
+                    {!collapsed && (
+                      <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="whitespace-nowrap flex-1 text-left">
+                        {entry.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                  {!collapsed && (
+                    <ChevronDown className={cn("w-4 h-4 transition-transform", groupOpen && "rotate-180")} />
+                  )}
+                </button>
+                <AnimatePresence>
+                  {groupOpen && !collapsed && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden ml-4 border-l border-sidebar-border pl-2 space-y-0.5"
+                    >
+                      {entry.children.map((child) => {
+                        const isActive = location.pathname === child.path;
+                        return (
+                          <Link
+                            key={child.path}
+                            to={child.path}
+                            className={cn(
+                              "flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200",
+                              isActive
+                                ? "bg-sidebar-accent text-sidebar-primary"
+                                : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                            )}
+                          >
+                            <child.icon className={cn("w-4 h-4 flex-shrink-0", isActive && "text-sidebar-primary")} />
+                            <span className="whitespace-nowrap">{child.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          }
+
+          const isActive = location.pathname === entry.path;
           return (
             <Link
-              key={item.path}
-              to={item.path}
+              key={entry.path}
+              to={entry.path}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive
@@ -82,11 +164,11 @@ export function AppSidebar() {
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               )}
             >
-              <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive && "text-sidebar-primary")} />
+              <entry.icon className={cn("w-5 h-5 flex-shrink-0", isActive && "text-sidebar-primary")} />
               <AnimatePresence>
                 {!collapsed && (
                   <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="whitespace-nowrap">
-                    {item.label}
+                    {entry.label}
                   </motion.span>
                 )}
               </AnimatePresence>
