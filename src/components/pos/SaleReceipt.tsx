@@ -2,6 +2,7 @@ import { Check, Printer, X } from "lucide-react";
 import { formatCurrency, type CartItem } from "@/lib/mock-data";
 import { type TEFResult } from "@/components/pos/TEFProcessor";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 const methodLabels: Record<string, string> = {
   dinheiro: "Dinheiro",
@@ -22,6 +23,68 @@ interface SaleReceiptProps {
 
 export function SaleReceipt({ items, total, payments, nfceNumber, onClose }: SaleReceiptProps) {
   const isSplit = payments.length > 1;
+
+  const handlePrint = () => {
+    try {
+      // Build a printable receipt window
+      const paymentLines = payments.map(p => {
+        const label = methodLabels[p.method] || p.method;
+        let line = `${label}: ${formatCurrency(p.amount)}`;
+        if (p.nsu) line += ` | NSU: ${p.nsu}`;
+        if (p.cardBrand) line += ` | ${p.cardBrand} •••• ${p.cardLastDigits}`;
+        if (p.changeAmount && p.changeAmount > 0) line += ` | Troco: ${formatCurrency(p.changeAmount)}`;
+        return line;
+      }).join('\n');
+
+      const itemLines = items.map(item =>
+        `${item.quantity}× ${item.name} — ${formatCurrency(item.price * item.quantity)}`
+      ).join('\n');
+
+      const receiptContent = `
+        <html>
+        <head>
+          <title>Cupom NFC-e #${nfceNumber}</title>
+          <style>
+            body { font-family: 'Courier New', monospace; font-size: 12px; width: 300px; margin: 0 auto; padding: 20px; }
+            .center { text-align: center; }
+            .bold { font-weight: bold; }
+            .separator { border-top: 1px dashed #000; margin: 8px 0; }
+            .line { margin: 4px 0; }
+            .total { font-size: 16px; font-weight: bold; margin: 8px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="center bold" style="font-size:16px;">CUPOM NÃO FISCAL</div>
+          <div class="separator"></div>
+          <div class="center bold">NFC-e #${nfceNumber}</div>
+          <div class="center line">${new Date().toLocaleString('pt-BR')}</div>
+          <div class="separator"></div>
+          <div class="bold line">ITENS:</div>
+          <pre>${itemLines}</pre>
+          <div class="separator"></div>
+          <div class="total center">TOTAL: ${formatCurrency(total)}</div>
+          <div class="separator"></div>
+          <div class="bold line">PAGAMENTO:</div>
+          <pre>${paymentLines}</pre>
+          <div class="separator"></div>
+          <div class="center line" style="margin-top:16px;">Obrigado pela preferência!</div>
+        </body>
+        </html>
+      `;
+
+      const printWindow = window.open('', '_blank', 'width=350,height=600');
+      if (printWindow) {
+        printWindow.document.write(receiptContent);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+      } else {
+        toast.error("Não foi possível abrir a janela de impressão. Verifique se pop-ups estão permitidos.");
+      }
+    } catch (err) {
+      toast.error("Erro ao imprimir cupom.");
+    }
+  };
 
   return (
     <motion.div
@@ -130,7 +193,7 @@ export function SaleReceipt({ items, total, payments, nfceNumber, onClose }: Sal
             <X className="w-4 h-4" />
             Fechar
           </button>
-          <button className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-pos-accent text-primary-foreground text-sm font-medium hover:opacity-90 transition-all">
+          <button onClick={handlePrint} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-pos-accent text-primary-foreground text-sm font-medium hover:opacity-90 transition-all">
             <Printer className="w-4 h-4" />
             Imprimir
           </button>
