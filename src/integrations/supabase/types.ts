@@ -878,6 +878,231 @@ export type Database = {
         }
         Relationships: []
       }
+      reseller_commissions: {
+        Row: {
+          base_amount: number
+          created_at: string
+          id: string
+          license_id: string
+          markup_amount: number
+          paid_at: string | null
+          period_end: string
+          period_start: string
+          reseller_id: string
+          status: string
+        }
+        Insert: {
+          base_amount?: number
+          created_at?: string
+          id?: string
+          license_id: string
+          markup_amount?: number
+          paid_at?: string | null
+          period_end: string
+          period_start: string
+          reseller_id: string
+          status?: string
+        }
+        Update: {
+          base_amount?: number
+          created_at?: string
+          id?: string
+          license_id?: string
+          markup_amount?: number
+          paid_at?: string | null
+          period_end?: string
+          period_start?: string
+          reseller_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reseller_commissions_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_licenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reseller_commissions_reseller_id_fkey"
+            columns: ["reseller_id"]
+            isOneToOne: false
+            referencedRelation: "resellers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reseller_licenses: {
+        Row: {
+          company_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          plan_id: string
+          reseller_id: string
+          started_at: string
+          status: string
+          trial_ends_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          plan_id: string
+          reseller_id: string
+          started_at?: string
+          status?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          plan_id?: string
+          reseller_id?: string
+          started_at?: string
+          status?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reseller_licenses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reseller_licenses_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reseller_licenses_reseller_id_fkey"
+            columns: ["reseller_id"]
+            isOneToOne: false
+            referencedRelation: "resellers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reseller_plans: {
+        Row: {
+          base_price: number
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          max_monthly_sales: number | null
+          max_products: number
+          max_users: number
+          name: string
+          reseller_id: string
+          reseller_price: number
+          updated_at: string
+        }
+        Insert: {
+          base_price?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_monthly_sales?: number | null
+          max_products?: number
+          max_users?: number
+          name: string
+          reseller_id: string
+          reseller_price?: number
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_monthly_sales?: number | null
+          max_products?: number
+          max_users?: number
+          name?: string
+          reseller_id?: string
+          reseller_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reseller_plans_reseller_id_fkey"
+            columns: ["reseller_id"]
+            isOneToOne: false
+            referencedRelation: "resellers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resellers: {
+        Row: {
+          brand_name: string
+          cnpj: string | null
+          created_at: string
+          custom_domain: string | null
+          email: string | null
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          markup_percentage: number
+          name: string
+          owner_user_id: string
+          phone: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          trade_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          brand_name?: string
+          cnpj?: string | null
+          created_at?: string
+          custom_domain?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          markup_percentage?: number
+          name: string
+          owner_user_id: string
+          phone?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          trade_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          brand_name?: string
+          cnpj?: string | null
+          created_at?: string
+          custom_domain?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          markup_percentage?: number
+          name?: string
+          owner_user_id?: string
+          phone?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          trade_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stock_movements: {
         Row: {
           company_id: string
@@ -1049,6 +1274,7 @@ export type Database = {
         Returns: boolean
       }
       is_company_member: { Args: { _company_id: string }; Returns: boolean }
+      is_reseller_owner: { Args: { _reseller_id: string }; Returns: boolean }
     }
     Enums: {
       cash_movement_type:

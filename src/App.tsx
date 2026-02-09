@@ -16,6 +16,7 @@ import AuditLogs from "./pages/AuditLogs";
 import Financeiro from "./pages/Financeiro";
 import Configuracoes from "./pages/Configuracoes";
 import Usuarios from "./pages/Usuarios";
+import Revendas from "./pages/Revendas";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -67,6 +68,7 @@ function AppRoutes() {
                 <Route path="/financeiro" element={<Financeiro />} />
                 <Route path="/configuracoes" element={<Configuracoes />} />
                 <Route path="/usuarios" element={<Usuarios />} />
+                <Route path="/revendas" element={<Revendas />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AppLayout>

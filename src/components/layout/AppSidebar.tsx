@@ -19,6 +19,7 @@ import {
   DollarSign,
   Landmark,
   Users,
+  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -36,6 +37,7 @@ const navItems = [
   { icon: Shield, label: "Config. Fiscal", path: "/fiscal/config" },
   { icon: ScrollText, label: "Auditoria", path: "/fiscal/auditoria" },
   { icon: Users, label: "Usuários", path: "/usuarios" },
+  { icon: Building2, label: "Revendas", path: "/revendas" },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
 ];
 
