@@ -285,7 +285,7 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="p-6 space-y-3"
+              className="p-6 space-y-3 max-h-[60vh] overflow-y-auto"
             >
               <p className="text-sm text-pos-text-muted mb-4">Selecione a forma de pagamento:</p>
               {paymentMethods.map((pm) => (
