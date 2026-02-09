@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Search, Plus, Edit, Package, ArrowUpDown, Upload, Trash2, History } from "lucide-react";
+import { BatchMovementMode } from "@/components/stock/BatchMovementMode";
 import { formatCurrency } from "@/lib/mock-data";
 import { motion } from "framer-motion";
 import { useProducts, useDeleteProduct, type Product } from "@/hooks/useProducts";
@@ -32,6 +33,7 @@ export default function Produtos() {
   const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [batchMode, setBatchMode] = useState(false);
 
   const filtered = products.filter(
     (p) =>
@@ -50,6 +52,14 @@ export default function Produtos() {
     if (!open) setEditingProduct(null);
   };
 
+  if (batchMode) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <BatchMovementMode products={products} onClose={() => setBatchMode(false)} />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
@@ -60,6 +70,10 @@ export default function Produtos() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setBatchMode(true)}>
+            <ArrowUpDown className="w-4 h-4 mr-2" />
+            Movimentações
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
             <Upload className="w-4 h-4 mr-2" />
             Importar CSV
