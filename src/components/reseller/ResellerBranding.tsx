@@ -11,9 +11,9 @@ interface Props {
 }
 
 export function ResellerBranding({ reseller, onUpdate }: Props) {
-  const [brandName, setBrandName] = useState(reseller.brand_name);
-  const [primaryColor, setPrimaryColor] = useState(reseller.primary_color);
-  const [secondaryColor, setSecondaryColor] = useState(reseller.secondary_color);
+  const [brandName, setBrandName] = useState(reseller.brand_name || "");
+  const [primaryColor, setPrimaryColor] = useState(reseller.primary_color || "#1a9e7a");
+  const [secondaryColor, setSecondaryColor] = useState(reseller.secondary_color || "#0f766e");
   const [customDomain, setCustomDomain] = useState(reseller.custom_domain || "");
   const [logoUrl, setLogoUrl] = useState(reseller.logo_url || "");
   const [saving, setSaving] = useState(false);

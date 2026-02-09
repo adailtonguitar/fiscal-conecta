@@ -69,9 +69,9 @@ export function useReseller() {
   const [commissions, setCommissions] = useState<ResellerCommission[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchReseller = useCallback(async () => {
+  const fetchReseller = useCallback(async (showLoading = true) => {
     if (!user) return;
-    setLoading(true);
+    if (showLoading) setLoading(true);
     try {
       const { data, error } = await supabase
         .from("resellers")
@@ -129,7 +129,7 @@ export function useReseller() {
       const { error } = await supabase.from("resellers").update(updates).eq("id", reseller.id);
       if (error) throw error;
       toast.success("Revenda atualizada!");
-      await fetchReseller();
+      await fetchReseller(false);
     } catch (err: any) {
       toast.error("Erro ao atualizar: " + err.message);
     }
