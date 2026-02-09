@@ -1,5 +1,6 @@
 import { Check, Printer, X } from "lucide-react";
 import { formatCurrency, type CartItem } from "@/lib/mock-data";
+import { type TEFResult } from "@/components/pos/TEFProcessor";
 import { motion } from "framer-motion";
 
 interface SaleReceiptProps {
@@ -7,10 +8,11 @@ interface SaleReceiptProps {
   total: number;
   paymentMethod: string;
   nfceNumber: string;
+  tefResult?: TEFResult;
   onClose: () => void;
 }
 
-export function SaleReceipt({ items, total, paymentMethod, nfceNumber, onClose }: SaleReceiptProps) {
+export function SaleReceipt({ items, total, paymentMethod, nfceNumber, tefResult, onClose }: SaleReceiptProps) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -47,8 +49,8 @@ export function SaleReceipt({ items, total, paymentMethod, nfceNumber, onClose }
           ))}
         </div>
 
-        {/* Total */}
-        <div className="px-6 py-4 border-t border-pos-border">
+        {/* Total + TEF details */}
+        <div className="px-6 py-4 border-t border-pos-border space-y-2">
           <div className="flex justify-between items-end">
             <div>
               <p className="text-xs text-pos-text-muted">Pagamento</p>
@@ -59,6 +61,41 @@ export function SaleReceipt({ items, total, paymentMethod, nfceNumber, onClose }
               <p className="pos-price text-xl">{formatCurrency(total)}</p>
             </div>
           </div>
+
+          {tefResult && (
+            <div className="space-y-1 pt-2 border-t border-pos-border text-xs">
+              {tefResult.nsu && (
+                <div className="flex justify-between">
+                  <span className="text-pos-text-muted">NSU</span>
+                  <span className="font-mono text-pos-text">{tefResult.nsu}</span>
+                </div>
+              )}
+              {tefResult.authCode && (
+                <div className="flex justify-between">
+                  <span className="text-pos-text-muted">Autorização</span>
+                  <span className="font-mono text-pos-text">{tefResult.authCode}</span>
+                </div>
+              )}
+              {tefResult.cardBrand && (
+                <div className="flex justify-between">
+                  <span className="text-pos-text-muted">Bandeira</span>
+                  <span className="text-pos-text">{tefResult.cardBrand} •••• {tefResult.cardLastDigits}</span>
+                </div>
+              )}
+              {tefResult.installments && tefResult.installments > 1 && (
+                <div className="flex justify-between">
+                  <span className="text-pos-text-muted">Parcelas</span>
+                  <span className="text-pos-text">{tefResult.installments}×</span>
+                </div>
+              )}
+              {tefResult.changeAmount !== undefined && tefResult.changeAmount > 0 && (
+                <div className="flex justify-between pt-1 border-t border-pos-border">
+                  <span className="text-pos-text-muted font-medium">Troco</span>
+                  <span className="pos-price">{formatCurrency(tefResult.changeAmount)}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Actions */}

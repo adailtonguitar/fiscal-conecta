@@ -16,6 +16,7 @@ import {
   Shield,
   ScrollText,
   LogOut,
+  DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,6 +27,7 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: Package, label: "Produtos", path: "/produtos" },
   { icon: FileText, label: "Vendas", path: "/vendas" },
+  { icon: DollarSign, label: "Caixa", path: "/caixa" },
   { icon: Receipt, label: "Fiscal", path: "/fiscal" },
   { icon: Shield, label: "Config. Fiscal", path: "/fiscal/config" },
   { icon: ScrollText, label: "Auditoria", path: "/fiscal/auditoria" },
@@ -46,31 +48,20 @@ export function AppSidebar() {
         collapsed ? "w-[72px]" : "w-[240px]"
       )}
     >
-      {/* Logo */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border">
         <div className="w-9 h-9 rounded-lg brand-gradient flex items-center justify-center flex-shrink-0">
           <Store className="w-5 h-5 text-primary-foreground" />
         </div>
         <AnimatePresence>
           {!collapsed && (
-            <motion.div
-              initial={{ opacity: 0, width: 0 }}
-              animate={{ opacity: 1, width: "auto" }}
-              exit={{ opacity: 0, width: 0 }}
-              className="overflow-hidden"
-            >
-              <h1 className="text-sm font-bold text-sidebar-accent-foreground whitespace-nowrap">
-                PDV Fiscal
-              </h1>
-              <p className="text-[10px] text-sidebar-foreground whitespace-nowrap">
-                Sistema de Vendas
-              </p>
+            <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }} exit={{ opacity: 0, width: 0 }} className="overflow-hidden">
+              <h1 className="text-sm font-bold text-sidebar-accent-foreground whitespace-nowrap">PDV Fiscal</h1>
+              <p className="text-[10px] text-sidebar-foreground whitespace-nowrap">Sistema de Vendas</p>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -88,12 +79,7 @@ export function AppSidebar() {
               <item.icon className={cn("w-5 h-5 flex-shrink-0", isActive && "text-sidebar-primary")} />
               <AnimatePresence>
                 {!collapsed && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="whitespace-nowrap"
-                  >
+                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="whitespace-nowrap">
                     {item.label}
                   </motion.span>
                 )}
@@ -103,7 +89,6 @@ export function AppSidebar() {
         })}
       </nav>
 
-      {/* Footer */}
       <div className="px-3 pb-3 space-y-2">
         {pendingSync > 0 && (
           <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-sidebar-accent", collapsed && "justify-center")}>
@@ -111,36 +96,17 @@ export function AppSidebar() {
             {!collapsed && <span className="text-xs text-sidebar-foreground">{pendingSync} pendentes</span>}
           </div>
         )}
-
         <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg", collapsed && "justify-center")}>
           {isOnline ? (
-            <>
-              <Wifi className="w-4 h-4 status-online flex-shrink-0" />
-              {!collapsed && <span className="text-xs status-online font-medium">Online</span>}
-            </>
+            <><Wifi className="w-4 h-4 status-online flex-shrink-0" />{!collapsed && <span className="text-xs status-online font-medium">Online</span>}</>
           ) : (
-            <>
-              <WifiOff className="w-4 h-4 status-offline flex-shrink-0" />
-              {!collapsed && <span className="text-xs status-offline font-medium">Offline</span>}
-            </>
+            <><WifiOff className="w-4 h-4 status-offline flex-shrink-0" />{!collapsed && <span className="text-xs status-offline font-medium">Offline</span>}</>
           )}
         </div>
-
-        <button
-          onClick={signOut}
-          className={cn(
-            "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors",
-            collapsed && "justify-center"
-          )}
-        >
-          <LogOut className="w-4 h-4 flex-shrink-0" />
-          {!collapsed && <span className="text-xs">Sair</span>}
+        <button onClick={signOut} className={cn("w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors", collapsed && "justify-center")}>
+          <LogOut className="w-4 h-4 flex-shrink-0" />{!collapsed && <span className="text-xs">Sair</span>}
         </button>
-
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center justify-center py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-        >
+        <button onClick={() => setCollapsed(!collapsed)} className="w-full flex items-center justify-center py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
       </div>
