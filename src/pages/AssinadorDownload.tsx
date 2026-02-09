@@ -15,7 +15,7 @@ const signerOptions: SignerOption[] = [
     name: "Assinador SERPRO",
     description:
       "Assinador digital gratuito do Governo Federal. Compatível com certificados A1 e A3 (token/smartcard). Ideal para emissão de NF-e e NFC-e.",
-    url: "https://www.serpro.gov.br/links-fixos-702702702/assinador-digital/assinador-serpro",
+    url: "https://www.serpro.gov.br/links-fixos-superiores/assinador-digital/assinador-serpro",
     platforms: ["Windows", "Linux"],
     free: true,
     recommended: true,
