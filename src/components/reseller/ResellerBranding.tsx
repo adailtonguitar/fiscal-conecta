@@ -1,6 +1,8 @@
-import { useState } from "react";
-import { Palette, Save, Globe, Upload } from "lucide-react";
+import { useState, useRef } from "react";
+import { Palette, Save, Globe, Upload, Image, Trash2, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import type { Reseller } from "@/hooks/useReseller";
 
 interface Props {
@@ -13,7 +15,53 @@ export function ResellerBranding({ reseller, onUpdate }: Props) {
   const [primaryColor, setPrimaryColor] = useState(reseller.primary_color);
   const [secondaryColor, setSecondaryColor] = useState(reseller.secondary_color);
   const [customDomain, setCustomDomain] = useState(reseller.custom_domain || "");
+  const [logoUrl, setLogoUrl] = useState(reseller.logo_url || "");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione um arquivo de imagem");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Imagem deve ter no máximo 2MB");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${reseller.id}/logo.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("reseller-logos")
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from("reseller-logos")
+        .getPublicUrl(path);
+
+      const url = `${data.publicUrl}?t=${Date.now()}`;
+      setLogoUrl(url);
+      toast.success("Logo enviado com sucesso");
+    } catch (err: any) {
+      toast.error(`Erro ao enviar logo: ${err.message}`);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setLogoUrl("");
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -22,6 +70,7 @@ export function ResellerBranding({ reseller, onUpdate }: Props) {
       primary_color: primaryColor,
       secondary_color: secondaryColor,
       custom_domain: customDomain || null,
+      logo_url: logoUrl || null,
     });
     setSaving(false);
   };
@@ -38,6 +87,51 @@ export function ResellerBranding({ reseller, onUpdate }: Props) {
           <h2 className="text-base font-semibold text-foreground">Personalização da Marca</h2>
         </div>
         <div className="p-5 space-y-4">
+          {/* Logo Upload */}
+          <div>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">Logo da Marca</label>
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 rounded-xl border-2 border-dashed border-border bg-muted/30 flex items-center justify-center overflow-hidden">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                ) : (
+                  <Image className="w-8 h-8 text-muted-foreground" />
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors disabled:opacity-50"
+                >
+                  {uploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4" />
+                  )}
+                  {uploading ? "Enviando..." : "Enviar Logo"}
+                </button>
+                {logoUrl && (
+                  <button
+                    onClick={handleRemoveLogo}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-destructive text-sm font-medium hover:bg-destructive/10 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Remover
+                  </button>
+                )}
+                <p className="text-xs text-muted-foreground">PNG, JPG ou SVG. Máx. 2MB.</p>
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="text-sm font-medium text-foreground mb-1.5 block">Nome da Marca</label>
             <input
@@ -83,8 +177,12 @@ export function ResellerBranding({ reseller, onUpdate }: Props) {
               style={{ background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                  <Upload className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center overflow-hidden">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                  ) : (
+                    <Upload className="w-5 h-5 text-white" />
+                  )}
                 </div>
                 <div>
                   <p className="text-white font-semibold text-sm">{brandName}</p>
