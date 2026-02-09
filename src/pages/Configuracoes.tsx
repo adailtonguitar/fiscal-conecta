@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Store, Palette, Save, Globe, FileText, Download, Clock, HardDrive } from "lucide-react";
+import { Store, Palette, Save, Globe, FileText, Download, Clock, HardDrive, Search, Loader2 } from "lucide-react";
+import { useCnpjLookup } from "@/hooks/useCnpjLookup";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -7,6 +8,7 @@ import { useCompany } from "@/hooks/useCompany";
 
 export default function Configuracoes() {
   const { companyId, loading: companyLoading } = useCompany();
+  const { lookup: cnpjLookup, loading: cnpjLoading } = useCnpjLookup();
   const [companyData, setCompanyData] = useState({
     name: "",
     trade_name: "",
@@ -88,6 +90,26 @@ export default function Configuracoes() {
 
   const updateField = (field: string, value: string) => {
     setCompanyData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleCnpjSearch = async () => {
+    const result = await cnpjLookup(companyData.cnpj);
+    if (!result) return;
+    setCompanyData((prev) => ({
+      ...prev,
+      name: result.name || prev.name,
+      trade_name: result.trade_name || prev.trade_name,
+      email: result.email || prev.email,
+      phone: result.phone || prev.phone,
+      address_street: result.address_street || prev.address_street,
+      address_number: result.address_number || prev.address_number,
+      address_complement: result.address_complement || prev.address_complement,
+      address_neighborhood: result.address_neighborhood || prev.address_neighborhood,
+      address_city: result.address_city || prev.address_city,
+      address_state: result.address_state || prev.address_state,
+      address_zip: result.address_zip || prev.address_zip,
+      address_ibge_code: result.address_ibge_code || prev.address_ibge_code,
+    }));
   };
 
   const handleExport = async () => {
@@ -185,7 +207,18 @@ export default function Configuracoes() {
         <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="text-sm font-medium text-foreground mb-1.5 block">CNPJ *</label>
-            <input type="text" value={companyData.cnpj} onChange={(e) => updateField("cnpj", e.target.value)} className={inputClass} />
+            <div className="flex gap-2">
+              <input type="text" value={companyData.cnpj} onChange={(e) => updateField("cnpj", e.target.value)} className={inputClass} />
+              <button
+                type="button"
+                onClick={handleCnpjSearch}
+                disabled={cnpjLoading || !companyData.cnpj}
+                title="Buscar dados do CNPJ"
+                className="shrink-0 flex items-center justify-center w-10 h-10 rounded-xl border border-border bg-background text-muted-foreground hover:text-foreground hover:border-primary transition-all disabled:opacity-50"
+              >
+                {cnpjLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
           <div>
             <label className="text-sm font-medium text-foreground mb-1.5 block">Inscrição Estadual</label>

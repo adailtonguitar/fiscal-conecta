@@ -5,7 +5,7 @@ import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from "@
 const fields: FieldConfig[] = [
   { key: "name", label: "Nome / Razão Social", required: true, showInTable: true, colSpan: 2 },
   { key: "trade_name", label: "Nome Fantasia" },
-  { key: "cpf_cnpj", label: "CPF / CNPJ", showInTable: true },
+  { key: "cpf_cnpj", label: "CPF / CNPJ", showInTable: true, cnpjLookup: true },
   { key: "ie", label: "Inscrição Estadual" },
   { key: "email", label: "E-mail", type: "email", showInTable: true },
   { key: "phone", label: "Telefone", type: "tel", showInTable: true },
@@ -37,6 +37,7 @@ export default function Clientes() {
       onUpdate={(d) => update.mutateAsync(d as any)}
       onDelete={(id) => del.mutateAsync(id)}
       searchKeys={["name", "cpf_cnpj", "email"] as any}
+      cnpjFieldMap={{ name: "name", trade_name: "trade_name", email: "email", phone: "phone", address_street: "address_street", address_number: "address_number", address_complement: "address_complement", address_neighborhood: "address_neighborhood", address_city: "address_city", address_state: "address_state", address_zip: "address_zip" }}
     />
   );
 }

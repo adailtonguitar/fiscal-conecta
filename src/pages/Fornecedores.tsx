@@ -5,7 +5,7 @@ import { useSuppliers, useCreateSupplier, useUpdateSupplier, useDeleteSupplier }
 const fields: FieldConfig[] = [
   { key: "name", label: "Razão Social", required: true, showInTable: true, colSpan: 2 },
   { key: "trade_name", label: "Nome Fantasia" },
-  { key: "cnpj", label: "CNPJ", showInTable: true },
+  { key: "cnpj", label: "CNPJ", showInTable: true, cnpjLookup: true },
   { key: "ie", label: "Inscrição Estadual" },
   { key: "contact_name", label: "Contato", showInTable: true },
   { key: "email", label: "E-mail", type: "email", showInTable: true },

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Plus, Edit, Trash2 } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useCnpjLookup } from "@/hooks/useCnpjLookup";
 
 export interface FieldConfig {
   key: string;
@@ -22,7 +23,25 @@ export interface FieldConfig {
   options?: { value: string; label: string }[];
   showInTable?: boolean;
   colSpan?: number; // 1 or 2
+  cnpjLookup?: boolean; // enables CNPJ lookup button
 }
+
+/** Maps CNPJ result keys to form field keys. Override via cnpjFieldMap prop. */
+const DEFAULT_CNPJ_MAP: Record<string, string> = {
+  name: "name",
+  trade_name: "trade_name",
+  email: "email",
+  phone: "phone",
+  address_street: "address_street",
+  address_number: "address_number",
+  address_complement: "address_complement",
+  address_neighborhood: "address_neighborhood",
+  address_city: "address_city",
+  address_state: "address_state",
+  address_zip: "address_zip",
+  address_ibge_code: "address_ibge_code",
+  contact_name: "contact_name",
+};
 
 interface CrudPageProps<T extends { id: string }> {
   title: string;
@@ -36,11 +55,13 @@ interface CrudPageProps<T extends { id: string }> {
   onDelete: (id: string) => Promise<any>;
   searchKeys?: (keyof T)[];
   nameKey?: keyof T;
+  cnpjFieldMap?: Record<string, string>;
 }
 
 export function CrudPage<T extends { id: string }>({
-  title, subtitle, icon, data, isLoading, fields, onCreate, onUpdate, onDelete, searchKeys = ["name" as keyof T], nameKey = "name" as keyof T,
+  title, subtitle, icon, data, isLoading, fields, onCreate, onUpdate, onDelete, searchKeys = ["name" as keyof T], nameKey = "name" as keyof T, cnpjFieldMap,
 }: CrudPageProps<T>) {
+  const { lookup: cnpjLookup, loading: cnpjLoading } = useCnpjLookup();
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<T | null>(null);
@@ -71,6 +92,21 @@ export function CrudPage<T extends { id: string }>({
     fields.forEach((f) => { values[f.key] = (item as any)[f.key] ?? ""; });
     setFormData(values);
     setShowForm(true);
+  };
+
+  const handleCnpjSearch = async (cnpjFieldKey: string) => {
+    const cnpjValue = formData[cnpjFieldKey];
+    if (!cnpjValue) return;
+    const result = await cnpjLookup(cnpjValue);
+    if (!result) return;
+    const map = cnpjFieldMap || DEFAULT_CNPJ_MAP;
+    const updated = { ...formData };
+    for (const [resultKey, formKey] of Object.entries(map)) {
+      if ((result as any)[resultKey] && fields.some((f) => f.key === formKey)) {
+        updated[formKey] = (result as any)[resultKey];
+      }
+    }
+    setFormData(updated);
   };
 
   const handleSave = async () => {
@@ -175,7 +211,7 @@ export function CrudPage<T extends { id: string }>({
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
             {fields.map((f) => (
-              <div key={f.key} className={f.colSpan === 2 ? "md:col-span-2" : ""}>
+               <div key={f.key} className={f.colSpan === 2 ? "md:col-span-2" : ""}>
                 <Label className="text-xs">{f.label}{f.required && " *"}</Label>
                 {f.type === "select" && f.options ? (
                   <select
@@ -186,6 +222,26 @@ export function CrudPage<T extends { id: string }>({
                     <option value="">Selecione...</option>
                     {f.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
+                ) : f.cnpjLookup ? (
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      placeholder={f.placeholder || "00.000.000/0000-00"}
+                      value={formData[f.key] || ""}
+                      onChange={(e) => setFormData({ ...formData, [f.key]: e.target.value })}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0"
+                      disabled={cnpjLoading || !formData[f.key]}
+                      onClick={() => handleCnpjSearch(f.key)}
+                      title="Buscar dados do CNPJ"
+                    >
+                      {cnpjLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    </Button>
+                  </div>
                 ) : (
                   <Input
                     type={f.type || "text"}
