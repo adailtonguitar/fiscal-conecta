@@ -32,8 +32,11 @@ const initialConfigs: FiscalConfigSection[] = [
 
 export default function FiscalConfig() {
   const [configs, setConfigs] = useState(initialConfigs);
+  const [certType, setCertType] = useState<"A1" | "A3">("A1");
   const [certFile, setCertFile] = useState<string | null>(null);
   const [certExpiry, setCertExpiry] = useState("2027-06-15");
+  const [a3Provider, setA3Provider] = useState("");
+  const [a3SlotIndex, setA3SlotIndex] = useState("0");
   const [satSerial, setSatSerial] = useState("");
   const [satActivation, setSatActivation] = useState("");
 
@@ -58,52 +61,134 @@ export default function FiscalConfig() {
       >
         <div className="px-5 py-4 border-b border-border flex items-center gap-2">
           <FileKey className="w-4 h-4 text-primary" />
-          <h2 className="text-base font-semibold text-foreground">Certificado Digital A1</h2>
+          <h2 className="text-base font-semibold text-foreground">Certificado Digital</h2>
         </div>
         <div className="p-5 space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
-            <div className="flex items-center gap-3">
-              {certFile ? (
-                <CheckCircle className="w-5 h-5 text-success" />
-              ) : (
-                <AlertTriangle className="w-5 h-5 text-warning" />
-              )}
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  {certFile ? "Certificado instalado" : "Nenhum certificado instalado"}
-                </p>
-                {certFile && (
-                  <p className="text-xs text-muted-foreground">
-                    Validade: {new Date(certExpiry).toLocaleDateString("pt-BR")}
-                  </p>
-                )}
-              </div>
-            </div>
-            <label className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium cursor-pointer hover:opacity-90 transition-all">
-              <Upload className="w-4 h-4" />
-              {certFile ? "Trocar" : "Enviar"} Certificado
-              <input
-                type="file"
-                accept=".pfx,.p12"
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files?.[0]) setCertFile(e.target.files[0].name);
-                }}
-              />
-            </label>
+          {/* Cert type selector */}
+          <div className="flex gap-2">
+            {(["A1", "A3"] as const).map((type) => (
+              <button
+                key={type}
+                onClick={() => setCertType(type)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+                  certType === type
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted/50 text-foreground border-border hover:bg-muted"
+                }`}
+              >
+                Certificado {type}
+              </button>
+            ))}
           </div>
 
-          {certFile && (
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">
-                Senha do Certificado
-              </label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                className="w-full max-w-sm px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-              />
-            </div>
+          {certType === "A1" ? (
+            <>
+              <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
+                <div className="flex items-center gap-3">
+                  {certFile ? (
+                    <CheckCircle className="w-5 h-5 text-success" />
+                  ) : (
+                    <AlertTriangle className="w-5 h-5 text-warning" />
+                  )}
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {certFile ? "Certificado A1 instalado" : "Nenhum certificado A1 instalado"}
+                    </p>
+                    {certFile && (
+                      <p className="text-xs text-muted-foreground">
+                        Validade: {new Date(certExpiry).toLocaleDateString("pt-BR")}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium cursor-pointer hover:opacity-90 transition-all">
+                  <Upload className="w-4 h-4" />
+                  {certFile ? "Trocar" : "Enviar"} .PFX
+                  <input
+                    type="file"
+                    accept=".pfx,.p12"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) setCertFile(e.target.files[0].name);
+                    }}
+                  />
+                </label>
+              </div>
+              {certFile && (
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">
+                    Senha do Certificado
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    className="w-full max-w-sm px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  />
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50">
+                <Shield className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">Certificado A3 (Token/Smartcard)</p>
+                  <p className="text-xs text-muted-foreground">
+                    O certificado A3 é acessado via dispositivo criptográfico (token USB ou smartcard)
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">
+                    Provedor / Driver PKCS#11
+                  </label>
+                  <select
+                    value={a3Provider}
+                    onChange={(e) => setA3Provider(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  >
+                    <option value="">Selecione o provedor</option>
+                    <option value="safenet">SafeNet (eToken)</option>
+                    <option value="oberthur">Oberthur / IDEMIA</option>
+                    <option value="gemalto">Gemalto / Thales</option>
+                    <option value="certisign">Certisign</option>
+                    <option value="serasa">Serasa Experian</option>
+                    <option value="valid">Valid Certificadora</option>
+                    <option value="custom">Outro (personalizado)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">
+                    Slot / Índice do Token
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={a3SlotIndex}
+                    onChange={(e) => setA3SlotIndex(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">
+                  PIN do Token / Smartcard
+                </label>
+                <input
+                  type="password"
+                  placeholder="Digite o PIN do dispositivo"
+                  className="w-full max-w-sm px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 text-primary text-xs">
+                <Cpu className="w-4 h-4 flex-shrink-0" />
+                O certificado A3 requer que o token/smartcard esteja conectado ao computador durante a emissão de documentos fiscais.
+              </div>
+            </>
           )}
         </div>
       </motion.div>
