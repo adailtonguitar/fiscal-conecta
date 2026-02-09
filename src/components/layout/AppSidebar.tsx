@@ -24,7 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
-import { useOfflineSync } from "@/hooks/useOfflineSync";
+import { useSync } from "@/hooks/useSync";
 
 const navItems = [
   { icon: ShoppingCart, label: "PDV", path: "/" },
@@ -44,7 +44,7 @@ const navItems = [
 export function AppSidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
-  const { isOnline, pendingCount, syncing, syncPending } = useOfflineSync();
+  const { isOnline, pendingCount, syncing, syncAll } = useSync();
   const { signOut } = useAuth();
 
   return (
@@ -98,7 +98,7 @@ export function AppSidebar() {
       <div className="px-3 pb-3 space-y-2">
         {pendingCount > 0 && (
           <button
-            onClick={syncPending}
+            onClick={syncAll}
             disabled={syncing || !isOnline}
             className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-sidebar-accent w-full", collapsed && "justify-center")}
           >
