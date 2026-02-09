@@ -68,6 +68,7 @@ const pixSteps = [
 const generateNSU = () => String(Math.floor(Math.random() * 999999999)).padStart(9, "0");
 const generateAuthCode = () => String(Math.floor(Math.random() * 999999)).padStart(6, "0");
 const generatePixTxId = () => `E${String(Math.floor(Math.random() * 99999999999)).padStart(32, "0")}`;
+const generateQrPattern = () => Array.from({ length: 25 }, () => Math.random() > 0.4);
 
 export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps) {
   const [step, setStep] = useState<PaymentStep>("select");
@@ -80,6 +81,7 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
   const [processingStatus, setProcessingStatus] = useState("");
   const [processingStep, setProcessingStep] = useState(0);
   const [currentResult, setCurrentResult] = useState<TEFResult | null>(null);
+  const [qrPattern] = useState(() => generateQrPattern());
 
   const paidSoFar = completedPayments.reduce((s, p) => s + p.amount, 0);
   const remaining = Math.max(0, Number((total - paidSoFar).toFixed(2)));
@@ -496,10 +498,10 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
               {method === "pix" && processingStep >= 1 && (
                 <div className="w-40 h-40 bg-pos-bg rounded-xl border border-pos-border flex items-center justify-center mb-4">
                   <div className="grid grid-cols-5 gap-0.5">
-                    {Array.from({ length: 25 }).map((_, i) => (
+                    {qrPattern.map((filled, i) => (
                       <div
                         key={i}
-                        className={`w-6 h-6 ${Math.random() > 0.4 ? "bg-pos-text" : "bg-transparent"}`}
+                        className={`w-6 h-6 ${filled ? "bg-pos-text" : "bg-transparent"}`}
                       />
                     ))}
                   </div>
