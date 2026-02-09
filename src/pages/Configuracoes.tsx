@@ -86,26 +86,13 @@ export default function Configuracoes() {
         if (error) throw error;
         toast.success("Dados da empresa salvos com sucesso!");
       } else {
-        // Create new company and link user
-        const { data: newCompany, error: createError } = await supabase
+        // Create new company (trigger auto_assign_company_admin handles company_users link)
+        const { error: createError } = await supabase
           .from("companies")
-          .insert(companyData)
-          .select("id")
-          .single();
+          .insert(companyData);
         if (createError) throw createError;
 
-        const { error: linkError } = await supabase
-          .from("company_users")
-          .insert({
-            company_id: newCompany.id,
-            user_id: user!.id,
-            role: "admin" as const,
-            is_active: true,
-          });
-        if (linkError) throw linkError;
-
         toast.success("Empresa criada com sucesso!");
-        // Reload to pick up the new companyId
         window.location.reload();
       }
     } catch (err: any) {
