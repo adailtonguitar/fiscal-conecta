@@ -40,7 +40,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
   const initialMargin = product && product.cost_price && product.cost_price > 0
     ? ((product.price - product.cost_price) / product.cost_price) * 100
     : null;
-  const [margin, setMargin] = useState<number | null>(initialMargin);
+  const [marginStr, setMarginStr] = useState<string>(initialMargin !== null ? initialMargin.toFixed(1) : "");
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -155,7 +155,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                         const cost = parseFloat(e.target.value) || 0;
                         const price = form.getValues("price");
                         if (cost > 0 && price > 0) {
-                          setMargin(((price - cost) / cost) * 100);
+                          setMarginStr((((price - cost) / cost) * 100).toFixed(1));
                         }
                       }}
                     />
@@ -176,7 +176,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                         const price = parseFloat(e.target.value) || 0;
                         const cost = form.getValues("cost_price") || 0;
                         if (cost > 0 && price > 0) {
-                          setMargin(((price - cost) / cost) * 100);
+                          setMarginStr((((price - cost) / cost) * 100).toFixed(1));
                         }
                       }}
                     />
@@ -188,13 +188,17 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                 <label className="text-sm font-medium leading-none">Margem %</label>
                 <Input
                   type="number"
-                  step="0.1"
+                  step="any"
                   placeholder="0"
-                  value={margin !== null ? margin.toFixed(1) : ""}
-                  className={margin !== null ? (margin > 0 ? "text-green-600 font-semibold" : margin < 0 ? "text-destructive font-semibold" : "") : ""}
+                  value={marginStr}
+                  className={(() => {
+                    const m = parseFloat(marginStr);
+                    if (isNaN(m)) return "";
+                    return m > 0 ? "text-green-600 font-semibold" : m < 0 ? "text-destructive font-semibold" : "";
+                  })()}
                   onChange={(e) => {
+                    setMarginStr(e.target.value);
                     const m = parseFloat(e.target.value);
-                    setMargin(isNaN(m) ? null : m);
                     const cost = form.getValues("cost_price") || 0;
                     if (!isNaN(m) && cost > 0) {
                       const newPrice = +(cost * (1 + m / 100)).toFixed(2);
