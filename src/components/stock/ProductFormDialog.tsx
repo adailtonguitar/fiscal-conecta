@@ -37,6 +37,10 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const isEditing = !!product;
+  const initialMargin = product && product.cost_price && product.cost_price > 0
+    ? ((product.price - product.cost_price) / product.cost_price) * 100
+    : null;
+  const [margin, setMargin] = useState<number | null>(initialMargin);
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -123,7 +127,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
               )} />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <FormField control={form.control} name="unit" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Unidade</FormLabel>
@@ -138,20 +142,67 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                   <FormMessage />
                 </FormItem>
               )} />
-              <FormField control={form.control} name="price" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preço Venda</FormLabel>
-                  <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
               <FormField control={form.control} name="cost_price" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Preço Custo</FormLabel>
-                  <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        const cost = parseFloat(e.target.value) || 0;
+                        const price = form.getValues("price");
+                        if (cost > 0 && price > 0) {
+                          setMargin(((price - cost) / cost) * 100);
+                        }
+                      }}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
+              <FormField control={form.control} name="price" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Preço Venda</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        const price = parseFloat(e.target.value) || 0;
+                        const cost = form.getValues("cost_price") || 0;
+                        if (cost > 0 && price > 0) {
+                          setMargin(((price - cost) / cost) * 100);
+                        }
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <div className="space-y-2">
+                <label className="text-sm font-medium leading-none">Margem %</label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  placeholder="0"
+                  value={margin !== null ? margin.toFixed(1) : ""}
+                  className={margin !== null ? (margin > 0 ? "text-green-600 font-semibold" : margin < 0 ? "text-destructive font-semibold" : "") : ""}
+                  onChange={(e) => {
+                    const m = parseFloat(e.target.value);
+                    setMargin(isNaN(m) ? null : m);
+                    const cost = form.getValues("cost_price") || 0;
+                    if (!isNaN(m) && cost > 0) {
+                      const newPrice = +(cost * (1 + m / 100)).toFixed(2);
+                      form.setValue("price", newPrice);
+                    }
+                  }}
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
