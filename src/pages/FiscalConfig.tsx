@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Shield,
   Upload,
@@ -10,8 +10,13 @@ import {
   Settings2,
   Cpu,
   Save,
+  RefreshCw,
+  Loader2,
+  Usb,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
+import { webPKIService, type CertificateInfo } from "@/services/WebPKIService";
 
 interface FiscalConfigSection {
   docType: "nfce" | "nfe" | "sat";
@@ -39,6 +44,47 @@ export default function FiscalConfig() {
   const [a3SlotIndex, setA3SlotIndex] = useState("0");
   const [satSerial, setSatSerial] = useState("");
   const [satActivation, setSatActivation] = useState("");
+
+  // Web PKI A3 state
+  const [a3Certificates, setA3Certificates] = useState<CertificateInfo[]>([]);
+  const [a3SelectedThumbprint, setA3SelectedThumbprint] = useState("");
+  const [a3Loading, setA3Loading] = useState(false);
+  const [a3Initialized, setA3Initialized] = useState(false);
+
+  const initWebPKI = useCallback(async () => {
+    setA3Loading(true);
+    try {
+      await webPKIService.init();
+      setA3Initialized(true);
+      const certs = await webPKIService.listCertificates();
+      setA3Certificates(certs);
+      if (certs.length === 0) {
+        toast.info("Nenhum certificado digital encontrado. Verifique se o token está conectado.");
+      } else {
+        toast.success(`${certs.length} certificado(s) encontrado(s)`);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao inicializar Web PKI");
+    } finally {
+      setA3Loading(false);
+    }
+  }, []);
+
+  const refreshCertificates = useCallback(async () => {
+    if (!a3Initialized) return;
+    setA3Loading(true);
+    try {
+      const certs = await webPKIService.listCertificates();
+      setA3Certificates(certs);
+      toast.success(`${certs.length} certificado(s) encontrado(s)`);
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao listar certificados");
+    } finally {
+      setA3Loading(false);
+    }
+  }, [a3Initialized]);
+
+  const selectedCert = a3Certificates.find((c) => c.thumbprint === a3SelectedThumbprint);
 
   const updateConfig = (idx: number, updates: Partial<FiscalConfigSection>) => {
     setConfigs((prev) => prev.map((c, i) => (i === idx ? { ...c, ...updates } : c)));
@@ -130,63 +176,81 @@ export default function FiscalConfig() {
           ) : (
             <>
               <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50">
-                <Shield className="w-5 h-5 text-primary" />
-                <div>
+                <Usb className="w-5 h-5 text-primary" />
+                <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">Certificado A3 (Token/Smartcard)</p>
                   <p className="text-xs text-muted-foreground">
-                    O certificado A3 é acessado via dispositivo criptográfico (token USB ou smartcard)
+                    Assinatura digital via Lacuna Web PKI — o token deve estar conectado
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">
-                    Provedor / Driver PKCS#11
-                  </label>
-                  <select
-                    value={a3Provider}
-                    onChange={(e) => setA3Provider(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  >
-                    <option value="">Selecione o provedor</option>
-                    <option value="safenet">SafeNet (eToken)</option>
-                    <option value="oberthur">Oberthur / IDEMIA</option>
-                    <option value="gemalto">Gemalto / Thales</option>
-                    <option value="certisign">Certisign</option>
-                    <option value="serasa">Serasa Experian</option>
-                    <option value="valid">Valid Certificadora</option>
-                    <option value="custom">Outro (personalizado)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">
-                    Slot / Índice do Token
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={a3SlotIndex}
-                    onChange={(e) => setA3SlotIndex(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
-                  />
-                </div>
-              </div>
+              {!a3Initialized ? (
+                <button
+                  onClick={initWebPKI}
+                  disabled={a3Loading}
+                  className="flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50"
+                >
+                  {a3Loading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Shield className="w-4 h-4" />
+                  )}
+                  {a3Loading ? "Detectando certificados..." : "Detectar Certificados A3"}
+                </button>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={a3SelectedThumbprint}
+                      onChange={(e) => setA3SelectedThumbprint(e.target.value)}
+                      className="flex-1 px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    >
+                      <option value="">Selecione um certificado</option>
+                      {a3Certificates.map((cert) => (
+                        <option key={cert.thumbprint} value={cert.thumbprint}>
+                          {cert.subjectName}
+                          {cert.pkiBrazil?.cnpj ? ` (CNPJ: ${cert.pkiBrazil.cnpj})` : ""}
+                          {cert.pkiBrazil?.cpf ? ` (CPF: ${cert.pkiBrazil.cpf})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={refreshCertificates}
+                      disabled={a3Loading}
+                      className="p-2.5 rounded-xl bg-muted border border-border hover:bg-muted/80 transition-all"
+                      title="Atualizar lista"
+                    >
+                      <RefreshCw className={`w-4 h-4 text-foreground ${a3Loading ? "animate-spin" : ""}`} />
+                    </button>
+                  </div>
 
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">
-                  PIN do Token / Smartcard
-                </label>
-                <input
-                  type="password"
-                  placeholder="Digite o PIN do dispositivo"
-                  className="w-full max-w-sm px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                />
-              </div>
+                  {selectedCert && (
+                    <div className="p-4 rounded-xl bg-muted/50 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-success" />
+                        <span className="text-sm font-medium text-foreground">Certificado selecionado</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs text-muted-foreground">
+                        <p><strong>Titular:</strong> {selectedCert.subjectName}</p>
+                        <p><strong>Emissor:</strong> {selectedCert.issuerName}</p>
+                        <p><strong>Válido de:</strong> {new Date(selectedCert.validFrom).toLocaleDateString("pt-BR")}</p>
+                        <p><strong>Válido até:</strong> {new Date(selectedCert.validTo).toLocaleDateString("pt-BR")}</p>
+                        {selectedCert.pkiBrazil?.cnpj && (
+                          <p><strong>CNPJ:</strong> {selectedCert.pkiBrazil.cnpj}</p>
+                        )}
+                        {selectedCert.pkiBrazil?.cpf && (
+                          <p><strong>CPF:</strong> {selectedCert.pkiBrazil.cpf}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
 
               <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 text-primary text-xs">
                 <Cpu className="w-4 h-4 flex-shrink-0" />
-                O certificado A3 requer que o token/smartcard esteja conectado ao computador durante a emissão de documentos fiscais.
+                O certificado A3 requer o Web PKI instalado e o token/smartcard conectado durante a emissão.
               </div>
             </>
           )}
