@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Produtos from "./pages/Produtos";
 import Vendas from "./pages/Vendas";
+import RelatorioVendas from "./pages/RelatorioVendas";
 import Caixa from "./pages/Caixa";
 import Fiscal from "./pages/Fiscal";
 import FiscalConfig from "./pages/FiscalConfig";
@@ -66,6 +67,7 @@ function AppRoutes() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/produtos" element={<Produtos />} />
                 <Route path="/vendas" element={<Vendas />} />
+                <Route path="/relatorio-vendas" element={<RelatorioVendas />} />
                 <Route path="/caixa" element={<Caixa />} />
                 <Route path="/fiscal" element={<Fiscal />} />
                 <Route path="/fiscal/config" element={<FiscalConfig />} />
