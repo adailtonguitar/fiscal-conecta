@@ -4,9 +4,11 @@ import { Cart } from "@/components/pos/Cart";
 import { SaleReceipt } from "@/components/pos/SaleReceipt";
 import { TEFProcessor, type TEFResult } from "@/components/pos/TEFProcessor";
 import { CashRegister } from "@/components/pos/CashRegister";
-import { type Product, type CartItem } from "@/lib/mock-data";
+import { type Product, type CartItem, products as allProducts } from "@/lib/mock-data";
+import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { AnimatePresence } from "framer-motion";
 import { DollarSign } from "lucide-react";
+import { toast } from "sonner";
 
 export default function PDV() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -21,6 +23,21 @@ export default function PDV() {
   } | null>(null);
 
   const total = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+  // Barcode scanner: find product by SKU or barcode
+  const handleBarcodeScan = useCallback((barcode: string) => {
+    const product = allProducts.find(
+      (p) => p.sku === barcode || p.id === barcode
+    );
+    if (product) {
+      addToCart(product);
+      toast.success(`${product.name} adicionado`);
+    } else {
+      toast.error(`Produto não encontrado: ${barcode}`);
+    }
+  }, []);
+
+  useBarcodeScanner(handleBarcodeScan);
 
   const addToCart = useCallback((product: Product) => {
     setCartItems((prev) => {
