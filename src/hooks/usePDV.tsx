@@ -134,6 +134,8 @@ export function usePDV() {
       debito: "debito",
       credito: "credito",
       pix: "pix",
+      voucher: "voucher",
+      outros: "outros",
     };
 
     const items: SaleItem[] = cartItems.map((item) => ({

@@ -54,6 +54,8 @@ export default function PDV() {
           debito: "Cartão Débito",
           credito: "Cartão Crédito",
           pix: "PIX",
+          voucher: "Voucher",
+          outros: "Outros",
         };
 
         setReceipt({

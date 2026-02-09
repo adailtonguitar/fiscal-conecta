@@ -28,7 +28,7 @@ export interface Sale {
 }
 
 export interface PaymentResult {
-  method: "dinheiro" | "debito" | "credito" | "pix";
+  method: "dinheiro" | "debito" | "credito" | "pix" | "voucher" | "outros";
   approved: boolean;
   nsu?: string;
   auth_code?: string;
