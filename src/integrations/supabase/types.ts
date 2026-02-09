@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_logs: {
+        Row: {
+          action: string
+          company_id: string
+          created_at: string
+          details: string | null
+          id: string
+          metadata: Json | null
+          module: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          action: string
+          company_id: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          metadata?: Json | null
+          module: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          action?: string
+          company_id?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          metadata?: Json | null
+          module?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_movements: {
         Row: {
           amount: number
@@ -673,6 +717,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      permissions: {
+        Row: {
+          can_create: boolean
+          can_delete: boolean
+          can_edit: boolean
+          can_view: boolean
+          id: string
+          module: string
+          role: Database["public"]["Enums"]["company_role"]
+        }
+        Insert: {
+          can_create?: boolean
+          can_delete?: boolean
+          can_edit?: boolean
+          can_view?: boolean
+          id?: string
+          module: string
+          role: Database["public"]["Enums"]["company_role"]
+        }
+        Update: {
+          can_create?: boolean
+          can_delete?: boolean
+          can_edit?: boolean
+          can_view?: boolean
+          id?: string
+          module?: string
+          role?: Database["public"]["Enums"]["company_role"]
+        }
+        Relationships: []
       }
       products: {
         Row: {
