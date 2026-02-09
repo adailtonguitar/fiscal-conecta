@@ -17,6 +17,7 @@ import {
   ScrollText,
   LogOut,
   DollarSign,
+  Landmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,6 +29,7 @@ const navItems = [
   { icon: Package, label: "Produtos", path: "/produtos" },
   { icon: FileText, label: "Vendas", path: "/vendas" },
   { icon: DollarSign, label: "Caixa", path: "/caixa" },
+  { icon: Landmark, label: "Financeiro", path: "/financeiro" },
   { icon: Receipt, label: "Fiscal", path: "/fiscal" },
   { icon: Shield, label: "Config. Fiscal", path: "/fiscal/config" },
   { icon: ScrollText, label: "Auditoria", path: "/fiscal/auditoria" },

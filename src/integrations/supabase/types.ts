@@ -321,6 +321,139 @@ export type Database = {
           },
         ]
       }
+      daily_closings: {
+        Row: {
+          cash_balance: number | null
+          closed_by: string
+          closing_date: string
+          company_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          total_credito: number | null
+          total_debito: number | null
+          total_dinheiro: number | null
+          total_outros: number | null
+          total_payables: number | null
+          total_pix: number | null
+          total_receivables: number | null
+          total_sales: number | null
+        }
+        Insert: {
+          cash_balance?: number | null
+          closed_by: string
+          closing_date: string
+          company_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          total_credito?: number | null
+          total_debito?: number | null
+          total_dinheiro?: number | null
+          total_outros?: number | null
+          total_payables?: number | null
+          total_pix?: number | null
+          total_receivables?: number | null
+          total_sales?: number | null
+        }
+        Update: {
+          cash_balance?: number | null
+          closed_by?: string
+          closing_date?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          total_credito?: number | null
+          total_debito?: number | null
+          total_dinheiro?: number | null
+          total_outros?: number | null
+          total_payables?: number | null
+          total_pix?: number | null
+          total_receivables?: number | null
+          total_sales?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_closings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_entries: {
+        Row: {
+          amount: number
+          category: Database["public"]["Enums"]["financial_category"]
+          company_id: string
+          counterpart: string | null
+          created_at: string
+          created_by: string
+          description: string
+          due_date: string
+          id: string
+          notes: string | null
+          paid_amount: number | null
+          paid_date: string | null
+          payment_method: string | null
+          recurrence: string | null
+          reference: string | null
+          status: Database["public"]["Enums"]["financial_status"]
+          type: Database["public"]["Enums"]["financial_type"]
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          category?: Database["public"]["Enums"]["financial_category"]
+          company_id: string
+          counterpart?: string | null
+          created_at?: string
+          created_by: string
+          description: string
+          due_date: string
+          id?: string
+          notes?: string | null
+          paid_amount?: number | null
+          paid_date?: string | null
+          payment_method?: string | null
+          recurrence?: string | null
+          reference?: string | null
+          status?: Database["public"]["Enums"]["financial_status"]
+          type: Database["public"]["Enums"]["financial_type"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: Database["public"]["Enums"]["financial_category"]
+          company_id?: string
+          counterpart?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          due_date?: string
+          id?: string
+          notes?: string | null
+          paid_amount?: number | null
+          paid_date?: string | null
+          payment_method?: string | null
+          recurrence?: string | null
+          reference?: string | null
+          status?: Database["public"]["Enums"]["financial_status"]
+          type?: Database["public"]["Enums"]["financial_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_entries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fiscal_audit_logs: {
         Row: {
           action: string
@@ -808,6 +941,22 @@ export type Database = {
         | "fechamento"
       cash_session_status: "aberto" | "fechado"
       company_role: "admin" | "gerente" | "caixa"
+      financial_category:
+        | "fornecedor"
+        | "aluguel"
+        | "energia"
+        | "agua"
+        | "internet"
+        | "salario"
+        | "impostos"
+        | "manutencao"
+        | "outros"
+        | "venda"
+        | "servico"
+        | "comissao"
+        | "reembolso"
+      financial_status: "pendente" | "pago" | "vencido" | "cancelado"
+      financial_type: "pagar" | "receber"
       fiscal_doc_status:
         | "pendente"
         | "autorizada"
@@ -974,6 +1123,23 @@ export const Constants = {
       ],
       cash_session_status: ["aberto", "fechado"],
       company_role: ["admin", "gerente", "caixa"],
+      financial_category: [
+        "fornecedor",
+        "aluguel",
+        "energia",
+        "agua",
+        "internet",
+        "salario",
+        "impostos",
+        "manutencao",
+        "outros",
+        "venda",
+        "servico",
+        "comissao",
+        "reembolso",
+      ],
+      financial_status: ["pendente", "pago", "vencido", "cancelado"],
+      financial_type: ["pagar", "receber"],
       fiscal_doc_status: [
         "pendente",
         "autorizada",
