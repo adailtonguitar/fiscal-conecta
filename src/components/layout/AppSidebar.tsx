@@ -12,15 +12,23 @@ import {
   ChevronLeft,
   ChevronRight,
   Store,
+  Receipt,
+  Shield,
+  ScrollText,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
   { icon: ShoppingCart, label: "PDV", path: "/" },
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: Package, label: "Produtos", path: "/produtos" },
   { icon: FileText, label: "Vendas", path: "/vendas" },
+  { icon: Receipt, label: "Fiscal", path: "/fiscal" },
+  { icon: Shield, label: "Config. Fiscal", path: "/fiscal/config" },
+  { icon: ScrollText, label: "Auditoria", path: "/fiscal/auditoria" },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
 ];
 
@@ -29,6 +37,7 @@ export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [isOnline] = useState(true);
   const [pendingSync] = useState(2);
+  const { signOut } = useAuth();
 
   return (
     <aside
@@ -62,7 +71,7 @@ export function AppSidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-3 px-2 space-y-1">
+      <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -94,50 +103,40 @@ export function AppSidebar() {
         })}
       </nav>
 
-      {/* Sync Status */}
+      {/* Footer */}
       <div className="px-3 pb-3 space-y-2">
-        {/* Pending sync badge */}
         {pendingSync > 0 && (
-          <div
-            className={cn(
-              "flex items-center gap-2 px-3 py-2 rounded-lg bg-sidebar-accent",
-              collapsed && "justify-center"
-            )}
-          >
+          <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-sidebar-accent", collapsed && "justify-center")}>
             <RefreshCw className="w-4 h-4 text-warning sync-pulse flex-shrink-0" />
-            {!collapsed && (
-              <span className="text-xs text-sidebar-foreground">
-                {pendingSync} pendentes
-              </span>
-            )}
+            {!collapsed && <span className="text-xs text-sidebar-foreground">{pendingSync} pendentes</span>}
           </div>
         )}
 
-        {/* Online/Offline */}
-        <div
-          className={cn(
-            "flex items-center gap-2 px-3 py-2 rounded-lg",
-            collapsed && "justify-center"
-          )}
-        >
+        <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg", collapsed && "justify-center")}>
           {isOnline ? (
             <>
               <Wifi className="w-4 h-4 status-online flex-shrink-0" />
-              {!collapsed && (
-                <span className="text-xs status-online font-medium">Online</span>
-              )}
+              {!collapsed && <span className="text-xs status-online font-medium">Online</span>}
             </>
           ) : (
             <>
               <WifiOff className="w-4 h-4 status-offline flex-shrink-0" />
-              {!collapsed && (
-                <span className="text-xs status-offline font-medium">Offline</span>
-              )}
+              {!collapsed && <span className="text-xs status-offline font-medium">Offline</span>}
             </>
           )}
         </div>
 
-        {/* Collapse toggle */}
+        <button
+          onClick={signOut}
+          className={cn(
+            "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors",
+            collapsed && "justify-center"
+          )}
+        >
+          <LogOut className="w-4 h-4 flex-shrink-0" />
+          {!collapsed && <span className="text-xs">Sair</span>}
+        </button>
+
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="w-full flex items-center justify-center py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
