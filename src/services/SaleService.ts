@@ -17,11 +17,11 @@ export class SaleService {
     items: SaleItem[];
     total: number;
     paymentMethod: string;
-    paymentResult?: PaymentResult;
+    paymentResults?: PaymentResult[];
     customerCpf?: string;
     customerName?: string;
   }): Promise<{ fiscalDocId: string; nfceNumber: string }> {
-    const { companyId, userId, sessionId, items, total, paymentMethod, paymentResult, customerCpf, customerName } = params;
+    const { companyId, userId, sessionId, items, total, paymentMethod, paymentResults, customerCpf, customerName } = params;
 
     // 1. Create fiscal document
     const { data: doc, error: docErr } = await supabase
@@ -42,38 +42,44 @@ export class SaleService {
 
     if (docErr) throw new Error(`Erro ao criar documento fiscal: ${docErr.message}`);
 
-    // 2. Register cash movement if session is open
-    if (sessionId) {
-      await supabase.from("cash_movements").insert({
-        company_id: companyId,
-        session_id: sessionId,
-        type: "venda",
-        amount: total,
-        payment_method: paymentMethod as any,
-        performed_by: userId,
-        sale_id: doc.id,
-        description: `Venda #${doc.number || doc.id.slice(0, 8)}`,
-      });
+    // 2. Register cash movements for each payment
+    if (sessionId && paymentResults) {
+      for (const pr of paymentResults) {
+        await supabase.from("cash_movements").insert({
+          company_id: companyId,
+          session_id: sessionId,
+          type: "venda",
+          amount: pr.amount,
+          payment_method: pr.method as any,
+          performed_by: userId,
+          sale_id: doc.id,
+          description: `Venda #${doc.number || doc.id.slice(0, 8)} - ${pr.method}`,
+        });
+      }
     }
 
-    // 3. Register TEF transaction if card/pix
-    if (paymentResult && paymentResult.method !== "dinheiro" && paymentResult.approved) {
-      await supabase.from("tef_transactions").insert({
-        company_id: companyId,
-        amount: total,
-        payment_method: paymentResult.method,
-        status: "aprovado",
-        nsu: paymentResult.nsu,
-        authorization_code: paymentResult.auth_code,
-        card_brand: paymentResult.card_brand,
-        card_last_digits: paymentResult.card_last_digits,
-        installments: paymentResult.installments,
-        pix_txid: paymentResult.pix_tx_id,
-        sale_id: doc.id,
-        session_id: sessionId,
-        processed_by: userId,
-        transaction_date: new Date().toISOString(),
-      });
+    // 3. Register TEF transactions for card/pix payments
+    if (paymentResults) {
+      for (const pr of paymentResults) {
+        if (pr.method !== "dinheiro" && pr.approved) {
+          await supabase.from("tef_transactions").insert({
+            company_id: companyId,
+            amount: pr.amount,
+            payment_method: pr.method,
+            status: "aprovado",
+            nsu: pr.nsu,
+            authorization_code: pr.auth_code,
+            card_brand: pr.card_brand,
+            card_last_digits: pr.card_last_digits,
+            installments: pr.installments,
+            pix_txid: pr.pix_tx_id,
+            sale_id: doc.id,
+            session_id: sessionId,
+            processed_by: userId,
+            transaction_date: new Date().toISOString(),
+          });
+        }
+      }
     }
 
     // 4. Deduct stock for each item

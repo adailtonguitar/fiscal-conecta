@@ -3,16 +3,26 @@ import { formatCurrency, type CartItem } from "@/lib/mock-data";
 import { type TEFResult } from "@/components/pos/TEFProcessor";
 import { motion } from "framer-motion";
 
+const methodLabels: Record<string, string> = {
+  dinheiro: "Dinheiro",
+  debito: "Cartão Débito",
+  credito: "Cartão Crédito",
+  pix: "PIX",
+  voucher: "Voucher",
+  outros: "Outros",
+};
+
 interface SaleReceiptProps {
   items: CartItem[];
   total: number;
-  paymentMethod: string;
+  payments: TEFResult[];
   nfceNumber: string;
-  tefResult?: TEFResult;
   onClose: () => void;
 }
 
-export function SaleReceipt({ items, total, paymentMethod, nfceNumber, tefResult, onClose }: SaleReceiptProps) {
+export function SaleReceipt({ items, total, payments, nfceNumber, onClose }: SaleReceiptProps) {
+  const isSplit = payments.length > 1;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -49,12 +59,13 @@ export function SaleReceipt({ items, total, paymentMethod, nfceNumber, tefResult
           ))}
         </div>
 
-        {/* Total + TEF details */}
-        <div className="px-6 py-4 border-t border-pos-border space-y-2">
+        {/* Payment details */}
+        <div className="px-6 py-4 border-t border-pos-border space-y-3">
           <div className="flex justify-between items-end">
             <div>
-              <p className="text-xs text-pos-text-muted">Pagamento</p>
-              <p className="text-sm text-pos-text font-medium">{paymentMethod}</p>
+              <p className="text-xs text-pos-text-muted">
+                {isSplit ? "Pagamentos" : "Pagamento"}
+              </p>
             </div>
             <div className="text-right">
               <p className="text-xs text-pos-text-muted">Total</p>
@@ -62,40 +73,52 @@ export function SaleReceipt({ items, total, paymentMethod, nfceNumber, tefResult
             </div>
           </div>
 
-          {tefResult && (
-            <div className="space-y-1 pt-2 border-t border-pos-border text-xs">
-              {tefResult.nsu && (
-                <div className="flex justify-between">
-                  <span className="text-pos-text-muted">NSU</span>
-                  <span className="font-mono text-pos-text">{tefResult.nsu}</span>
+          {/* Each payment */}
+          <div className="space-y-2">
+            {payments.map((p, i) => (
+              <div key={i} className="p-3 rounded-xl bg-pos-bg space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-pos-text">
+                    {methodLabels[p.method] || p.method}
+                  </span>
+                  <span className="pos-price text-sm">{formatCurrency(p.amount)}</span>
                 </div>
-              )}
-              {tefResult.authCode && (
-                <div className="flex justify-between">
-                  <span className="text-pos-text-muted">Autorização</span>
-                  <span className="font-mono text-pos-text">{tefResult.authCode}</span>
+
+                <div className="space-y-1 text-xs">
+                  {p.nsu && (
+                    <div className="flex justify-between">
+                      <span className="text-pos-text-muted">NSU</span>
+                      <span className="font-mono text-pos-text">{p.nsu}</span>
+                    </div>
+                  )}
+                  {p.authCode && (
+                    <div className="flex justify-between">
+                      <span className="text-pos-text-muted">Autorização</span>
+                      <span className="font-mono text-pos-text">{p.authCode}</span>
+                    </div>
+                  )}
+                  {p.cardBrand && (
+                    <div className="flex justify-between">
+                      <span className="text-pos-text-muted">Bandeira</span>
+                      <span className="text-pos-text">{p.cardBrand} •••• {p.cardLastDigits}</span>
+                    </div>
+                  )}
+                  {p.installments && p.installments > 1 && (
+                    <div className="flex justify-between">
+                      <span className="text-pos-text-muted">Parcelas</span>
+                      <span className="text-pos-text">{p.installments}×</span>
+                    </div>
+                  )}
+                  {p.changeAmount !== undefined && p.changeAmount > 0 && (
+                    <div className="flex justify-between pt-1 border-t border-pos-border">
+                      <span className="text-pos-text-muted font-medium">Troco</span>
+                      <span className="pos-price">{formatCurrency(p.changeAmount)}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-              {tefResult.cardBrand && (
-                <div className="flex justify-between">
-                  <span className="text-pos-text-muted">Bandeira</span>
-                  <span className="text-pos-text">{tefResult.cardBrand} •••• {tefResult.cardLastDigits}</span>
-                </div>
-              )}
-              {tefResult.installments && tefResult.installments > 1 && (
-                <div className="flex justify-between">
-                  <span className="text-pos-text-muted">Parcelas</span>
-                  <span className="text-pos-text">{tefResult.installments}×</span>
-                </div>
-              )}
-              {tefResult.changeAmount !== undefined && tefResult.changeAmount > 0 && (
-                <div className="flex justify-between pt-1 border-t border-pos-border">
-                  <span className="text-pos-text-muted font-medium">Troco</span>
-                  <span className="pos-price">{formatCurrency(tefResult.changeAmount)}</span>
-                </div>
-              )}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Actions */}

@@ -30,6 +30,7 @@ export interface Sale {
 export interface PaymentResult {
   method: "dinheiro" | "debito" | "credito" | "pix" | "voucher" | "outros";
   approved: boolean;
+  amount: number;
   nsu?: string;
   auth_code?: string;
   card_brand?: string;

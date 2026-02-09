@@ -124,19 +124,10 @@ export function usePDV() {
   const clearCart = useCallback(() => setCartItems([]), []);
 
   // Finalize sale
-  const finalizeSale = useCallback(async (paymentResult: PaymentResult) => {
+  const finalizeSale = useCallback(async (paymentResults: PaymentResult[]) => {
     if (!companyId || !user || cartItems.length === 0) {
       throw new Error("Dados incompletos para finalizar venda");
     }
-
-    const methodLabels: Record<string, string> = {
-      dinheiro: "dinheiro",
-      debito: "debito",
-      credito: "credito",
-      pix: "pix",
-      voucher: "voucher",
-      outros: "outros",
-    };
 
     const items: SaleItem[] = cartItems.map((item) => ({
       product_id: item.id,
@@ -148,6 +139,11 @@ export function usePDV() {
       ncm: item.ncm || undefined,
     }));
 
+    // Build payment method label for fiscal document
+    const paymentMethodLabel = paymentResults.length === 1
+      ? paymentResults[0].method
+      : paymentResults.map((p) => p.method).join("+");
+
     if (navigator.onLine) {
       try {
         const result = await SaleService.finalizeSale({
@@ -156,14 +152,13 @@ export function usePDV() {
           sessionId: currentSession?.id,
           items,
           total,
-          paymentMethod: methodLabels[paymentResult.method] || paymentResult.method,
-          paymentResult,
+          paymentMethod: paymentMethodLabel,
+          paymentResults,
         });
 
         setCartItems([]);
         return result;
       } catch (err: any) {
-        // If online fails, queue offline
         toast.warning("Erro ao salvar online. Enfileirando para sync.");
       }
     }
@@ -174,9 +169,9 @@ export function usePDV() {
       user_id: user.id,
       items,
       total,
-      payment_method: methodLabels[paymentResult.method] || paymentResult.method,
+      payment_method: paymentMethodLabel,
       created_at: new Date().toISOString(),
-    }, 1, 5); // high priority, 5 retries
+    }, 1, 5);
 
     const nfceNumber = String(Math.floor(Math.random() * 999999)).padStart(6, "0");
     setCartItems([]);
