@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
+import { useOfflineSync } from "@/hooks/useOfflineSync";
 
 const navItems = [
   { icon: ShoppingCart, label: "PDV", path: "/" },
@@ -41,8 +42,7 @@ const navItems = [
 export function AppSidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
-  const [isOnline] = useState(true);
-  const [pendingSync] = useState(2);
+  const { isOnline, pendingCount, syncing, syncPending } = useOfflineSync();
   const { signOut } = useAuth();
 
   return (
@@ -94,11 +94,15 @@ export function AppSidebar() {
       </nav>
 
       <div className="px-3 pb-3 space-y-2">
-        {pendingSync > 0 && (
-          <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-sidebar-accent", collapsed && "justify-center")}>
-            <RefreshCw className="w-4 h-4 text-warning sync-pulse flex-shrink-0" />
-            {!collapsed && <span className="text-xs text-sidebar-foreground">{pendingSync} pendentes</span>}
-          </div>
+        {pendingCount > 0 && (
+          <button
+            onClick={syncPending}
+            disabled={syncing || !isOnline}
+            className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-sidebar-accent w-full", collapsed && "justify-center")}
+          >
+            <RefreshCw className={cn("w-4 h-4 text-warning flex-shrink-0", syncing && "animate-spin")} />
+            {!collapsed && <span className="text-xs text-sidebar-foreground">{pendingCount} pendentes</span>}
+          </button>
         )}
         <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg", collapsed && "justify-center")}>
           {isOnline ? (
