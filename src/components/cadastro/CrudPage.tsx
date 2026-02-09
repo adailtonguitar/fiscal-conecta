@@ -1,0 +1,231 @@
+import { useState } from "react";
+import { Search, Plus, Edit, Trash2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+export interface FieldConfig {
+  key: string;
+  label: string;
+  type?: "text" | "number" | "date" | "email" | "tel" | "select";
+  required?: boolean;
+  placeholder?: string;
+  options?: { value: string; label: string }[];
+  showInTable?: boolean;
+  colSpan?: number; // 1 or 2
+}
+
+interface CrudPageProps<T extends { id: string }> {
+  title: string;
+  subtitle?: string;
+  icon: React.ReactNode;
+  data: T[];
+  isLoading: boolean;
+  fields: FieldConfig[];
+  onCreate: (item: Record<string, any>) => Promise<any>;
+  onUpdate: (item: Record<string, any> & { id: string }) => Promise<any>;
+  onDelete: (id: string) => Promise<any>;
+  searchKeys?: (keyof T)[];
+  nameKey?: keyof T;
+}
+
+export function CrudPage<T extends { id: string }>({
+  title, subtitle, icon, data, isLoading, fields, onCreate, onUpdate, onDelete, searchKeys = ["name" as keyof T], nameKey = "name" as keyof T,
+}: CrudPageProps<T>) {
+  const [search, setSearch] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<T | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<T | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState<Record<string, any>>({});
+
+  const tableFields = fields.filter((f) => f.showInTable !== false);
+
+  const filtered = data.filter((item) =>
+    searchKeys.some((key) => {
+      const val = (item as any)[key];
+      return val && String(val).toLowerCase().includes(search.toLowerCase());
+    })
+  );
+
+  const openCreate = () => {
+    setEditing(null);
+    const defaults: Record<string, any> = {};
+    fields.forEach((f) => { defaults[f.key] = ""; });
+    setFormData(defaults);
+    setShowForm(true);
+  };
+
+  const openEdit = (item: T) => {
+    setEditing(item);
+    const values: Record<string, any> = {};
+    fields.forEach((f) => { values[f.key] = (item as any)[f.key] ?? ""; });
+    setFormData(values);
+    setShowForm(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      if (editing) {
+        await onUpdate({ ...formData, id: editing.id });
+      } else {
+        await onCreate(formData);
+      }
+      setShowForm(false);
+    } catch {
+      // error handled by hook
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">{title}</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {subtitle ?? `${data.length} registros cadastrados`}
+          </p>
+        </div>
+        <Button size="sm" onClick={openCreate}>
+          <Plus className="w-4 h-4 mr-2" />
+          Novo
+        </Button>
+      </div>
+
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Buscar..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+        />
+      </div>
+
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                {tableFields.map((f) => (
+                  <th key={f.key} className="text-left px-5 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    {f.label}
+                  </th>
+                ))}
+                <th className="text-center px-5 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                [...Array(5)].map((_, i) => (
+                  <tr key={i} className="border-b border-border">
+                    <td className="px-5 py-3" colSpan={tableFields.length + 1}><Skeleton className="h-8 w-full" /></td>
+                  </tr>
+                ))
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={tableFields.length + 1} className="px-5 py-12 text-center text-muted-foreground">
+                    {data.length === 0 ? 'Nenhum registro cadastrado.' : 'Nenhum resultado encontrado.'}
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((item) => (
+                  <tr key={item.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                    {tableFields.map((f) => (
+                      <td key={f.key} className="px-5 py-3 text-foreground">
+                        {(item as any)[f.key] || "—"}
+                      </td>
+                    ))}
+                    <td className="px-5 py-3">
+                      <div className="flex items-center justify-center gap-1">
+                        <button onClick={() => openEdit(item)} title="Editar" className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => setDeleteTarget(item)} title="Excluir" className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
+
+      {/* Form Dialog */}
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Editar" : "Novo"} {title.replace(/s$/, "")}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            {fields.map((f) => (
+              <div key={f.key} className={f.colSpan === 2 ? "md:col-span-2" : ""}>
+                <Label className="text-xs">{f.label}{f.required && " *"}</Label>
+                {f.type === "select" && f.options ? (
+                  <select
+                    value={formData[f.key] || ""}
+                    onChange={(e) => setFormData({ ...formData, [f.key]: e.target.value })}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">Selecione...</option>
+                    {f.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                ) : (
+                  <Input
+                    type={f.type || "text"}
+                    placeholder={f.placeholder}
+                    value={formData[f.key] || ""}
+                    onChange={(e) => setFormData({ ...formData, [f.key]: f.type === "number" ? parseFloat(e.target.value) || 0 : e.target.value })}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir registro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{deleteTarget ? String((deleteTarget as any)[nameKey] || deleteTarget.id) : ""}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { if (deleteTarget) onDelete(deleteTarget.id); setDeleteTarget(null); }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}

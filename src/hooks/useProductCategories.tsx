@@ -1,0 +1,62 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useCompany } from "./useCompany";
+import type { Tables, TablesInsert } from "@/integrations/supabase/types";
+import { toast } from "sonner";
+
+export type ProductCategory = Tables<"product_categories">;
+export type ProductCategoryInsert = TablesInsert<"product_categories">;
+
+export function useProductCategories() {
+  const { companyId } = useCompany();
+  return useQuery({
+    queryKey: ["product_categories", companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      const { data, error } = await supabase.from("product_categories").select("*").eq("company_id", companyId).order("name");
+      if (error) throw error;
+      return data as ProductCategory[];
+    },
+    enabled: !!companyId,
+  });
+}
+
+export function useCreateProductCategory() {
+  const qc = useQueryClient();
+  const { companyId } = useCompany();
+  return useMutation({
+    mutationFn: async (c: Omit<ProductCategoryInsert, "company_id">) => {
+      if (!companyId) throw new Error("Empresa não encontrada");
+      const { data, error } = await supabase.from("product_categories").insert({ ...c, company_id: companyId }).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["product_categories"] }); toast.success("Categoria criada"); },
+    onError: (e: Error) => toast.error(`Erro: ${e.message}`),
+  });
+}
+
+export function useUpdateProductCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<ProductCategory> & { id: string }) => {
+      const { data, error } = await supabase.from("product_categories").update(updates).eq("id", id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["product_categories"] }); toast.success("Categoria atualizada"); },
+    onError: (e: Error) => toast.error(`Erro: ${e.message}`),
+  });
+}
+
+export function useDeleteProductCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("product_categories").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["product_categories"] }); toast.success("Categoria excluída"); },
+    onError: (e: Error) => toast.error(`Erro: ${e.message}`),
+  });
+}
