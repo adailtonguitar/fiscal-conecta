@@ -5,8 +5,10 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useCompany } from "@/hooks/useCompany";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Configuracoes() {
+  const { user } = useAuth();
   const { companyId, loading: companyLoading } = useCompany();
   const { lookup: cnpjLookup, loading: cnpjLoading } = useCnpjLookup();
   const [companyData, setCompanyData] = useState({
@@ -69,18 +71,43 @@ export default function Configuracoes() {
   }, [companyId]);
 
   const handleSave = async () => {
-    if (!companyId) {
-      toast.error("Empresa não encontrada");
+    if (!companyData.name || !companyData.cnpj) {
+      toast.error("Razão Social e CNPJ são obrigatórios");
       return;
     }
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("companies")
-        .update(companyData)
-        .eq("id", companyId);
-      if (error) throw error;
-      toast.success("Dados da empresa salvos com sucesso!");
+      if (companyId) {
+        // Update existing company
+        const { error } = await supabase
+          .from("companies")
+          .update(companyData)
+          .eq("id", companyId);
+        if (error) throw error;
+        toast.success("Dados da empresa salvos com sucesso!");
+      } else {
+        // Create new company and link user
+        const { data: newCompany, error: createError } = await supabase
+          .from("companies")
+          .insert(companyData)
+          .select("id")
+          .single();
+        if (createError) throw createError;
+
+        const { error: linkError } = await supabase
+          .from("company_users")
+          .insert({
+            company_id: newCompany.id,
+            user_id: user!.id,
+            role: "admin" as const,
+            is_active: true,
+          });
+        if (linkError) throw linkError;
+
+        toast.success("Empresa criada com sucesso!");
+        // Reload to pick up the new companyId
+        window.location.reload();
+      }
     } catch (err: any) {
       toast.error("Erro ao salvar: " + err.message);
     } finally {
