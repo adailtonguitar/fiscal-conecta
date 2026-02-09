@@ -7,28 +7,28 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
-  Wifi,
   ArrowLeft,
-  Receipt,
-  Copy,
   Ticket,
   MoreHorizontal,
+  Plus,
+  Split,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/mock-data";
 import { motion, AnimatePresence } from "framer-motion";
 
-type PaymentStep = "select" | "details" | "processing" | "result";
+type PaymentStep = "select" | "amount" | "details" | "processing" | "result" | "summary";
 type PaymentMethodType = "dinheiro" | "debito" | "credito" | "pix" | "voucher" | "outros";
 
 interface TEFProcessorProps {
   total: number;
-  onComplete: (result: TEFResult) => void;
+  onComplete: (results: TEFResult[]) => void;
   onCancel: () => void;
 }
 
 export interface TEFResult {
   method: PaymentMethodType;
   approved: boolean;
+  amount: number;
   nsu?: string;
   authCode?: string;
   cardBrand?: string;
@@ -65,22 +65,29 @@ const pixSteps = [
   { status: "Verificando transferência...", duration: 1500 },
 ];
 
+const generateNSU = () => String(Math.floor(Math.random() * 999999999)).padStart(9, "0");
+const generateAuthCode = () => String(Math.floor(Math.random() * 999999)).padStart(6, "0");
+const generatePixTxId = () => `E${String(Math.floor(Math.random() * 99999999999)).padStart(32, "0")}`;
+
 export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps) {
   const [step, setStep] = useState<PaymentStep>("select");
   const [method, setMethod] = useState<PaymentMethodType | null>(null);
+  const [isSplit, setIsSplit] = useState(false);
+  const [completedPayments, setCompletedPayments] = useState<TEFResult[]>([]);
+  const [currentAmount, setCurrentAmount] = useState("");
   const [cashReceived, setCashReceived] = useState("");
   const [installments, setInstallments] = useState(1);
   const [processingStatus, setProcessingStatus] = useState("");
   const [processingStep, setProcessingStep] = useState(0);
-  const [result, setResult] = useState<TEFResult | null>(null);
+  const [currentResult, setCurrentResult] = useState<TEFResult | null>(null);
 
-  const changeAmount = method === "dinheiro" && cashReceived ? Number(cashReceived) - total : 0;
+  const paidSoFar = completedPayments.reduce((s, p) => s + p.amount, 0);
+  const remaining = Math.max(0, Number((total - paidSoFar).toFixed(2)));
+  const paymentAmount = isSplit && currentAmount ? Number(currentAmount) : remaining;
 
-  const generateNSU = () => String(Math.floor(Math.random() * 999999999)).padStart(9, "0");
-  const generateAuthCode = () => String(Math.floor(Math.random() * 999999)).padStart(6, "0");
-  const generatePixTxId = () => `E${String(Math.floor(Math.random() * 99999999999)).padStart(32, "0")}`;
+  const changeAmount = method === "dinheiro" && cashReceived ? Number(cashReceived) - paymentAmount : 0;
 
-  const processPayment = useCallback(async () => {
+  const processPayment = useCallback(async (amt: number) => {
     if (!method) return;
     setStep("processing");
 
@@ -92,68 +99,111 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
       await new Promise((r) => setTimeout(r, steps[i].duration));
     }
 
-    // Simulate 95% approval rate
     const approved = Math.random() > 0.05;
     const brand = cardBrands[Math.floor(Math.random() * cardBrands.length)];
 
     const tefResult: TEFResult = {
       method,
       approved,
+      amount: amt,
       nsu: approved ? generateNSU() : undefined,
       authCode: approved ? generateAuthCode() : undefined,
       cardBrand: method === "debito" || method === "credito" ? brand : undefined,
       cardLastDigits: method === "debito" || method === "credito" ? String(Math.floor(Math.random() * 9999)).padStart(4, "0") : undefined,
       installments: method === "credito" ? installments : undefined,
-      changeAmount: method === "dinheiro" ? changeAmount : undefined,
+      changeAmount: method === "dinheiro" ? (cashReceived ? Number(cashReceived) - amt : 0) : undefined,
       pixTxId: method === "pix" ? generatePixTxId() : undefined,
     };
 
-    setResult(tefResult);
+    setCurrentResult(tefResult);
     setStep("result");
-  }, [method, installments, changeAmount, total]);
+  }, [method, installments, cashReceived]);
 
   const handleSelectMethod = (m: PaymentMethodType) => {
     setMethod(m);
-    if (m === "dinheiro") {
-      setStep("details");
-    } else if (m === "credito") {
-      setStep("details");
-    } else if (m === "voucher" || m === "outros") {
-      // Instant approval for voucher/outros
-      const tefResult: TEFResult = {
-        method: m,
-        approved: true,
-        nsu: generateNSU(),
-      };
-      setResult(tefResult);
-      setStep("result");
+    setInstallments(1);
+    setCashReceived("");
+
+    if (isSplit) {
+      // In split mode, always ask for amount first (except if it's the last remaining)
+      setStep("amount");
     } else {
-      processPayment();
-      setMethod(m);
+      // Single payment mode — full amount
+      if (m === "dinheiro" || m === "credito") {
+        setStep("details");
+      } else if (m === "voucher" || m === "outros") {
+        const tefResult: TEFResult = { method: m, approved: true, amount: remaining, nsu: generateNSU() };
+        setCurrentResult(tefResult);
+        setStep("result");
+      } else {
+        processPayment(remaining);
+      }
     }
   };
 
-  // Trigger processing when method is set and we skip details
-  useEffect(() => {
-    if (method && (method === "debito" || method === "pix") && step === "select") {
-      processPayment();
+  const handleConfirmAmount = () => {
+    const amt = Number(currentAmount);
+    if (!amt || amt <= 0 || amt > remaining) return;
+
+    if (method === "dinheiro" || method === "credito") {
+      setStep("details");
+    } else if (method === "voucher" || method === "outros") {
+      const tefResult: TEFResult = { method: method!, approved: true, amount: amt, nsu: generateNSU() };
+      setCurrentResult(tefResult);
+      setStep("result");
+    } else {
+      processPayment(amt);
     }
-  }, [method]); // eslint-disable-line
+  };
 
   const handleConfirmDetails = () => {
+    const amt = isSplit ? Number(currentAmount) || remaining : remaining;
+
     if (method === "dinheiro") {
       const received = Number(cashReceived);
-      if (received < total) return;
+      if (received < amt) return;
       const tefResult: TEFResult = {
         method: "dinheiro",
         approved: true,
-        changeAmount: received - total,
+        amount: amt,
+        changeAmount: received - amt,
       };
-      setResult(tefResult);
+      setCurrentResult(tefResult);
       setStep("result");
     } else {
-      processPayment();
+      processPayment(amt);
     }
+  };
+
+  const handlePaymentApproved = () => {
+    if (!currentResult || !currentResult.approved) return;
+
+    const newCompleted = [...completedPayments, currentResult];
+    setCompletedPayments(newCompleted);
+
+    const newPaid = newCompleted.reduce((s, p) => s + p.amount, 0);
+    const newRemaining = Number((total - newPaid).toFixed(2));
+
+    if (newRemaining <= 0) {
+      // All paid — go to summary
+      onComplete(newCompleted);
+    } else {
+      // More to pay — go back to select
+      setMethod(null);
+      setCurrentAmount("");
+      setCashReceived("");
+      setCurrentResult(null);
+      setStep("select");
+    }
+  };
+
+  const handleRetry = () => {
+    setCurrentResult(null);
+    setStep("select");
+  };
+
+  const enableSplit = () => {
+    setIsSplit(true);
   };
 
   return (
@@ -169,23 +219,66 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
         className="bg-pos-surface border border-pos-border rounded-2xl w-full max-w-md mx-4 overflow-hidden"
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-pos-border flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-semibold text-pos-text">Pagamento</h3>
-            <p className="pos-price text-xl mt-0.5">{formatCurrency(total)}</p>
+        <div className="px-6 py-4 border-b border-pos-border">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-semibold text-pos-text">
+                {isSplit ? "Pagamento Misto" : "Pagamento"}
+              </h3>
+              <p className="pos-price text-xl mt-0.5">{formatCurrency(total)}</p>
+            </div>
+            {step !== "processing" && (
+              <button
+                onClick={step === "select" && completedPayments.length === 0 ? onCancel : () => {
+                  if (step === "select" && completedPayments.length > 0) {
+                    // Can't go back once partial payments are made
+                    return;
+                  }
+                  setStep("select");
+                  setCurrentResult(null);
+                }}
+                className="p-2 rounded-lg text-pos-text-muted hover:text-pos-text hover:bg-pos-bg transition-colors"
+              >
+                {step === "select" && completedPayments.length === 0 ? (
+                  <XCircle className="w-5 h-5" />
+                ) : step !== "select" ? (
+                  <ArrowLeft className="w-5 h-5" />
+                ) : null}
+              </button>
+            )}
           </div>
-          {step !== "processing" && (
-            <button
-              onClick={step === "select" ? onCancel : () => setStep("select")}
-              className="p-2 rounded-lg text-pos-text-muted hover:text-pos-text hover:bg-pos-bg transition-colors"
-            >
-              {step === "select" ? <XCircle className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
-            </button>
+
+          {/* Split payment progress bar */}
+          {isSplit && (
+            <div className="mt-3 space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="text-pos-text-muted">Pago: {formatCurrency(paidSoFar)}</span>
+                <span className="text-pos-accent font-medium">Restante: {formatCurrency(remaining)}</span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-pos-bg overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-pos-accent transition-all duration-500"
+                  style={{ width: `${Math.min(100, (paidSoFar / total) * 100)}%` }}
+                />
+              </div>
+              {completedPayments.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {completedPayments.map((p, i) => {
+                    const pm = paymentMethods.find((m) => m.id === p.method);
+                    return (
+                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-pos-bg text-xs text-pos-text-muted">
+                        {pm?.label}: {formatCurrency(p.amount)}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           )}
         </div>
 
         <AnimatePresence mode="wait">
-          {/* Step 1: Select payment method */}
+          {/* Step: Select payment method */}
           {step === "select" && (
             <motion.div
               key="select"
@@ -207,10 +300,78 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
                   <span className="text-base font-medium text-pos-text">{pm.label}</span>
                 </button>
               ))}
+
+              {/* Split payment toggle */}
+              {!isSplit && completedPayments.length === 0 && (
+                <button
+                  onClick={enableSplit}
+                  className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-pos-border text-pos-text-muted hover:text-pos-accent hover:border-pos-accent transition-all text-sm"
+                >
+                  <Split className="w-4 h-4" />
+                  Pagamento Misto (dividir formas)
+                </button>
+              )}
             </motion.div>
           )}
 
-          {/* Step 2: Details (cash amount or installments) */}
+          {/* Step: Enter partial amount (split mode) */}
+          {step === "amount" && (
+            <motion.div
+              key="amount"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="p-6 space-y-4"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                {(() => {
+                  const pm = paymentMethods.find((m) => m.id === method);
+                  return pm ? (
+                    <>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${pm.color}`}>
+                        <pm.icon className="w-5 h-5" />
+                      </div>
+                      <span className="text-sm font-medium text-pos-text">{pm.label}</span>
+                    </>
+                  ) : null;
+                })()}
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-pos-text mb-2 block">
+                  Valor nesta forma ({formatCurrency(remaining)} restante)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min={0.01}
+                  max={remaining}
+                  value={currentAmount}
+                  onChange={(e) => setCurrentAmount(e.target.value)}
+                  placeholder={formatCurrency(remaining)}
+                  autoFocus
+                  className="w-full px-4 py-3 rounded-xl bg-pos-bg border border-pos-border text-pos-text text-lg font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-accent/30 focus:border-pos-accent transition-all"
+                />
+              </div>
+
+              <button
+                onClick={() => { setCurrentAmount(String(remaining)); }}
+                className="w-full py-2 rounded-lg bg-pos-bg text-pos-text-muted text-sm hover:bg-pos-surface-hover transition-all"
+              >
+                Usar valor total restante ({formatCurrency(remaining)})
+              </button>
+
+              <button
+                onClick={handleConfirmAmount}
+                disabled={!currentAmount || Number(currentAmount) <= 0 || Number(currentAmount) > remaining}
+                className="w-full py-3 rounded-xl bg-pos-accent text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
+              >
+                Continuar
+              </button>
+            </motion.div>
+          )}
+
+          {/* Step: Details (cash amount or installments) */}
           {step === "details" && (
             <motion.div
               key="details"
@@ -221,6 +382,10 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
             >
               {method === "dinheiro" && (
                 <>
+                  <div className="text-center mb-2">
+                    <span className="text-sm text-pos-text-muted">Valor a pagar:</span>
+                    <span className="pos-price text-lg ml-2">{formatCurrency(paymentAmount)}</span>
+                  </div>
                   <div>
                     <label className="text-sm font-medium text-pos-text mb-2 block">
                       Valor Recebido
@@ -228,23 +393,23 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
                     <input
                       type="number"
                       step="0.01"
-                      min={total}
+                      min={paymentAmount}
                       value={cashReceived}
                       onChange={(e) => setCashReceived(e.target.value)}
-                      placeholder={formatCurrency(total)}
+                      placeholder={formatCurrency(paymentAmount)}
                       autoFocus
                       className="w-full px-4 py-3 rounded-xl bg-pos-bg border border-pos-border text-pos-text text-lg font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-accent/30 focus:border-pos-accent transition-all"
                     />
                   </div>
-                  {cashReceived && Number(cashReceived) >= total && (
+                  {cashReceived && Number(cashReceived) >= paymentAmount && (
                     <div className="flex justify-between items-center p-4 rounded-xl bg-pos-bg">
                       <span className="text-sm text-pos-text-muted">Troco</span>
                       <span className="pos-price text-2xl">
-                        {formatCurrency(Number(cashReceived) - total)}
+                        {formatCurrency(Number(cashReceived) - paymentAmount)}
                       </span>
                     </div>
                   )}
-                  {cashReceived && Number(cashReceived) < total && (
+                  {cashReceived && Number(cashReceived) < paymentAmount && (
                     <p className="text-xs text-destructive text-center">Valor insuficiente</p>
                   )}
                 </>
@@ -252,6 +417,10 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
 
               {method === "credito" && (
                 <>
+                  <div className="text-center mb-2">
+                    <span className="text-sm text-pos-text-muted">Valor:</span>
+                    <span className="pos-price text-lg ml-2">{formatCurrency(paymentAmount)}</span>
+                  </div>
                   <label className="text-sm font-medium text-pos-text mb-2 block">
                     Parcelas
                   </label>
@@ -266,7 +435,7 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
                             : "bg-pos-bg text-pos-text hover:bg-pos-surface-hover"
                         }`}
                       >
-                        {n}× {formatCurrency(total / n)}
+                        {n}× {formatCurrency(paymentAmount / n)}
                       </button>
                     ))}
                   </div>
@@ -275,7 +444,7 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
 
               <button
                 onClick={handleConfirmDetails}
-                disabled={method === "dinheiro" && (!cashReceived || Number(cashReceived) < total)}
+                disabled={method === "dinheiro" && (!cashReceived || Number(cashReceived) < paymentAmount)}
                 className="w-full py-3 rounded-xl bg-pos-accent text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
               >
                 {method === "dinheiro" ? "Confirmar Pagamento" : "Processar TEF"}
@@ -283,7 +452,7 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
             </motion.div>
           )}
 
-          {/* Step 3: Processing */}
+          {/* Step: Processing */}
           {step === "processing" && (
             <motion.div
               key="processing"
@@ -305,12 +474,14 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
                 </div>
               </div>
 
-              <p className="text-base font-semibold text-pos-text mb-2">
+              <p className="text-base font-semibold text-pos-text mb-1">
                 {method === "pix" ? "PIX" : "TEF"} em processamento
+              </p>
+              <p className="text-sm text-pos-text-muted mb-2">
+                {formatCurrency(isSplit ? Number(currentAmount) || remaining : remaining)}
               </p>
               <p className="text-sm text-pos-accent font-medium mb-4">{processingStatus}</p>
 
-              {/* Progress dots */}
               <div className="flex gap-2 mb-6">
                 {(method === "pix" ? pixSteps : tefSteps).map((_, i) => (
                   <div
@@ -344,8 +515,8 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
             </motion.div>
           )}
 
-          {/* Step 4: Result */}
-          {step === "result" && result && (
+          {/* Step: Result of current payment */}
+          {step === "result" && currentResult && (
             <motion.div
               key="result"
               initial={{ opacity: 0, scale: 0.95 }}
@@ -353,7 +524,7 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
               className="p-6"
             >
               <div className="flex flex-col items-center mb-6">
-                {result.approved ? (
+                {currentResult.approved ? (
                   <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mb-3">
                     <CheckCircle className="w-8 h-8 text-success" />
                   </div>
@@ -363,71 +534,67 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
                   </div>
                 )}
                 <h4 className="text-lg font-bold text-pos-text">
-                  {result.approved ? "Pagamento Aprovado" : "Pagamento Negado"}
+                  {currentResult.approved ? "Pagamento Aprovado" : "Pagamento Negado"}
                 </h4>
+                <p className="text-sm text-pos-text-muted mt-1">
+                  {formatCurrency(currentResult.amount)}
+                </p>
               </div>
 
-              {result.approved && (
+              {currentResult.approved && (
                 <div className="space-y-2 p-4 rounded-xl bg-pos-bg text-sm mb-4">
-                  {result.nsu && (
+                  {currentResult.nsu && (
                     <div className="flex justify-between">
                       <span className="text-pos-text-muted">NSU</span>
-                      <span className="font-mono text-pos-text">{result.nsu}</span>
+                      <span className="font-mono text-pos-text">{currentResult.nsu}</span>
                     </div>
                   )}
-                  {result.authCode && (
+                  {currentResult.authCode && (
                     <div className="flex justify-between">
                       <span className="text-pos-text-muted">Autorização</span>
-                      <span className="font-mono text-pos-text">{result.authCode}</span>
+                      <span className="font-mono text-pos-text">{currentResult.authCode}</span>
                     </div>
                   )}
-                  {result.cardBrand && (
+                  {currentResult.cardBrand && (
                     <div className="flex justify-between">
                       <span className="text-pos-text-muted">Bandeira</span>
-                      <span className="text-pos-text">{result.cardBrand}</span>
+                      <span className="text-pos-text">{currentResult.cardBrand} •••• {currentResult.cardLastDigits}</span>
                     </div>
                   )}
-                  {result.cardLastDigits && (
-                    <div className="flex justify-between">
-                      <span className="text-pos-text-muted">Cartão</span>
-                      <span className="font-mono text-pos-text">•••• {result.cardLastDigits}</span>
-                    </div>
-                  )}
-                  {result.installments && result.installments > 1 && (
+                  {currentResult.installments && currentResult.installments > 1 && (
                     <div className="flex justify-between">
                       <span className="text-pos-text-muted">Parcelas</span>
-                      <span className="text-pos-text">{result.installments}× {formatCurrency(total / result.installments)}</span>
+                      <span className="text-pos-text">{currentResult.installments}×</span>
                     </div>
                   )}
-                  {result.pixTxId && (
-                    <div className="flex justify-between">
-                      <span className="text-pos-text-muted">TxID</span>
-                      <span className="font-mono text-pos-text text-xs truncate max-w-[180px]">{result.pixTxId}</span>
-                    </div>
-                  )}
-                  {result.changeAmount !== undefined && result.changeAmount > 0 && (
+                  {currentResult.changeAmount !== undefined && currentResult.changeAmount > 0 && (
                     <div className="flex justify-between pt-2 border-t border-pos-border">
                       <span className="text-pos-text-muted font-medium">Troco</span>
-                      <span className="pos-price text-lg">{formatCurrency(result.changeAmount)}</span>
+                      <span className="pos-price text-lg">{formatCurrency(currentResult.changeAmount)}</span>
                     </div>
                   )}
                 </div>
               )}
 
               <div className="flex gap-3">
-                {!result.approved && (
+                {!currentResult.approved && (
                   <button
-                    onClick={() => { setStep("select"); setResult(null); }}
+                    onClick={handleRetry}
                     className="flex-1 py-3 rounded-xl bg-pos-bg text-pos-text text-sm font-medium hover:bg-pos-surface-hover transition-all"
                   >
                     Tentar novamente
                   </button>
                 )}
                 <button
-                  onClick={() => onComplete(result)}
+                  onClick={currentResult.approved ? handlePaymentApproved : onCancel}
                   className="flex-1 py-3 rounded-xl bg-pos-accent text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all"
                 >
-                  {result.approved ? "Finalizar Venda" : "Cancelar"}
+                  {currentResult.approved
+                    ? isSplit && remaining - currentResult.amount > 0.01
+                      ? "Próximo Pagamento"
+                      : "Finalizar Venda"
+                    : "Cancelar"
+                  }
                 </button>
               </div>
             </motion.div>

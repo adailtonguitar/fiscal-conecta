@@ -11,6 +11,15 @@ import { DollarSign, Wifi, WifiOff, RefreshCw, AlertTriangle } from "lucide-reac
 import { toast } from "sonner";
 import type { PaymentResult } from "@/services/types";
 
+const methodLabels: Record<string, string> = {
+  dinheiro: "Dinheiro",
+  debito: "Cartão Débito",
+  credito: "Cartão Crédito",
+  pix: "PIX",
+  voucher: "Voucher",
+  outros: "Outros",
+};
+
 export default function PDV() {
   const pdv = usePDV();
   const [showTEF, setShowTEF] = useState(false);
@@ -18,9 +27,8 @@ export default function PDV() {
   const [receipt, setReceipt] = useState<{
     items: typeof pdv.cartItems;
     total: number;
-    paymentMethod: string;
+    payments: TEFResult[];
     nfceNumber: string;
-    tefResult?: TEFResult;
   } | null>(null);
 
   useBarcodeScanner(pdv.handleBarcodeScan);
@@ -29,41 +37,33 @@ export default function PDV() {
     if (pdv.cartItems.length > 0) setShowTEF(true);
   };
 
-  const handleTEFComplete = async (tefResult: TEFResult) => {
-    if (tefResult.approved) {
+  const handleTEFComplete = async (tefResults: TEFResult[]) => {
+    const allApproved = tefResults.every((r) => r.approved);
+    if (allApproved) {
       try {
-        const paymentResult: PaymentResult = {
-          method: tefResult.method,
-          approved: tefResult.approved,
-          nsu: tefResult.nsu,
-          auth_code: tefResult.authCode,
-          card_brand: tefResult.cardBrand,
-          card_last_digits: tefResult.cardLastDigits,
-          installments: tefResult.installments,
-          change_amount: tefResult.changeAmount,
-          pix_tx_id: tefResult.pixTxId,
-        };
+        const paymentResults: PaymentResult[] = tefResults.map((r) => ({
+          method: r.method,
+          approved: r.approved,
+          amount: r.amount,
+          nsu: r.nsu,
+          auth_code: r.authCode,
+          card_brand: r.cardBrand,
+          card_last_digits: r.cardLastDigits,
+          installments: r.installments,
+          change_amount: r.changeAmount,
+          pix_tx_id: r.pixTxId,
+        }));
 
         const savedItems = [...pdv.cartItems];
         const savedTotal = pdv.total;
 
-        const result = await pdv.finalizeSale(paymentResult);
-
-        const methodLabels: Record<string, string> = {
-          dinheiro: "Dinheiro",
-          debito: "Cartão Débito",
-          credito: "Cartão Crédito",
-          pix: "PIX",
-          voucher: "Voucher",
-          outros: "Outros",
-        };
+        const result = await pdv.finalizeSale(paymentResults);
 
         setReceipt({
           items: savedItems,
           total: savedTotal,
-          paymentMethod: methodLabels[tefResult.method] || tefResult.method,
+          payments: tefResults,
           nfceNumber: result.nfceNumber,
-          tefResult,
         });
       } catch (err: any) {
         toast.error(`Erro ao finalizar venda: ${err.message}`);
@@ -76,7 +76,6 @@ export default function PDV() {
     <div className="flex h-full pos-screen relative">
       {/* Status bar */}
       <div className="absolute top-3 right-[354px] z-10 flex items-center gap-2">
-        {/* Sync status */}
         {pdv.pendingCount > 0 && (
           <button
             onClick={pdv.syncAll}
@@ -93,7 +92,6 @@ export default function PDV() {
             {pdv.stats.failed} erros
           </div>
         )}
-        {/* Connection status */}
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pos-surface border border-pos-border text-xs font-medium">
           {pdv.isOnline ? (
             <><Wifi className="w-3.5 h-3.5 text-success" /><span className="text-success">Online</span></>
@@ -101,7 +99,6 @@ export default function PDV() {
             <><WifiOff className="w-3.5 h-3.5 text-warning" /><span className="text-warning">Offline</span></>
           )}
         </div>
-        {/* Cash register */}
         <button
           onClick={() => setShowCashRegister(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pos-surface border border-pos-border text-pos-text-muted hover:text-pos-text hover:bg-pos-surface-hover transition-all text-xs font-medium"
@@ -142,7 +139,7 @@ export default function PDV() {
         )}
       </AnimatePresence>
 
-      {/* Receipt overlay — using legacy SaleReceipt with adapter */}
+      {/* Receipt overlay */}
       <AnimatePresence>
         {receipt && (
           <SaleReceipt
@@ -158,9 +155,8 @@ export default function PDV() {
               quantity: i.quantity,
             }))}
             total={receipt.total}
-            paymentMethod={receipt.paymentMethod}
+            payments={receipt.payments}
             nfceNumber={receipt.nfceNumber}
-            tefResult={receipt.tefResult}
             onClose={() => setReceipt(null)}
           />
         )}
