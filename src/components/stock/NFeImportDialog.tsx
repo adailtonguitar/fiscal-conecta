@@ -243,7 +243,7 @@ export function NFeImportDialog({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
@@ -291,7 +291,7 @@ export function NFeImportDialog({ open, onOpenChange }: Props) {
         )}
 
         {step === "review" && nfeData && (
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto flex-1 min-h-0 pr-1">
             {/* NF-e header info */}
             <div className="bg-muted/50 rounded-lg p-3 text-sm grid grid-cols-2 md:grid-cols-4 gap-2">
               <div>
@@ -338,7 +338,7 @@ export function NFeImportDialog({ open, onOpenChange }: Props) {
             </div>
 
             {/* Items list */}
-            <ScrollArea className="h-[400px] pr-2">
+            <ScrollArea className="flex-1 min-h-[200px] max-h-[50vh] pr-2">
               <div className="space-y-2">
                 {reviewItems.map((item, idx) => (
                   <div
