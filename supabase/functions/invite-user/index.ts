@@ -108,21 +108,17 @@ serve(async (req) => {
 
       userId = existingUser.id;
     } else {
-      // Create new user with email confirmation
-      const tempPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
-      
-      const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
-        email,
-        password: tempPassword,
-        email_confirm: false, // User must confirm via email
-        user_metadata: {
+      // Create new user via invite (sends email automatically)
+      const { data: newUser, error: createError } = await adminClient.auth.admin.inviteUserByEmail(email, {
+        data: {
           full_name: fullName || "",
           phone: phone || "",
         },
+        redirectTo: `${req.headers.get("origin") || "https://id-preview--e5ef5c79-efef-4e2f-b9c1-39921fc0a605.lovable.app"}/auth`,
       });
 
       if (createError) {
-        console.error("Create user error:", createError);
+        console.error("Invite user error:", createError);
         return new Response(JSON.stringify({ error: createError.message }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -130,19 +126,6 @@ serve(async (req) => {
       }
 
       userId = newUser.user.id;
-
-      // Send password reset so user can set their own password
-      const { error: resetError } = await adminClient.auth.admin.generateLink({
-        type: "magiclink",
-        email,
-        options: {
-          redirectTo: `${req.headers.get("origin") || SUPABASE_URL}/auth`,
-        },
-      });
-
-      if (resetError) {
-        console.error("Generate link error:", resetError);
-      }
     }
 
     // Link user to company with specified role
