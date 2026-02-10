@@ -83,8 +83,11 @@ export default function Fiscal() {
     setPrintingDanfe(true);
     try {
       const result = await FiscalEmissionService.downloadPdf(doc.access_key, doc.doc_type as "nfce" | "nfe");
-      if (result?.pdf_base64) {
-        const byteCharacters = atob(result.pdf_base64);
+      
+      // Handle base64 PDF response
+      const pdfBase64 = result?.pdf_base64 || result?.base64;
+      if (pdfBase64) {
+        const byteCharacters = atob(pdfBase64);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
           byteNumbers[i] = byteCharacters.charCodeAt(i);
@@ -94,8 +97,10 @@ export default function Fiscal() {
         const url = URL.createObjectURL(blob);
         window.open(url, "_blank");
         toast.success("DANFE gerada com sucesso!");
+      } else if (result?.error) {
+        toast.error(`Erro da Nuvem Fiscal: ${typeof result.error === 'string' ? result.error : 'Documento não encontrado no provedor fiscal. Verifique se a NFC-e foi emitida com sucesso.'}`);
       } else {
-        toast.error("Não foi possível obter o PDF da DANFE.");
+        toast.error("Não foi possível obter o PDF da DANFE. Verifique se o documento foi emitido corretamente.");
       }
     } catch (err: any) {
       toast.error(`Erro ao gerar DANFE: ${err.message}`);
