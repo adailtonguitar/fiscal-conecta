@@ -15,35 +15,54 @@ export default function Auth() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Handle auth callback from email links (magic link, recovery, invite)
+    // Listen for auth state changes to detect invite/recovery flows
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth event:", event, "session:", !!session);
+      
+      if (event === "PASSWORD_RECOVERY") {
+        setMode("set-password");
+        toast.info("Defina sua senha para acessar o sistema");
+        return;
+      }
+
+      // When a user clicks an invite link, Supabase fires SIGNED_IN
+      // but the user hasn't set a password yet - detect this
+      if (event === "SIGNED_IN" && session?.user) {
+        const hash = window.location.hash;
+        const hashParams = new URLSearchParams(hash.substring(1));
+        const type = hashParams.get("type");
+
+        // Check if user was invited (no password set yet)
+        const userMeta = session.user.user_metadata;
+        const isInvitedUser = type === "invite" || type === "magiclink" || type === "recovery";
+        const hasNoPasswordLogin = !session.user.last_sign_in_at || 
+          (session.user.created_at === session.user.last_sign_in_at);
+
+        if (isInvitedUser || (hasNoPasswordLogin && hash.includes("access_token"))) {
+          setMode("set-password");
+          toast.info("Defina sua senha para acessar o sistema");
+          return;
+        }
+      }
+    });
+
+    // Handle initial load - check hash for auth tokens
     const handleAuthCallback = async () => {
       const hash = window.location.hash;
       
-      // Check for auth tokens in URL hash
       if (hash && (hash.includes("access_token") || hash.includes("type="))) {
         try {
-          const { data, error } = await supabase.auth.getSession();
-          
-          if (error) {
-            console.error("Auth callback error:", error);
-            toast.error("Erro ao processar link de verificação");
-            setMode("login");
+          const hashParams = new URLSearchParams(hash.substring(1));
+          const type = hashParams.get("type");
+
+          // If type is in the hash, we can determine mode before session resolves
+          if (type === "recovery" || type === "invite" || type === "magiclink") {
+            // Wait for the session to be established by onAuthStateChange
             return;
           }
 
+          const { data } = await supabase.auth.getSession();
           if (data.session) {
-            // Check if this is a recovery/invite flow - user needs to set password
-            const hashParams = new URLSearchParams(hash.substring(1));
-            const type = hashParams.get("type");
-            
-            if (type === "recovery" || type === "magiclink" || type === "invite") {
-              setMode("set-password");
-              toast.info("Defina sua senha para acessar o sistema");
-              return;
-            }
-
-            // Normal sign-in, redirect
-            toast.success("Login realizado com sucesso!");
             navigate("/");
             return;
           }
@@ -56,6 +75,8 @@ export default function Auth() {
     };
 
     handleAuthCallback();
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handleSetPassword = async (e: React.FormEvent) => {
