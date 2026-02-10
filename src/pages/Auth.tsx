@@ -116,6 +116,7 @@ export default function Auth() {
     setLoading(true);
 
     try {
+      sessionStorage.removeItem("needs-password-setup");
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       toast.success("Login realizado com sucesso!");
