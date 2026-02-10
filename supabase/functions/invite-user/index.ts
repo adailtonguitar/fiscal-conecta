@@ -123,58 +123,57 @@ serve(async (req) => {
 
     // Create new user via invite if needed
     if (!userId) {
-      const { data: newUser, error: createError } = await adminClient.auth.admin.inviteUserByEmail(email, {
-        data: {
-          full_name: fullName || "",
-          phone: phone || "",
-        },
-        redirectTo: `${req.headers.get("origin") || "https://id-preview--e5ef5c79-efef-4e2f-b9c1-39921fc0a605.lovable.app"}/auth`,
-      });
-
-      if (createError) {
-        console.error("Invite user error:", createError);
-        return new Response(JSON.stringify({ error: createError.message }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      userId = newUser.user.id;
-
-      // Send custom Portuguese email via Resend
       const resendApiKey = Deno.env.get("RESEND_API_KEY");
+      const redirectUrl = `${req.headers.get("origin") || "https://id-preview--e5ef5c79-efef-4e2f-b9c1-39921fc0a605.lovable.app"}/auth`;
+
+      // Get company name for the email
+      const { data: company } = await adminClient
+        .from("companies")
+        .select("name")
+        .eq("id", companyId)
+        .maybeSingle();
+
+      const companyName = company?.name || "nossa empresa";
+      const userName = fullName || "Usuário";
+
       if (resendApiKey) {
+        // Strategy: Create user with generateLink (no email sent by Supabase) + send via Resend
+        const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+          type: "invite",
+          email,
+          options: {
+            data: {
+              full_name: fullName || "",
+              phone: phone || "",
+            },
+            redirectTo: redirectUrl,
+          },
+        });
+
+        if (linkError) {
+          console.error("Generate link error:", linkError);
+          return new Response(JSON.stringify({ error: linkError.message }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        userId = linkData.user.id;
+        const confirmUrl = linkData.properties?.action_link || "";
+
+        console.log("Generated invite link for:", email, "URL exists:", !!confirmUrl);
+
+        // Send custom Portuguese email via Resend
         try {
           const resend = new Resend(resendApiKey);
-          
-          // Get the confirmation URL from the invite
-          const { data: linkData } = await adminClient.auth.admin.generateLink({
-            type: "invite",
-            email,
-            options: {
-              redirectTo: `${req.headers.get("origin") || "https://id-preview--e5ef5c79-efef-4e2f-b9c1-39921fc0a605.lovable.app"}/auth`,
-            },
-          });
 
-          const confirmUrl = linkData?.properties?.action_link || "";
-
-          // Get company name
-          const { data: company } = await adminClient
-            .from("companies")
-            .select("name")
-            .eq("id", companyId)
-            .single();
-
-          const companyName = company?.name || "nossa empresa";
-          const userName = fullName || "Usuário";
-
-          await resend.emails.send({
-            from: "Sistema <noreply@resend.dev>",
+          const emailResult = await resend.emails.send({
+            from: "Sistema <onboarding@resend.dev>",
             to: [email],
             subject: `Você foi convidado para ${companyName}`,
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h2 style="color: #333;">Olá${userName ? ', ' + userName : ''}! 👋</h2>
+                <h2 style="color: #333;">Olá, ${userName}! 👋</h2>
                 <p style="color: #555; font-size: 16px;">
                   Você foi convidado para fazer parte da equipe <strong>${companyName}</strong>.
                 </p>
@@ -183,25 +182,48 @@ serve(async (req) => {
                 </p>
                 <div style="text-align: center; margin: 30px 0;">
                   <a href="${confirmUrl}" 
-                     style="background-color: #4F46E5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold;">
+                     style="background-color: #4F46E5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold; display: inline-block;">
                     Ativar Minha Conta
                   </a>
                 </div>
                 <p style="color: #888; font-size: 14px;">
-                  Se você não esperava este convite, pode ignorar este e-mail com segurança.
+                  Se o botão não funcionar, copie e cole este link no seu navegador:
                 </p>
+                <p style="color: #888; font-size: 12px; word-break: break-all;">${confirmUrl}</p>
                 <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
                 <p style="color: #aaa; font-size: 12px;">
-                  Este é um e-mail automático. Por favor, não responda.
+                  Se você não esperava este convite, pode ignorar este e-mail com segurança.
                 </p>
               </div>
             `,
           });
-          console.log("Custom invite email sent via Resend to:", email);
+          console.log("Resend email sent successfully:", JSON.stringify(emailResult));
         } catch (emailErr) {
-          console.error("Resend email error (non-blocking):", emailErr);
-          // Don't fail the invite if email sending fails - the default Supabase email was already sent
+          console.error("Resend email error:", emailErr);
+          return new Response(JSON.stringify({ error: "Usuário criado mas falha ao enviar e-mail. Tente novamente." }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
+      } else {
+        // Fallback: Use inviteUserByEmail (sends Supabase default email)
+        const { data: newUser, error: createError } = await adminClient.auth.admin.inviteUserByEmail(email, {
+          data: {
+            full_name: fullName || "",
+            phone: phone || "",
+          },
+          redirectTo: redirectUrl,
+        });
+
+        if (createError) {
+          console.error("Invite user error:", createError);
+          return new Response(JSON.stringify({ error: createError.message }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        userId = newUser.user.id;
       }
     }
 
