@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Building2, Plus, Edit2, Search, CheckCircle, XCircle, Clock, AlertTriangle, User } from "lucide-react";
+import { Building2, Plus, Edit2, Search, CheckCircle, XCircle, Clock, AlertTriangle, User, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import type { ResellerLicense, ResellerPlan } from "@/hooks/useReseller";
+import { useCnpjLookup } from "@/hooks/useCnpjLookup";
 
 interface Props {
   licenses: ResellerLicense[];
@@ -33,6 +34,7 @@ const emptyForm = {
 };
 
 export function ResellerLicenses({ licenses, plans, onCreateLicense, onUpdateLicense }: Props) {
+  const { lookup: cnpjLookup, loading: cnpjLoading } = useCnpjLookup();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -172,7 +174,29 @@ export function ResellerLicenses({ licenses, plans, onCreateLicense, onUpdateLic
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground mb-1 block">CNPJ *</label>
-                <input value={form.client_cnpj} onChange={(e) => updateField("client_cnpj", e.target.value)} placeholder="00.000.000/0001-00" className={inputClass} />
+                <div className="flex gap-2">
+                  <input value={form.client_cnpj} onChange={(e) => updateField("client_cnpj", e.target.value)} placeholder="00.000.000/0001-00" className={`${inputClass} flex-1`} />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!form.client_cnpj) return;
+                      const result = await cnpjLookup(form.client_cnpj);
+                      if (!result) return;
+                      setForm((prev) => ({
+                        ...prev,
+                        client_name: result.name || prev.client_name,
+                        client_trade_name: result.trade_name || prev.client_trade_name,
+                        client_email: result.email || prev.client_email,
+                        client_phone: result.phone || prev.client_phone,
+                      }));
+                    }}
+                    disabled={cnpjLoading || !form.client_cnpj}
+                    className="shrink-0 px-3 py-2 rounded-lg border border-border bg-secondary text-secondary-foreground text-sm hover:opacity-90 transition-all disabled:opacity-50"
+                    title="Buscar dados do CNPJ"
+                  >
+                    {cnpjLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground mb-1 block">E-mail *</label>
