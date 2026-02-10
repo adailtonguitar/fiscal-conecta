@@ -24,7 +24,7 @@ export default function PDV() {
     payments: TEFResult[];
     nfceNumber: string;
   } | null>(null);
-  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false); // kept for F1 toggle compat
   const [barcodeInput, setBarcodeInput] = useState("");
   const [zeroStockProduct, setZeroStockProduct] = useState<PDVProduct | null>(null);
   const [stockMovementProduct, setStockMovementProduct] = useState<PDVProduct | null>(null);
@@ -391,50 +391,24 @@ export default function PDV() {
       )}
 
 
-      {/* Keyboard shortcuts overlay */}
-      <AnimatePresence>
-        {showShortcuts && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-            onClick={() => setShowShortcuts(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-card rounded-2xl border border-border shadow-2xl p-6 w-full max-w-md mx-4"
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <Keyboard className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-bold text-foreground">Atalhos do Teclado</h2>
-              </div>
-              <div className="space-y-2">
-                {[
-                  { key: "F1", action: "Mostrar/ocultar atalhos" },
-                  { key: "F2", action: "Finalizar venda (pagamento)" },
-                  { key: "F3", action: "Buscar produto" },
-                  { key: "F4", action: "Abrir caixa" },
-                  { key: "F6", action: "Limpar carrinho" },
-                  { key: "F9", action: "Sincronizar pendentes" },
-                  { key: "Delete", action: "Remover último item" },
-                  { key: "ESC", action: "Fechar janela/overlay" },
-                ].map(({ key, action }) => (
-                  <div key={key} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
-                    <span className="text-sm text-muted-foreground">{action}</span>
-                    <kbd className="px-2.5 py-1 rounded-lg bg-background border border-border text-xs font-mono font-semibold text-foreground">{key}</kbd>
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={() => setShowShortcuts(false)}
-                className="w-full mt-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all"
-              >
-                Entendi
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Fixed shortcuts bar at bottom */}
+      <div className="flex items-center justify-center gap-1 px-3 py-1.5 bg-[hsl(220,35%,18%)] border-t border-pos-border flex-shrink-0 flex-wrap">
+        {[
+          { key: "F1", label: "Atalhos" },
+          { key: "F2", label: "Pagamento" },
+          { key: "F3", label: "Buscar" },
+          { key: "F4", label: "Caixa" },
+          { key: "F6", label: "Limpar" },
+          { key: "F9", label: "Sincronizar" },
+          { key: "Del", label: "Remover" },
+          { key: "ESC", label: "Fechar" },
+        ].map(({ key, label }) => (
+          <div key={key} className="flex items-center gap-1 px-2 py-0.5">
+            <kbd className="px-1.5 py-0.5 rounded bg-pos-surface border border-pos-border text-[10px] font-mono font-bold text-pos-accent">{key}</kbd>
+            <span className="text-[10px] text-pos-text-muted">{label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
