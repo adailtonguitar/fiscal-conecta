@@ -31,8 +31,8 @@ function isGroup(entry: NavEntry): entry is NavGroup {
 }
 
 const navItems: NavEntry[] = [
-  { icon: ShoppingCart, label: "PDV", path: "/" },
-  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: ShoppingCart, label: "PDV", path: "/pdv" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Package, label: "Produtos", path: "/produtos" },
   { icon: FileText, label: "Vendas", path: "/vendas" },
   { icon: BarChart3, label: "Relatório Vendas", path: "/relatorio-vendas" },
