@@ -95,6 +95,9 @@ function AppRoutes() {
           ? <Navigate to="/dashboard" replace /> 
           : <Auth />
       } />
+      <Route path="/landing" element={
+        user ? <Navigate to="/dashboard" replace /> : <LandingPage />
+      } />
       <Route path="/install" element={<Instalar />} />
       <Route path="/termos" element={<Termos />} />
       <Route path="/privacidade" element={<Privacidade />} />
