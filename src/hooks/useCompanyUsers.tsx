@@ -73,5 +73,18 @@ export function useCompanyUsers() {
     queryClient.invalidateQueries({ queryKey: ["company-users"] });
   };
 
-  return { users, isLoading, updateRole, toggleActive };
+  const removeUser = async (companyUserId: string) => {
+    const { error } = await supabase
+      .from("company_users")
+      .delete()
+      .eq("id", companyUserId);
+    if (error) {
+      toast.error("Erro ao remover usuário");
+      return;
+    }
+    toast.success("Usuário removido com sucesso");
+    queryClient.invalidateQueries({ queryKey: ["company-users"] });
+  };
+
+  return { users, isLoading, updateRole, toggleActive, removeUser };
 }
