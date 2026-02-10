@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useSync } from "@/hooks/useSync";
+import { useIsReseller } from "@/hooks/useIsReseller";
 
 interface NavItem {
   icon: any;
@@ -55,16 +56,22 @@ const navItems: NavEntry[] = [
   { icon: Shield, label: "Config. Fiscal", path: "/fiscal/config" },
   { icon: ScrollText, label: "Auditoria", path: "/fiscal/auditoria" },
   { icon: Download, label: "Assinador Digital", path: "/fiscal/assinador" },
-  { icon: Building2, label: "Revendas", path: "/revendas" },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
 ];
+
+const resellerNavItem: NavItem = { icon: Building2, label: "Revendas", path: "/revendas" };
 
 export function AppSidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const { isOnline, pendingCount, syncing, syncAll } = useSync();
   const { signOut } = useAuth();
+  const { isReseller } = useIsReseller();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ Cadastro: false });
+
+  const visibleNavItems: NavEntry[] = isReseller
+    ? [...navItems.slice(0, -1), resellerNavItem, navItems[navItems.length - 1]]
+    : navItems;
 
   const toggleGroup = (label: string) => {
     if (collapsed) return;
@@ -96,7 +103,7 @@ export function AppSidebar() {
       </div>
 
       <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
-        {navItems.map((entry) => {
+        {visibleNavItems.map((entry) => {
           if (isGroup(entry)) {
             const groupOpen = openGroups[entry.label] || isChildActive(entry);
             return (

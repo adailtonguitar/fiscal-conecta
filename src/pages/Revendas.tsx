@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { Navigate } from "react-router-dom";
 import { useReseller } from "@/hooks/useReseller";
+import { useIsReseller } from "@/hooks/useIsReseller";
 import { ResellerSetup } from "@/components/reseller/ResellerSetup";
 import { ResellerDashboard } from "@/components/reseller/ResellerDashboard";
 import { ResellerPlans } from "@/components/reseller/ResellerPlans";
@@ -17,6 +19,7 @@ type TabId = (typeof tabs)[number]["id"];
 
 export default function Revendas() {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
+  const { isReseller, loading: resellerCheckLoading } = useIsReseller();
   const {
     reseller,
     plans,
@@ -30,12 +33,16 @@ export default function Revendas() {
     deletePlan,
   } = useReseller();
 
-  if (loading) {
+  if (loading || resellerCheckLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
+  }
+
+  if (!isReseller && !reseller) {
+    return <Navigate to="/" replace />;
   }
 
   if (!reseller) {
