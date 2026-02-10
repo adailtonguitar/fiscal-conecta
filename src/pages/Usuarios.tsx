@@ -158,22 +158,42 @@ function UsersTab({
   removeUser: (id: string) => Promise<void>;
   updateUserName: (userId: string, fullName: string) => Promise<void>;
 }) {
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
+  const [editingUser, setEditingUser] = useState<CompanyUser | null>(null);
+  const [editForm, setEditForm] = useState({ full_name: "", role: "caixa" as CompanyRole, is_active: true });
 
   const startEdit = useCallback((u: CompanyUser) => {
-    setEditingId(u.user_id);
-    setEditName(u.profile?.full_name || "");
+    setEditingUser(u);
+    setEditForm({
+      full_name: u.profile?.full_name || "",
+      role: u.role,
+      is_active: u.is_active,
+    });
   }, []);
 
   const saveEdit = useCallback(async () => {
-    if (!editingId || !editName.trim()) return;
-    await updateUserName(editingId, editName.trim());
-    setEditingId(null);
-  }, [editingId, editName, updateUserName]);
+    if (!editingUser) return;
+    const isSelf = editingUser.user_id === currentUserId;
+
+    // Update name if changed
+    if (editForm.full_name.trim() !== (editingUser.profile?.full_name || "")) {
+      await updateUserName(editingUser.user_id, editForm.full_name.trim());
+    }
+
+    // Update role if changed (not self)
+    if (!isSelf && editForm.role !== editingUser.role) {
+      await updateRole(editingUser.id, editForm.role);
+    }
+
+    // Toggle active if changed (not self)
+    if (!isSelf && editForm.is_active !== editingUser.is_active) {
+      await toggleActive(editingUser.id, editingUser.is_active);
+    }
+
+    setEditingUser(null);
+  }, [editingUser, editForm, currentUserId, updateUserName, updateRole, toggleActive]);
 
   const cancelEdit = useCallback(() => {
-    setEditingId(null);
+    setEditingUser(null);
   }, []);
 
   if (isLoading) {
@@ -193,129 +213,138 @@ function UsersTab({
     );
   }
 
+  const inputClass = "w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all";
+
   return (
     <div className="space-y-3">
-      {users.map((u, i) => (
-        <motion.div
-          key={u.id}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.05 }}
-          className="bg-card rounded-xl border border-border p-4 flex items-center gap-4"
-        >
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <span className="text-sm font-bold text-primary">
-              {(u.profile?.full_name || u.profile?.email || "?")[0].toUpperCase()}
-            </span>
-          </div>
+      {users.map((u, i) => {
+        const isEditing = editingUser?.id === u.id;
+        const isSelf = u.user_id === currentUserId;
 
-          <div className="flex-1 min-w-0">
-            {editingId === u.user_id ? (
-              <div className="flex items-center gap-2">
-                <input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") saveEdit();
-                    if (e.key === "Escape") cancelEdit();
-                  }}
-                  autoFocus
-                  className="text-sm font-semibold text-foreground bg-background border border-border rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary/20 w-full max-w-[200px]"
-                  placeholder="Nome completo"
-                />
-                <button onClick={saveEdit} className="text-xs px-2 py-1 rounded-lg bg-primary text-primary-foreground hover:opacity-90">
-                  Salvar
-                </button>
-                <button onClick={cancelEdit} className="text-xs px-2 py-1 rounded-lg bg-secondary text-secondary-foreground hover:opacity-90">
-                  Cancelar
-                </button>
+        return (
+          <motion.div
+            key={u.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="bg-card rounded-xl border border-border overflow-hidden"
+          >
+            {/* User row */}
+            <div className="p-4 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <span className="text-sm font-bold text-primary">
+                  {(u.profile?.full_name || u.profile?.email || "?")[0].toUpperCase()}
+                </span>
               </div>
-            ) : (
-              <>
+
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-foreground truncate">
                   {u.profile?.full_name || "Sem nome"}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">
                   {u.profile?.email || u.user_id}
                 </p>
-              </>
-            )}
-          </div>
-
-          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${roleColors[u.role]}`}>
-            {roleLabels[u.role]}
-          </span>
-
-          {canManage && (
-            <div className="flex items-center gap-2">
-              {editingId !== u.user_id && (
-                <button
-                  onClick={() => startEdit(u)}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:bg-secondary transition-colors"
-                  title="Editar nome"
-                >
-                  <PenLine className="w-4 h-4" />
-                </button>
-              )}
-
-              <div className="relative">
-                <select
-                  value={u.role}
-                  onChange={(e) => updateRole(u.id, e.target.value as CompanyRole)}
-                  disabled={u.user_id === currentUserId}
-                  className="appearance-none bg-background border border-border rounded-lg pl-3 pr-7 py-1.5 text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
-                >
-                  <option value="admin">Admin</option>
-                  <option value="gerente">Gerente</option>
-                  <option value="supervisor">Supervisor</option>
-                  <option value="caixa">Caixa</option>
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
               </div>
 
-              <button
-                onClick={() => {
-                  if (u.user_id === currentUserId) {
-                    toast.error("Você não pode desativar sua própria conta");
-                    return;
-                  }
-                  toggleActive(u.id, u.is_active);
-                }}
-                className={`p-1.5 rounded-lg transition-colors ${
-                  u.user_id === currentUserId
-                    ? "opacity-50 cursor-not-allowed"
-                    : u.is_active
-                      ? "text-success hover:bg-success/10"
-                      : "text-destructive hover:bg-destructive/10"
-                }`}
-                title={u.user_id === currentUserId ? "Você não pode desativar sua própria conta" : u.is_active ? "Desativar" : "Ativar"}
-              >
-                {u.is_active ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
-              </button>
+              <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${roleColors[u.role]}`}>
+                {roleLabels[u.role]}
+              </span>
 
-              <button
-                onClick={() => {
-                  if (u.user_id === currentUserId) {
-                    toast.error("Você não pode remover sua própria conta");
-                    return;
-                  }
-                  if (confirm("Tem certeza que deseja remover este usuário da empresa?")) {
-                    removeUser(u.id);
-                  }
-                }}
-                className={`p-1.5 rounded-lg transition-colors ${
-                  u.user_id === currentUserId
-                    ? "opacity-50 cursor-not-allowed"
-                    : "text-destructive hover:bg-destructive/10"
-                }`}
-                title={u.user_id === currentUserId ? "Você não pode remover sua própria conta" : "Remover usuário"}
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${u.is_active ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}>
+                {u.is_active ? "Ativo" : "Inativo"}
+              </span>
+
+              {canManage && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => isEditing ? cancelEdit() : startEdit(u)}
+                    className="p-1.5 rounded-lg text-muted-foreground hover:bg-secondary transition-colors"
+                    title="Editar usuário"
+                  >
+                    <PenLine className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (isSelf) {
+                        toast.error("Você não pode remover sua própria conta");
+                        return;
+                      }
+                      if (confirm("Tem certeza que deseja remover este usuário da empresa?")) {
+                        removeUser(u.id);
+                      }
+                    }}
+                    className={`p-1.5 rounded-lg transition-colors ${
+                      isSelf ? "opacity-50 cursor-not-allowed" : "text-destructive hover:bg-destructive/10"
+                    }`}
+                    title={isSelf ? "Você não pode remover sua própria conta" : "Remover usuário"}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-        </motion.div>
-      ))}
+
+            {/* Edit form */}
+            {isEditing && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="border-t border-border bg-secondary/20 p-4 space-y-4"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1 block">Nome Completo</label>
+                    <input
+                      value={editForm.full_name}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, full_name: e.target.value }))}
+                      placeholder="Nome completo"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1 block">Perfil / Cargo</label>
+                    <select
+                      value={editForm.role}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, role: e.target.value as CompanyRole }))}
+                      disabled={isSelf}
+                      className={`${inputClass} ${isSelf ? "opacity-50" : ""}`}
+                    >
+                      <option value="admin">Administrador</option>
+                      <option value="gerente">Gerente</option>
+                      <option value="supervisor">Supervisor</option>
+                      <option value="caixa">Caixa</option>
+                    </select>
+                    {isSelf && <p className="text-xs text-muted-foreground mt-1">Você não pode alterar seu próprio perfil</p>}
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1 block">Status</label>
+                    <select
+                      value={editForm.is_active ? "ativo" : "inativo"}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, is_active: e.target.value === "ativo" }))}
+                      disabled={isSelf}
+                      className={`${inputClass} ${isSelf ? "opacity-50" : ""}`}
+                    >
+                      <option value="ativo">Ativo</option>
+                      <option value="inativo">Inativo</option>
+                    </select>
+                    {isSelf && <p className="text-xs text-muted-foreground mt-1">Você não pode desativar sua própria conta</p>}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={saveEdit} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all">
+                    Salvar Alterações
+                  </button>
+                  <button onClick={cancelEdit} className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-90 transition-all">
+                    Cancelar
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
+        );
+      })}
     </div>
   );
 }
