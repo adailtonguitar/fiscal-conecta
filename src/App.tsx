@@ -6,11 +6,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useCompany } from "@/hooks/useCompany";
-import { SubscriptionProvider } from "@/hooks/useSubscription";
+import { SubscriptionProvider, useSubscription } from "@/hooks/useSubscription";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { toast } from "sonner";
 import Dashboard from "./pages/Dashboard";
 import LandingPage from "./pages/LandingPage";
+import TrialExpirado from "./pages/TrialExpirado";
 import Produtos from "./pages/Produtos";
 import Vendas from "./pages/Vendas";
 import RelatorioVendas from "./pages/RelatorioVendas";
@@ -41,10 +42,10 @@ const queryClient = new QueryClient();
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, signOut } = useAuth();
   const { companyId, loading: companyLoading } = useCompany();
+  const { subscribed, trialExpired, loading: subLoading } = useSubscription();
   const hasSignedOut = useRef(false);
 
   useEffect(() => {
-    // Only sign out if user exists, company finished loading, and no company found
     if (!loading && !companyLoading && user && companyId === null && !hasSignedOut.current) {
       hasSignedOut.current = true;
       toast.error("Sua conta foi desativada. Entre em contato com o administrador.");
@@ -52,14 +53,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [loading, companyLoading, user, companyId, signOut]);
 
-  // Reset the ref when user changes (e.g., logs back in)
   useEffect(() => {
     if (!user) {
       hasSignedOut.current = false;
     }
   }, [user]);
 
-  if (loading || companyLoading) {
+  if (loading || companyLoading || subLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -69,6 +69,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) return <Navigate to="/" replace />;
   if (!companyId) return <Navigate to="/" replace />;
+
+  // Trial expired and no active subscription → redirect to plans
+  if (trialExpired && !subscribed) {
+    return <Navigate to="/trial-expirado" replace />;
+  }
 
   return <>{children}</>;
 }
@@ -101,6 +106,9 @@ function AppRoutes() {
       <Route path="/install" element={<Instalar />} />
       <Route path="/termos" element={<Termos />} />
       <Route path="/privacidade" element={<Privacidade />} />
+      <Route path="/trial-expirado" element={
+        user ? <TrialExpirado /> : <Navigate to="/" replace />
+      } />
       {/* PDV: full-screen, outside AppLayout */}
       <Route
         path="/pdv"
