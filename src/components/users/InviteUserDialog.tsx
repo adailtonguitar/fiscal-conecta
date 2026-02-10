@@ -36,7 +36,14 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !companyId) return;
+    if (!email.trim()) {
+      toast.error("Informe o e-mail do usuário");
+      return;
+    }
+    if (!companyId) {
+      toast.error("Empresa não identificada. Faça login novamente.");
+      return;
+    }
 
     setLoading(true);
     setInviteLink(null);
