@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Shield,
   Upload,
@@ -45,6 +46,7 @@ const defaultConfigs: FiscalConfigSection[] = [
 
 export default function FiscalConfig() {
   const { companyId } = useCompany();
+  const navigate = useNavigate();
   const [configs, setConfigs] = useState<FiscalConfigSection[]>(defaultConfigs);
   const [certType, setCertType] = useState<"A1" | "A3">("A1");
   const [certFile, setCertFile] = useState<string | null>(null);
@@ -185,6 +187,7 @@ export default function FiscalConfig() {
       // Update local state with IDs
       setConfigs([...configs]);
       toast.success("Configurações fiscais salvas com sucesso!");
+      navigate("/fiscal");
     } catch (err: any) {
       toast.error(`Erro ao salvar: ${err.message}`);
     } finally {
