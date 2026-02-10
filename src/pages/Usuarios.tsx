@@ -48,7 +48,7 @@ const moduleLabels: Record<string, string> = {
 };
 
 export default function Usuarios() {
-  const { users, isLoading, updateRole, toggleActive } = useCompanyUsers();
+  const { users, isLoading, updateRole, toggleActive, removeUser } = useCompanyUsers();
   const { canEdit } = usePermissions();
   const { logs, isLoading: logsLoading } = useActionLogs();
   const [tab, setTab] = useState<"users" | "permissions" | "logs">("users");
@@ -114,6 +114,7 @@ export default function Usuarios() {
           canManage={canManage}
           updateRole={updateRole}
           toggleActive={toggleActive}
+          removeUser={removeUser}
         />
       )}
 
@@ -139,12 +140,14 @@ function UsersTab({
   canManage,
   updateRole,
   toggleActive,
+  removeUser,
 }: {
   users: CompanyUser[];
   isLoading: boolean;
   canManage: boolean;
   updateRole: (id: string, role: CompanyRole) => Promise<void>;
   toggleActive: (id: string, isActive: boolean) => Promise<void>;
+  removeUser: (id: string) => Promise<void>;
 }) {
   if (isLoading) {
     return (
@@ -218,6 +221,18 @@ function UsersTab({
                 title={u.is_active ? "Desativar" : "Ativar"}
               >
                 {u.is_active ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
+              </button>
+
+              <button
+                onClick={() => {
+                  if (confirm("Tem certeza que deseja remover este usuário da empresa?")) {
+                    removeUser(u.id);
+                  }
+                }}
+                className="p-1.5 rounded-lg text-destructive hover:bg-destructive/10 transition-colors"
+                title="Remover usuário"
+              >
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
           )}
