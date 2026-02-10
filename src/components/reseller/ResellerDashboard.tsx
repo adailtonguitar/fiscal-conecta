@@ -62,7 +62,7 @@ export function ResellerDashboard({ plans, licenses, commissions }: Props) {
           {licenses.slice(0, 5).map((license) => (
             <div key={license.id} className="px-5 py-3 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-foreground">{license.company_id.slice(0, 8)}...</p>
+                <p className="text-sm font-medium text-foreground">{(license as any).client_name || license.company_id?.slice(0, 8) || "Sem nome"}...</p>
                 <p className="text-xs text-muted-foreground">Desde {new Date(license.started_at).toLocaleDateString("pt-BR")}</p>
               </div>
               <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
