@@ -1,15 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Store, Mail, Lock, User, ArrowRight } from "lucide-react";
+import { Store, Mail, Lock, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -18,25 +16,12 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        toast.success("Login realizado com sucesso!");
-        navigate("/");
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { full_name: fullName },
-            emailRedirectTo: window.location.origin,
-          },
-        });
-        if (error) throw error;
-        toast.success("Conta criada! Verifique seu e-mail para confirmar.");
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      toast.success("Login realizado com sucesso!");
+      navigate("/");
     } catch (error: any) {
-      toast.error(error.message || "Erro ao processar solicitação");
+      toast.error(error.message || "Erro ao fazer login");
     } finally {
       setLoading(false);
     }
@@ -60,33 +45,12 @@ export default function Auth() {
 
         {/* Form card */}
         <div className="bg-card rounded-2xl card-shadow border border-border p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-1">
-            {isLogin ? "Entrar" : "Criar Conta"}
-          </h2>
+          <h2 className="text-lg font-semibold text-foreground mb-1">Entrar</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            {isLogin
-              ? "Acesse sua conta para continuar"
-              : "Preencha os dados para criar sua conta"}
+            Acesse sua conta para continuar
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">Nome Completo</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Seu nome"
-                    required
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  />
-                </div>
-              </div>
-            )}
-
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">E-mail</label>
               <div className="relative">
@@ -123,19 +87,14 @@ export default function Auth() {
               disabled={loading}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
             >
-              {loading ? "Processando..." : isLogin ? "Entrar" : "Criar Conta"}
+              {loading ? "Processando..." : "Entrar"}
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
 
-          <div className="mt-4 text-center">
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-primary hover:underline"
-            >
-              {isLogin ? "Não tem conta? Criar agora" : "Já tem conta? Fazer login"}
-            </button>
-          </div>
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            Solicite seu acesso ao administrador da empresa
+          </p>
         </div>
       </motion.div>
     </div>
