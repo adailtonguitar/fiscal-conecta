@@ -488,6 +488,174 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // ─── A3 FLOW: Generate unsigned XML ─────────────────────
+    if (req.method === "POST" && action === "gerar-xml") {
+      const body = await req.json();
+      const { fiscal_document_id, doc_type, items, total, payment_method, customer_cpf, customer_name } = body;
+      const dtype = doc_type || "nfce";
+
+      // Fetch company data
+      const { data: company } = await supabase
+        .from("companies")
+        .select("*")
+        .eq("id", companyId)
+        .single();
+
+      if (!company) throw new Error("Empresa não encontrada");
+
+      // Fetch fiscal config
+      const { data: fiscalConfig } = await supabase
+        .from("fiscal_configs")
+        .select("*")
+        .eq("company_id", companyId)
+        .eq("doc_type", dtype)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (!fiscalConfig) throw new Error(`Configuração fiscal de ${dtype.toUpperCase()} não encontrada.`);
+
+      // Build payload
+      const nfBody = buildNfceBody({
+        company,
+        fiscalConfig,
+        items,
+        total,
+        paymentMethod: payment_method,
+        customerCpf: customer_cpf,
+        customerName: customer_name,
+      });
+      nfBody.referencia = fiscal_document_id;
+
+      // Request unsigned XML from Nuvem Fiscal
+      const nfToken = await getAccessToken(`empresa ${dtype}`);
+      const result = await nuvemFiscalRequest("POST", `/${dtype}`, nfToken, {
+        ...nfBody,
+        // Tell Nuvem Fiscal NOT to sign (return unsigned XML)
+        assinar: false,
+      });
+
+      if (result.status >= 200 && result.status < 300) {
+        const nfData = result.data as Record<string, unknown>;
+
+        // Update fiscal document with pending status
+        if (fiscal_document_id) {
+          await supabase
+            .from("fiscal_documents")
+            .update({
+              status: "pendente",
+              access_key: nfData.chave || null,
+              number: nfData.numero || null,
+              environment: fiscalConfig.environment,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", fiscal_document_id);
+        }
+
+        return new Response(JSON.stringify({
+          nuvem_fiscal_id: nfData.id,
+          chave: nfData.chave,
+          numero: nfData.numero,
+          xml: nfData.xml || nfData.xml_nfe || null,
+          status: nfData.status,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } else {
+        return new Response(JSON.stringify({ error: "Erro ao gerar XML", details: result.data }), {
+          status: result.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // ─── A3 FLOW: Submit signed XML ─────────────────────────
+    if (req.method === "POST" && action === "enviar-xml-assinado") {
+      const body = await req.json();
+      const { nuvem_fiscal_id, fiscal_document_id, doc_type, signed_xml } = body;
+      const dtype = doc_type || "nfce";
+
+      if (!signed_xml) {
+        return new Response(JSON.stringify({ error: "XML assinado é obrigatório" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const nfToken = await getAccessToken(`empresa ${dtype}`);
+
+      // Submit signed XML to Nuvem Fiscal for authorization
+      const result = await nuvemFiscalRequest("POST", `/${dtype}/xml`, nfToken, {
+        xml: signed_xml,
+      });
+
+      if (result.status >= 200 && result.status < 300) {
+        const nfData = result.data as Record<string, unknown>;
+
+        // Update fiscal document
+        const updateData: Record<string, unknown> = {
+          status: nfData.status === "autorizada" ? "autorizada" : nfData.status === "rejeitada" ? "rejeitada" : "pendente",
+          updated_at: new Date().toISOString(),
+        };
+        if (nfData.chave) updateData.access_key = nfData.chave;
+        if (nfData.numero) updateData.number = nfData.numero;
+        if (nfData.numero_protocolo) updateData.protocol_number = nfData.numero_protocolo;
+        if (nfData.data_autorizacao) updateData.protocol_date = nfData.data_autorizacao;
+        if (nfData.motivo_status && nfData.status === "rejeitada") updateData.rejection_reason = nfData.motivo_status;
+
+        if (fiscal_document_id) {
+          await supabase
+            .from("fiscal_documents")
+            .update(updateData)
+            .eq("id", fiscal_document_id);
+
+          // Get fiscal config to increment number
+          const { data: fiscalConfig } = await supabase
+            .from("fiscal_configs")
+            .select("id, next_number")
+            .eq("company_id", companyId)
+            .eq("doc_type", dtype)
+            .eq("is_active", true)
+            .maybeSingle();
+
+          if (fiscalConfig) {
+            await supabase
+              .from("fiscal_configs")
+              .update({ next_number: (fiscalConfig.next_number || 1) + 1 })
+              .eq("id", fiscalConfig.id);
+          }
+        }
+
+        // Audit log
+        await supabase.from("action_logs").insert({
+          company_id: companyId,
+          user_id: user.id,
+          action: `${dtype}_emitida_a3`,
+          module: "fiscal",
+          details: `${dtype.toUpperCase()} ${nfData.numero || ""} emitida com certificado A3 - Status: ${nfData.status}`,
+        });
+
+        return new Response(JSON.stringify(nfData), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } else {
+        if (fiscal_document_id) {
+          await supabase
+            .from("fiscal_documents")
+            .update({
+              status: "rejeitada",
+              rejection_reason: JSON.stringify(result.data),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", fiscal_document_id);
+        }
+
+        return new Response(JSON.stringify({ error: "Erro ao enviar XML assinado", details: result.data }), {
+          status: result.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     return new Response(JSON.stringify({ error: "Ação não reconhecida" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

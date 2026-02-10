@@ -50,8 +50,7 @@ async function callFunction(action: string, method: "GET" | "POST", body?: unkno
 
 export class FiscalEmissionService {
   /**
-   * Emit an NFC-e through Nuvem Fiscal.
-   * The fiscal_document must already exist in our DB (status=pendente).
+   * Emit an NFC-e through Nuvem Fiscal (A1 certificate — fully server-side).
    */
   static async emitirNfce(params: {
     fiscalDocumentId: string;
@@ -77,6 +76,114 @@ export class FiscalEmissionService {
       customer_cpf: params.customerCpf,
       customer_name: params.customerName,
     });
+  }
+
+  /**
+   * A3 Flow Step 1: Generate unsigned XML on the server.
+   * Returns the XML that needs to be signed locally by the A3 certificate.
+   */
+  static async gerarXmlParaAssinatura(params: {
+    fiscalDocumentId: string;
+    docType: "nfce" | "nfe";
+    items: Array<{
+      product_id: string;
+      name: string;
+      sku: string;
+      quantity: number;
+      unit_price: number;
+      unit: string;
+      ncm?: string;
+    }>;
+    total: number;
+    paymentMethod: string;
+    customerCpf?: string;
+    customerName?: string;
+  }) {
+    return callFunction("gerar-xml", "POST", {
+      fiscal_document_id: params.fiscalDocumentId,
+      doc_type: params.docType,
+      items: params.items,
+      total: params.total,
+      payment_method: params.paymentMethod,
+      customer_cpf: params.customerCpf,
+      customer_name: params.customerName,
+    });
+  }
+
+  /**
+   * A3 Flow Step 2: Submit the locally-signed XML back to the server
+   * for transmission to SEFAZ via Nuvem Fiscal.
+   */
+  static async enviarXmlAssinado(params: {
+    nuvemFiscalId: string;
+    fiscalDocumentId: string;
+    docType: "nfce" | "nfe";
+    signedXml: string;
+  }) {
+    return callFunction("enviar-xml-assinado", "POST", {
+      nuvem_fiscal_id: params.nuvemFiscalId,
+      fiscal_document_id: params.fiscalDocumentId,
+      doc_type: params.docType,
+      signed_xml: params.signedXml,
+    });
+  }
+
+  /**
+   * Full A3 emission flow: generate XML → sign locally → submit signed XML.
+   * Requires localSignerService to be connected with a selected certificate.
+   */
+  static async emitirComA3(params: {
+    fiscalDocumentId: string;
+    docType: "nfce" | "nfe";
+    thumbprint: string;
+    items: Array<{
+      product_id: string;
+      name: string;
+      sku: string;
+      quantity: number;
+      unit_price: number;
+      unit: string;
+      ncm?: string;
+    }>;
+    total: number;
+    paymentMethod: string;
+    customerCpf?: string;
+    customerName?: string;
+    signerService: {
+      signXml: (thumbprint: string, xml: string) => Promise<string>;
+    };
+  }) {
+    // Step 1: Generate unsigned XML
+    const xmlResult = await this.gerarXmlParaAssinatura({
+      fiscalDocumentId: params.fiscalDocumentId,
+      docType: params.docType,
+      items: params.items,
+      total: params.total,
+      paymentMethod: params.paymentMethod,
+      customerCpf: params.customerCpf,
+      customerName: params.customerName,
+    });
+
+    if (!xmlResult?.xml) {
+      throw new Error("Servidor não retornou XML para assinatura. Verifique a configuração fiscal.");
+    }
+
+    // Step 2: Sign locally with A3 certificate
+    const signedXml = await params.signerService.signXml(params.thumbprint, xmlResult.xml);
+
+    if (!signedXml) {
+      throw new Error("Falha na assinatura local. Verifique se o token A3 está conectado.");
+    }
+
+    // Step 3: Submit signed XML
+    const emissionResult = await this.enviarXmlAssinado({
+      nuvemFiscalId: xmlResult.nuvem_fiscal_id,
+      fiscalDocumentId: params.fiscalDocumentId,
+      docType: params.docType,
+      signedXml,
+    });
+
+    return emissionResult;
   }
 
   /**

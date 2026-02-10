@@ -20,6 +20,12 @@ export class SaleService {
     paymentResults?: PaymentResult[];
     customerCpf?: string;
     customerName?: string;
+    a3Config?: {
+      thumbprint: string;
+      signerService: {
+        signXml: (thumbprint: string, xml: string) => Promise<string>;
+      };
+    };
   }): Promise<{ fiscalDocId: string; nfceNumber: string }> {
     const { companyId, userId, sessionId, items, total, paymentMethod, paymentResults, customerCpf, customerName } = params;
 
@@ -96,21 +102,43 @@ export class SaleService {
       });
     }
 
-    // 5. Trigger NFC-e emission (fire-and-forget, don't block the sale)
-    try {
-      const { FiscalEmissionService } = await import("./FiscalEmissionService");
-      FiscalEmissionService.emitirNfce({
-        fiscalDocumentId: doc.id,
-        items,
-        total,
-        paymentMethod,
-        customerCpf,
-        customerName,
-      }).catch((err) => {
-        console.warn("[NFC-e] Emissão automática falhou, será retentada:", err.message);
-      });
-    } catch {
-      // FiscalEmissionService not available (e.g. offline) — skip
+    // 5. Trigger NFC-e emission
+    // If A3 config is provided, use the interactive A3 signing flow
+    // Otherwise, use the standard fire-and-forget A1 flow
+    if (params.a3Config) {
+      try {
+        const { FiscalEmissionService } = await import("./FiscalEmissionService");
+        await FiscalEmissionService.emitirComA3({
+          fiscalDocumentId: doc.id,
+          docType: "nfce",
+          thumbprint: params.a3Config.thumbprint,
+          items,
+          total,
+          paymentMethod,
+          customerCpf,
+          customerName,
+          signerService: params.a3Config.signerService,
+        });
+      } catch (err: any) {
+        console.warn("[NFC-e A3] Emissão com certificado A3 falhou:", err.message);
+        // Don't block the sale — document stays as "pendente"
+      }
+    } else {
+      try {
+        const { FiscalEmissionService } = await import("./FiscalEmissionService");
+        FiscalEmissionService.emitirNfce({
+          fiscalDocumentId: doc.id,
+          items,
+          total,
+          paymentMethod,
+          customerCpf,
+          customerName,
+        }).catch((err) => {
+          console.warn("[NFC-e] Emissão automática falhou, será retentada:", err.message);
+        });
+      } catch {
+        // FiscalEmissionService not available (e.g. offline) — skip
+      }
     }
 
     return {
