@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -120,7 +121,7 @@ serve(async (req) => {
       }
     }
 
-    // Create new user via invite if needed (sends email automatically)
+    // Create new user via invite if needed
     if (!userId) {
       const { data: newUser, error: createError } = await adminClient.auth.admin.inviteUserByEmail(email, {
         data: {
@@ -139,6 +140,69 @@ serve(async (req) => {
       }
 
       userId = newUser.user.id;
+
+      // Send custom Portuguese email via Resend
+      const resendApiKey = Deno.env.get("RESEND_API_KEY");
+      if (resendApiKey) {
+        try {
+          const resend = new Resend(resendApiKey);
+          
+          // Get the confirmation URL from the invite
+          const { data: linkData } = await adminClient.auth.admin.generateLink({
+            type: "invite",
+            email,
+            options: {
+              redirectTo: `${req.headers.get("origin") || "https://id-preview--e5ef5c79-efef-4e2f-b9c1-39921fc0a605.lovable.app"}/auth`,
+            },
+          });
+
+          const confirmUrl = linkData?.properties?.action_link || "";
+
+          // Get company name
+          const { data: company } = await adminClient
+            .from("companies")
+            .select("name")
+            .eq("id", companyId)
+            .single();
+
+          const companyName = company?.name || "nossa empresa";
+          const userName = fullName || "Usuário";
+
+          await resend.emails.send({
+            from: "Sistema <noreply@resend.dev>",
+            to: [email],
+            subject: `Você foi convidado para ${companyName}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #333;">Olá${userName ? ', ' + userName : ''}! 👋</h2>
+                <p style="color: #555; font-size: 16px;">
+                  Você foi convidado para fazer parte da equipe <strong>${companyName}</strong>.
+                </p>
+                <p style="color: #555; font-size: 16px;">
+                  Clique no botão abaixo para ativar sua conta e definir sua senha:
+                </p>
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${confirmUrl}" 
+                     style="background-color: #4F46E5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold;">
+                    Ativar Minha Conta
+                  </a>
+                </div>
+                <p style="color: #888; font-size: 14px;">
+                  Se você não esperava este convite, pode ignorar este e-mail com segurança.
+                </p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
+                <p style="color: #aaa; font-size: 12px;">
+                  Este é um e-mail automático. Por favor, não responda.
+                </p>
+              </div>
+            `,
+          });
+          console.log("Custom invite email sent via Resend to:", email);
+        } catch (emailErr) {
+          console.error("Resend email error (non-blocking):", emailErr);
+          // Don't fail the invite if email sending fails - the default Supabase email was already sent
+        }
+      }
     }
 
     // Link user to company with specified role
