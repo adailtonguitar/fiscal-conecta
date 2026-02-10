@@ -30,6 +30,7 @@ import Categorias from "./pages/Categorias";
 import Auth from "./pages/Auth";
 import PDV from "./pages/PDV";
 import NotFound from "./pages/NotFound";
+import Instalar from "./pages/Instalar";
 
 const queryClient = new QueryClient();
 
@@ -86,6 +87,7 @@ function AppRoutes() {
           ? <Navigate to="/" replace /> 
           : <Auth />
       } />
+      <Route path="/install" element={<Instalar />} />
       {/* PDV: full-screen, outside AppLayout */}
       <Route
         path="/pdv"
