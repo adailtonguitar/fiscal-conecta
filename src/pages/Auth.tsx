@@ -11,7 +11,13 @@ export default function Auth() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"login" | "set-password" | "processing">("processing");
+  const [mode, setMode] = useState<"login" | "set-password" | "processing">(() => {
+    // Check if we need to show set-password from a previous redirect
+    if (sessionStorage.getItem("needs-password-setup") === "true") {
+      return "set-password";
+    }
+    return "processing";
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,6 +26,7 @@ export default function Auth() {
       console.log("Auth event:", event, "session:", !!session);
       
       if (event === "PASSWORD_RECOVERY") {
+        sessionStorage.setItem("needs-password-setup", "true");
         setMode("set-password");
         toast.info("Defina sua senha para acessar o sistema");
         return;
@@ -39,6 +46,7 @@ export default function Auth() {
           (session.user.created_at === session.user.last_sign_in_at);
 
         if (isInvitedUser || (hasNoPasswordLogin && hash.includes("access_token"))) {
+          sessionStorage.setItem("needs-password-setup", "true");
           setMode("set-password");
           toast.info("Defina sua senha para acessar o sistema");
           return;
@@ -93,6 +101,7 @@ export default function Auth() {
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
+      sessionStorage.removeItem("needs-password-setup");
       toast.success("Senha definida com sucesso!");
       navigate("/");
     } catch (error: any) {

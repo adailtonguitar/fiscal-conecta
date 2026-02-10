@@ -81,7 +81,9 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={
-        user && !window.location.hash.includes("type=") ? <Navigate to="/" replace /> : <Auth />
+        user && !window.location.hash.includes("type=") && sessionStorage.getItem("needs-password-setup") !== "true"
+          ? <Navigate to="/" replace /> 
+          : <Auth />
       } />
       {/* PDV: full-screen, outside AppLayout */}
       <Route
