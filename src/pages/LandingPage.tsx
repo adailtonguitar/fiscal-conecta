@@ -17,6 +17,7 @@ import {
   Cloud,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PLANS } from "@/hooks/useSubscription";
 
 const features = [
   { icon: ShoppingCart, title: "PDV Completo", desc: "Terminal de vendas com atalhos de teclado, leitor de código de barras e pagamentos múltiplos." },
@@ -34,6 +35,7 @@ const plans = [
     desc: "Para pequenos comércios",
     features: ["1 terminal PDV", "100 produtos", "NFC-e ilimitada", "Suporte por e-mail"],
     highlighted: false,
+    priceId: PLANS.essencial.price_id,
   },
   {
     name: "Profissional",
@@ -41,6 +43,7 @@ const plans = [
     desc: "Para negócios em crescimento",
     features: ["3 terminais PDV", "Produtos ilimitados", "NF-e + NFC-e", "Relatórios avançados", "Suporte prioritário"],
     highlighted: true,
+    priceId: PLANS.profissional.price_id,
   },
   {
     name: "Enterprise",
@@ -48,6 +51,7 @@ const plans = [
     desc: "Para redes e franquias",
     features: ["Terminais ilimitados", "Multi-empresa", "API dedicada", "White label", "Gerente de conta"],
     highlighted: false,
+    priceId: null,
   },
 ];
 

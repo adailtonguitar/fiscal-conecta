@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useCompany } from "@/hooks/useCompany";
+import { SubscriptionProvider } from "@/hooks/useSubscription";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { toast } from "sonner";
 import Dashboard from "./pages/Dashboard";
@@ -149,7 +150,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <SubscriptionProvider>
+            <AppRoutes />
+          </SubscriptionProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
