@@ -22,7 +22,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Intercept recovery/invite hash BEFORE Supabase clears it
+    const hash = window.location.hash;
+    if (hash) {
+      const hashParams = new URLSearchParams(hash.substring(1));
+      const type = hashParams.get("type");
+      if (type === "recovery" || type === "invite" || type === "magiclink") {
+        sessionStorage.setItem("needs-password-setup", "true");
+      }
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        sessionStorage.setItem("needs-password-setup", "true");
+      }
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
