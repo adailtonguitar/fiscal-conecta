@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Loader2,
   Usb,
+  ArrowLeft,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -248,11 +249,19 @@ export default function FiscalConfig() {
 
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Configuração Fiscal</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Certificado digital, CSC, séries e ambiente SEFAZ
-        </p>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => navigate("/fiscal")}
+          className="p-2 rounded-lg hover:bg-muted transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 text-foreground" />
+        </button>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Configuração Fiscal</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Certificado digital, CSC, séries e ambiente SEFAZ
+          </p>
+        </div>
       </div>
 
       {/* Certificate */}
