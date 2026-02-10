@@ -1,15 +1,85 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Store, Mail, Lock, ArrowRight } from "lucide-react";
+import { Store, Mail, Lock, ArrowRight, KeyRound } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"login" | "set-password" | "processing">("processing");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Handle auth callback from email links (magic link, recovery, invite)
+    const handleAuthCallback = async () => {
+      const hash = window.location.hash;
+      
+      // Check for auth tokens in URL hash
+      if (hash && (hash.includes("access_token") || hash.includes("type="))) {
+        try {
+          const { data, error } = await supabase.auth.getSession();
+          
+          if (error) {
+            console.error("Auth callback error:", error);
+            toast.error("Erro ao processar link de verificação");
+            setMode("login");
+            return;
+          }
+
+          if (data.session) {
+            // Check if this is a recovery/invite flow - user needs to set password
+            const hashParams = new URLSearchParams(hash.substring(1));
+            const type = hashParams.get("type");
+            
+            if (type === "recovery" || type === "magiclink" || type === "invite") {
+              setMode("set-password");
+              toast.info("Defina sua senha para acessar o sistema");
+              return;
+            }
+
+            // Normal sign-in, redirect
+            toast.success("Login realizado com sucesso!");
+            navigate("/");
+            return;
+          }
+        } catch (err) {
+          console.error("Callback processing error:", err);
+        }
+      }
+      
+      setMode("login");
+    };
+
+    handleAuthCallback();
+  }, [navigate]);
+
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error("As senhas não conferem");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("A senha deve ter no mínimo 6 caracteres");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      toast.success("Senha definida com sucesso!");
+      navigate("/");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao definir senha");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +96,14 @@ export default function Auth() {
       setLoading(false);
     }
   };
+
+  if (mode === "processing") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -45,56 +123,110 @@ export default function Auth() {
 
         {/* Form card */}
         <div className="bg-card rounded-2xl card-shadow border border-border p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-1">Entrar</h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            Acesse sua conta para continuar
-          </p>
+          {mode === "set-password" ? (
+            <>
+              <h2 className="text-lg font-semibold text-foreground mb-1">Definir Senha</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                Crie uma senha para acessar o sistema
+              </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">E-mail</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu@email.com"
-                  required
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                />
-              </div>
-            </div>
+              <form onSubmit={handleSetPassword} className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">Nova Senha</label>
+                  <div className="relative">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      minLength={6}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    />
+                  </div>
+                </div>
 
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">Senha</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  minLength={6}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                />
-              </div>
-            </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">Confirmar Senha</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      minLength={6}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    />
+                  </div>
+                </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
-            >
-              {loading ? "Processando..." : "Entrar"}
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </form>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
+                >
+                  {loading ? "Processando..." : "Definir Senha"}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              <h2 className="text-lg font-semibold text-foreground mb-1">Entrar</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                Acesse sua conta para continuar
+              </p>
 
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            Solicite seu acesso ao administrador da empresa
-          </p>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">E-mail</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="seu@email.com"
+                      required
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">Senha</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      minLength={6}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
+                >
+                  {loading ? "Processando..." : "Entrar"}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </form>
+
+              <p className="mt-4 text-center text-xs text-muted-foreground">
+                Solicite seu acesso ao administrador da empresa
+              </p>
+            </>
+          )}
         </div>
       </motion.div>
     </div>
