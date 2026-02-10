@@ -31,6 +31,8 @@ import Auth from "./pages/Auth";
 import PDV from "./pages/PDV";
 import NotFound from "./pages/NotFound";
 import Instalar from "./pages/Instalar";
+import Termos from "./pages/Termos";
+import Privacidade from "./pages/Privacidade";
 
 const queryClient = new QueryClient();
 
@@ -88,6 +90,8 @@ function AppRoutes() {
           : <Auth />
       } />
       <Route path="/install" element={<Instalar />} />
+      <Route path="/termos" element={<Termos />} />
+      <Route path="/privacidade" element={<Privacidade />} />
       {/* PDV: full-screen, outside AppLayout */}
       <Route
         path="/pdv"
