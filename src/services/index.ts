@@ -7,4 +7,5 @@ export { StockService } from "./StockService";
 export { CashSessionService } from "./CashSessionService";
 export { FinancialService } from "./FinancialService";
 export { AuditService } from "./AuditService";
+export { FiscalEmissionService } from "./FiscalEmissionService";
 export type * from "./types";
