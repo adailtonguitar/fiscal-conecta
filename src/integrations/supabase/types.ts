@@ -1265,7 +1265,7 @@ export type Database = {
           client_name: string | null
           client_phone: string | null
           client_trade_name: string | null
-          company_id: string
+          company_id: string | null
           created_at: string
           expires_at: string | null
           id: string
@@ -1285,7 +1285,7 @@ export type Database = {
           client_name?: string | null
           client_phone?: string | null
           client_trade_name?: string | null
-          company_id: string
+          company_id?: string | null
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -1305,7 +1305,7 @@ export type Database = {
           client_name?: string | null
           client_phone?: string | null
           client_trade_name?: string | null
-          company_id?: string
+          company_id?: string | null
           created_at?: string
           expires_at?: string | null
           id?: string
