@@ -54,14 +54,18 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
       if (error) throw error;
       if (data?.error && !data?.inviteLink) throw new Error(data.error);
 
+      queryClient.invalidateQueries({ queryKey: ["company-users"] });
+
       if (data?.inviteLink) {
-        // Email failed but link was generated - show it to admin
+        // Show the invite link to admin (always shown for new users)
         setInviteLink(data.inviteLink);
-        toast.warning("E-mail não pôde ser enviado. Copie o link abaixo e envie manualmente.");
-        queryClient.invalidateQueries({ queryKey: ["company-users"] });
+        if (data?.emailSent) {
+          toast.success("Convite enviado por e-mail! O link também está disponível abaixo.");
+        } else {
+          toast.warning("Copie o link abaixo e envie ao usuário por WhatsApp.");
+        }
       } else {
-        toast.success(data.message || "Usuário convidado com sucesso!");
-        queryClient.invalidateQueries({ queryKey: ["company-users"] });
+        toast.success(data.message || "Usuário vinculado com sucesso!");
         setEmail("");
         setFullName("");
         setPhone("");

@@ -122,6 +122,7 @@ serve(async (req) => {
     }
 
     // Create new user if needed
+    let recoveryUrl = "";
     if (!userId) {
       const redirectUrl = `${req.headers.get("origin") || "https://id-preview--e5ef5c79-efef-4e2f-b9c1-39921fc0a605.lovable.app"}/auth`;
 
@@ -130,7 +131,7 @@ serve(async (req) => {
       const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
         email,
         password: tempPassword,
-        email_confirm: true, // Auto-confirm email
+        email_confirm: true,
         user_metadata: {
           full_name: fullName || "",
           phone: phone || "",
@@ -160,9 +161,30 @@ serve(async (req) => {
         console.error("Generate recovery link error:", linkError);
       }
 
-      const recoveryUrl = linkData?.properties?.action_link || "";
-      console.log("User created and recovery link generated for:", email, "URL exists:", !!recoveryUrl);
+      recoveryUrl = linkData?.properties?.action_link || "";
+      console.log("User created. Recovery link for:", email, "URL exists:", !!recoveryUrl);
+    }
 
+    // Link user to company with specified role
+    const { error: linkError } = await adminClient
+      .from("company_users")
+      .insert({
+        user_id: userId,
+        company_id: companyId,
+        role,
+        is_active: true,
+      });
+
+    if (linkError) {
+      console.error("Link error:", linkError);
+      return new Response(JSON.stringify({ error: "Erro ao vincular usuário à empresa" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // For new users, try to send email and always return the link
+    if (recoveryUrl) {
       // Get company name
       const { data: company } = await adminClient
         .from("companies")
@@ -177,7 +199,7 @@ serve(async (req) => {
       const resendApiKey = Deno.env.get("RESEND_API_KEY");
       let emailSent = false;
 
-      if (resendApiKey && recoveryUrl) {
+      if (resendApiKey) {
         try {
           const resend = new Resend(resendApiKey);
           const emailResult = await resend.emails.send({
@@ -222,33 +244,16 @@ serve(async (req) => {
         }
       }
 
-      // Always return the link so admin can share manually if email fails
-      if (!emailSent && recoveryUrl) {
-        return new Response(JSON.stringify({
-          success: true,
-          message: "Usuário criado! O e-mail não pôde ser enviado. Copie o link e envie ao usuário.",
-          inviteLink: recoveryUrl,
-          userId,
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    // Link user to company with specified role
-    const { error: linkError } = await adminClient
-      .from("company_users")
-      .insert({
-        user_id: userId,
-        company_id: companyId,
-        role,
-        is_active: true,
-      });
-
-    if (linkError) {
-      console.error("Link error:", linkError);
-      return new Response(JSON.stringify({ error: "Erro ao vincular usuário à empresa" }), {
-        status: 500,
+      // Always return the invite link so admin can share via WhatsApp
+      return new Response(JSON.stringify({
+        success: true,
+        message: emailSent
+          ? "Convite enviado por e-mail! O link também está disponível abaixo."
+          : "Usuário criado! Copie o link abaixo e envie ao usuário por WhatsApp.",
+        inviteLink: recoveryUrl,
+        emailSent,
+        userId,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -256,9 +261,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: existingUser 
-          ? "Usuário existente vinculado à empresa com sucesso" 
-          : "Convite enviado! O usuário receberá um e-mail para confirmar o cadastro.",
+        message: "Usuário existente vinculado à empresa com sucesso",
         userId,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
