@@ -392,7 +392,7 @@ export default function PDV() {
 
 
       {/* Fixed shortcuts bar at bottom */}
-      <div className="flex items-center justify-center gap-1 px-3 py-1.5 bg-[hsl(220,35%,18%)] border-t border-pos-border flex-shrink-0 flex-wrap">
+      <div className="flex items-center justify-center gap-3 px-4 py-2.5 bg-[hsl(220,35%,18%)] border-t border-pos-border flex-shrink-0 flex-wrap">
         {[
           { key: "F1", label: "Atalhos" },
           { key: "F2", label: "Pagamento" },
@@ -403,9 +403,9 @@ export default function PDV() {
           { key: "Del", label: "Remover" },
           { key: "ESC", label: "Fechar" },
         ].map(({ key, label }) => (
-          <div key={key} className="flex items-center gap-1 px-2 py-0.5">
-            <kbd className="px-1.5 py-0.5 rounded bg-pos-surface border border-pos-border text-[10px] font-mono font-bold text-pos-accent">{key}</kbd>
-            <span className="text-[10px] text-pos-text-muted">{label}</span>
+          <div key={key} className="flex items-center gap-1.5 px-2">
+            <kbd className="px-2 py-1 rounded bg-pos-surface border border-pos-border text-xs font-mono font-bold text-pos-accent">{key}</kbd>
+            <span className="text-xs text-pos-text-muted">{label}</span>
           </div>
         ))}
       </div>
