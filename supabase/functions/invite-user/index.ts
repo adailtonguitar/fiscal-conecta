@@ -73,37 +73,36 @@ serve(async (req) => {
       });
     }
 
-    // Check if user already exists - search by email directly instead of listing all
-    const { data: { users: matchedUsers } } = await adminClient.auth.admin.listUsers({
-      filter: `email.eq.${email}`,
-      page: 1,
-      perPage: 1,
-    });
-    const existingUser = matchedUsers?.[0] || null;
+    // Check if user already exists by checking company_users + profiles first
+    // Then try to create - handle duplicate gracefully
+    const { data: existingProfile } = await adminClient
+      .from("profiles")
+      .select("id, email")
+      .eq("email", email)
+      .maybeSingle();
 
     let userId: string;
     let needsNewUser = false;
 
-    if (existingUser) {
-      // Check if already linked to this company
+    console.log("Checking email:", email, "existingProfile:", existingProfile?.id);
+
+    if (existingProfile) {
+      // User exists in profiles - check if already linked to this company
       const { data: existingLink } = await adminClient
         .from("company_users")
         .select("id, is_active")
-        .eq("user_id", existingUser.id)
+        .eq("user_id", existingProfile.id)
         .eq("company_id", companyId)
-        .single();
+        .maybeSingle();
+
+      console.log("Existing link:", existingLink);
 
       if (existingLink) {
         if (existingLink.is_active) {
-          if (!existingUser.email_confirmed_at) {
-            await adminClient.auth.admin.deleteUser(existingUser.id);
-            needsNewUser = true;
-          } else {
-            return new Response(JSON.stringify({ error: "Este usuário já está vinculado à empresa" }), {
-              status: 200,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-          }
+          return new Response(JSON.stringify({ error: "Este usuário já está vinculado à empresa" }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         } else {
           // Reactivate inactive user with new role
           await adminClient
@@ -111,7 +110,6 @@ serve(async (req) => {
             .update({ is_active: true, role })
             .eq("id", existingLink.id);
 
-          // Generate recovery link for reactivated user too
           const redirectUrl = `${req.headers.get("origin") || "https://id-preview--e5ef5c79-efef-4e2f-b9c1-39921fc0a605.lovable.app"}/auth`;
           const { data: linkData } = await adminClient.auth.admin.generateLink({
             type: "recovery",
@@ -121,17 +119,13 @@ serve(async (req) => {
           const recoveryUrl = linkData?.properties?.action_link || "";
 
           return new Response(
-            JSON.stringify({ success: true, message: "Usuário reativado com sucesso!", userId: existingUser.id, inviteLink: recoveryUrl }),
+            JSON.stringify({ success: true, message: "Usuário reativado com sucesso!", userId: existingProfile.id, inviteLink: recoveryUrl }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
-      } else if (existingUser.email_confirmed_at) {
-        // User exists and confirmed but not linked to this company
-        userId = existingUser.id;
       } else {
-        // User exists but unconfirmed and not linked - delete and re-invite
-        await adminClient.auth.admin.deleteUser(existingUser.id);
-        needsNewUser = true;
+        // User exists but not linked to this company - just link them
+        userId = existingProfile.id;
       }
     } else {
       needsNewUser = true;
