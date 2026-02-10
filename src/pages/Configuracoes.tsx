@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Store, Palette, Save, Globe, FileText, Download, Clock, HardDrive, Search, Loader2 } from "lucide-react";
+import { Store, Save, Globe, FileText, Download, Clock, HardDrive, Search, Loader2 } from "lucide-react";
 import { useCnpjLookup } from "@/hooks/useCnpjLookup";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,7 +29,7 @@ export default function Configuracoes() {
     address_zip: "",
     address_ibge_code: "",
   });
-  const [primaryColor, setPrimaryColor] = useState("#1a9e7a");
+  
   const [exporting, setExporting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
@@ -291,20 +291,6 @@ export default function Configuracoes() {
         </div>
       </motion.div>
 
-      {/* White Label */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden">
-        <div className="px-5 py-4 border-b border-border flex items-center gap-2">
-          <Palette className="w-4 h-4 text-primary" />
-          <h2 className="text-base font-semibold text-foreground">White Label</h2>
-        </div>
-        <div className="p-5">
-          <label className="text-sm font-medium text-foreground mb-1.5 block">Cor Principal</label>
-          <div className="flex items-center gap-3">
-            <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-10 h-10 rounded-lg border border-border cursor-pointer" />
-            <span className="text-sm font-mono text-muted-foreground">{primaryColor}</span>
-          </div>
-        </div>
-      </motion.div>
 
       {/* Backup / Export */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden">
