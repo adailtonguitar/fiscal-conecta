@@ -197,7 +197,21 @@ serve(async (req) => {
               </div>
             `,
           });
-          console.log("Resend email sent successfully:", JSON.stringify(emailResult));
+          
+          if (emailResult.error) {
+            console.error("Resend API error:", JSON.stringify(emailResult.error));
+            // Return error but still include the invite link so admin can share manually
+            return new Response(JSON.stringify({ 
+              error: `Falha ao enviar e-mail: ${emailResult.error.message}. Você pode copiar e enviar o link manualmente.`,
+              inviteLink: confirmUrl,
+              userId,
+            }), {
+              status: 200,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          console.log("Resend email sent successfully to:", email);
         } catch (emailErr) {
           console.error("Resend email error:", emailErr);
           return new Response(JSON.stringify({ error: "Usuário criado mas falha ao enviar e-mail. Tente novamente." }), {

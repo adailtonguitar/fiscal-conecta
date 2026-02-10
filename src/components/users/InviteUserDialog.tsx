@@ -32,12 +32,14 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<CompanyRole>("caixa");
   const [loading, setLoading] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !companyId) return;
 
     setLoading(true);
+    setInviteLink(null);
     try {
       const { data, error } = await supabase.functions.invoke("invite-user", {
         body: {
@@ -50,19 +52,33 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
       });
 
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (data?.error && !data?.inviteLink) throw new Error(data.error);
 
-      toast.success(data.message || "Usuário convidado com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["company-users"] });
-      setEmail("");
-      setFullName("");
-      setPhone("");
-      setRole("caixa");
-      onOpenChange(false);
+      if (data?.inviteLink) {
+        // Email failed but link was generated - show it to admin
+        setInviteLink(data.inviteLink);
+        toast.warning("E-mail não pôde ser enviado. Copie o link abaixo e envie manualmente.");
+        queryClient.invalidateQueries({ queryKey: ["company-users"] });
+      } else {
+        toast.success(data.message || "Usuário convidado com sucesso!");
+        queryClient.invalidateQueries({ queryKey: ["company-users"] });
+        setEmail("");
+        setFullName("");
+        setPhone("");
+        setRole("caixa");
+        onOpenChange(false);
+      }
     } catch (err: any) {
       toast.error(err.message || "Erro ao convidar usuário");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const copyLink = () => {
+    if (inviteLink) {
+      navigator.clipboard.writeText(inviteLink);
+      toast.success("Link copiado! Envie ao usuário por WhatsApp ou outro meio.");
     }
   };
 
@@ -138,6 +154,27 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
           <p className="text-xs text-muted-foreground">
             O usuário receberá um e-mail de confirmação para ativar sua conta e definir a senha.
           </p>
+
+          {inviteLink && (
+            <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 space-y-2">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                📋 Link de convite gerado:
+              </p>
+              <div className="flex gap-2">
+                <input
+                  readOnly
+                  value={inviteLink}
+                  className="flex-1 text-xs p-2 rounded bg-background border border-border truncate"
+                />
+                <Button type="button" size="sm" variant="outline" onClick={copyLink}>
+                  Copiar
+                </Button>
+              </div>
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                Envie este link ao usuário por WhatsApp ou outro meio.
+              </p>
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
