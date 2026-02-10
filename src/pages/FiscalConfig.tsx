@@ -15,6 +15,7 @@ import {
   Loader2,
   Usb,
   ArrowLeft,
+  Trash2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -312,21 +313,37 @@ export default function FiscalConfig() {
                     )}
                   </div>
                 </div>
-                <label className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium cursor-pointer hover:opacity-90 transition-all">
-                  <Upload className="w-4 h-4" />
-                  {certFile ? "Trocar" : "Enviar"} .PFX
-                  <input
-                    type="file"
-                    accept=".pfx,.p12"
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) {
-                        setCertFile(e.target.files[0].name);
-                        toast.info("Arquivo selecionado. Lembre-se de salvar as configurações.");
-                      }
-                    }}
-                  />
-                </label>
+                <div className="flex items-center gap-2">
+                  {certFile && (
+                    <button
+                      onClick={() => {
+                        setCertFile(null);
+                        setCertPassword("");
+                        setCertExpiry("");
+                        toast.info("Certificado removido. Salve para confirmar.");
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Remover
+                    </button>
+                  )}
+                  <label className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium cursor-pointer hover:opacity-90 transition-all">
+                    <Upload className="w-4 h-4" />
+                    {certFile ? "Trocar" : "Enviar"} .PFX
+                    <input
+                      type="file"
+                      accept=".pfx,.p12"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          setCertFile(e.target.files[0].name);
+                          toast.info("Arquivo selecionado. Lembre-se de salvar as configurações.");
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
