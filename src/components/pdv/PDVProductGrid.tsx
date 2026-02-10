@@ -27,7 +27,8 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
       !search ||
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.sku.toLowerCase().includes(search.toLowerCase()) ||
-      p.barcode?.includes(search);
+      p.barcode?.includes(search) ||
+      (p.ncm && p.ncm.includes(search));
     return matchCategory && matchSearch;
   });
 
@@ -35,7 +36,8 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
     ? products.filter((p) =>
         p.name.toLowerCase().includes(search.toLowerCase()) ||
         p.sku.toLowerCase().includes(search.toLowerCase()) ||
-        p.barcode?.includes(search)
+        p.barcode?.includes(search) ||
+        (p.ncm && p.ncm.includes(search))
       ).slice(0, 8)
     : [];
 
@@ -185,6 +187,7 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
             <thead className="sticky top-0 bg-[hsl(220,30%,15%)]">
               <tr className="text-pos-text-muted text-left">
                 <th className="px-2 py-1.5 font-medium">Código</th>
+                <th className="px-2 py-1.5 font-medium">NCM</th>
                 <th className="px-2 py-1.5 font-medium">Descrição</th>
                 <th className="px-2 py-1.5 font-medium text-right">Preço</th>
                 <th className="px-2 py-1.5 font-medium text-right">Estoque</th>
@@ -200,6 +203,7 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
                   }`}
                 >
                   <td className="px-2 py-1.5 font-mono text-pos-text-muted">{product.sku}</td>
+                  <td className="px-2 py-1.5 font-mono text-pos-text-muted">{product.ncm || "—"}</td>
                   <td className="px-2 py-1.5 text-pos-text">{product.name}</td>
                   <td className="px-2 py-1.5 text-right pos-price">{formatCurrency(product.price)}</td>
                   <td className="px-2 py-1.5 text-right text-pos-text-muted">{product.stock_quantity} {product.unit}</td>
