@@ -8,6 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useCreateProduct, useUpdateProduct, type Product } from "@/hooks/useProducts";
+import { supabase } from "@/integrations/supabase/client";
+import { Sparkles, Loader2, Check } from "lucide-react";
+import { toast } from "sonner";
+
+interface NCMSuggestion {
+  ncm: string;
+  description: string;
+}
 
 const schema = z.object({
   name: z.string().trim().min(1, "Nome obrigatório").max(200),
@@ -41,6 +49,41 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
     ? ((product.price - product.cost_price) / product.cost_price) * 100
     : null;
   const [marginStr, setMarginStr] = useState<string>(initialMargin !== null ? initialMargin.toFixed(1) : "");
+  const [ncmSuggestions, setNcmSuggestions] = useState<NCMSuggestion[]>([]);
+  const [ncmLoading, setNcmLoading] = useState(false);
+  const [showNcmSuggestions, setShowNcmSuggestions] = useState(false);
+
+  const lookupNCM = async () => {
+    const productName = form.getValues("name");
+    if (!productName || productName.trim().length < 2) {
+      toast.error("Digite o nome do produto primeiro");
+      return;
+    }
+    setNcmLoading(true);
+    setNcmSuggestions([]);
+    setShowNcmSuggestions(false);
+    try {
+      const { data, error } = await supabase.functions.invoke("ncm-lookup", {
+        body: { productName: productName.trim() },
+      });
+      if (error) throw error;
+      if (data?.suggestions && data.suggestions.length > 0) {
+        setNcmSuggestions(data.suggestions);
+        setShowNcmSuggestions(true);
+      } else {
+        toast.info("Nenhuma sugestão de NCM encontrada");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao buscar NCM");
+    } finally {
+      setNcmLoading(false);
+    }
+  };
+
+  const selectNCM = (ncm: string) => {
+    form.setValue("ncm", ncm);
+    setShowNcmSuggestions(false);
+  };
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -106,8 +149,37 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
             <div className="grid grid-cols-2 gap-4">
               <FormField control={form.control} name="ncm" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>NCM</FormLabel>
+                  <FormLabel className="flex items-center gap-2">
+                    NCM
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-5 px-1.5 text-[10px] gap-1 text-primary hover:text-primary"
+                      onClick={lookupNCM}
+                      disabled={ncmLoading}
+                    >
+                      {ncmLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                      Buscar por IA
+                    </Button>
+                  </FormLabel>
                   <FormControl><Input placeholder="22021000" {...field} /></FormControl>
+                  {showNcmSuggestions && ncmSuggestions.length > 0 && (
+                    <div className="mt-1 border border-border rounded-lg overflow-hidden bg-popover shadow-lg">
+                      {ncmSuggestions.map((s, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => selectNCM(s.ncm)}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent transition-colors border-b border-border last:border-0"
+                        >
+                          <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                          <span className="font-mono font-medium text-foreground">{s.ncm}</span>
+                          <span className="text-muted-foreground text-xs truncate">— {s.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <FormMessage />
                 </FormItem>
               )} />
