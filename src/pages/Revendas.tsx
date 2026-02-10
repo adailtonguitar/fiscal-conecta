@@ -5,13 +5,15 @@ import { useIsReseller } from "@/hooks/useIsReseller";
 import { ResellerSetup } from "@/components/reseller/ResellerSetup";
 import { ResellerDashboard } from "@/components/reseller/ResellerDashboard";
 import { ResellerPlans } from "@/components/reseller/ResellerPlans";
+import { ResellerLicenses } from "@/components/reseller/ResellerLicenses";
 import { ResellerBranding } from "@/components/reseller/ResellerBranding";
-import { LayoutDashboard, CreditCard, Palette } from "lucide-react";
+import { LayoutDashboard, CreditCard, Palette, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { id: "dashboard", label: "Painel", icon: LayoutDashboard },
   { id: "plans", label: "Planos", icon: CreditCard },
+  { id: "licenses", label: "Licenças", icon: KeyRound },
   { id: "branding", label: "Marca", icon: Palette },
 ] as const;
 
@@ -31,6 +33,8 @@ export default function Revendas() {
     createPlan,
     updatePlan,
     deletePlan,
+    createLicense,
+    updateLicense,
   } = useReseller();
 
   if (loading || resellerCheckLoading) {
@@ -61,7 +65,7 @@ export default function Revendas() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-secondary/50 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 bg-secondary/50 p-1 rounded-xl w-fit flex-wrap">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -90,6 +94,14 @@ export default function Revendas() {
           onCreatePlan={createPlan}
           onUpdatePlan={updatePlan}
           onDeletePlan={deletePlan}
+        />
+      )}
+      {activeTab === "licenses" && (
+        <ResellerLicenses
+          licenses={licenses}
+          plans={plans}
+          onCreateLicense={createLicense}
+          onUpdateLicense={updateLicense}
         />
       )}
       {activeTab === "branding" && (
