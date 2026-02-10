@@ -121,12 +121,49 @@ serve(async (req) => {
       }
     }
 
-    // Create new user via invite if needed
+    // Create new user if needed
     if (!userId) {
-      const resendApiKey = Deno.env.get("RESEND_API_KEY");
       const redirectUrl = `${req.headers.get("origin") || "https://id-preview--e5ef5c79-efef-4e2f-b9c1-39921fc0a605.lovable.app"}/auth`;
 
-      // Get company name for the email
+      // Create user with a temporary password (email auto-confirmed)
+      const tempPassword = crypto.randomUUID();
+      const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
+        email,
+        password: tempPassword,
+        email_confirm: true, // Auto-confirm email
+        user_metadata: {
+          full_name: fullName || "",
+          phone: phone || "",
+        },
+      });
+
+      if (createError) {
+        console.error("Create user error:", createError);
+        return new Response(JSON.stringify({ error: createError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      userId = newUser.user.id;
+
+      // Generate a password recovery link so user can set their own password
+      const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+        type: "recovery",
+        email,
+        options: {
+          redirectTo: redirectUrl,
+        },
+      });
+
+      if (linkError) {
+        console.error("Generate recovery link error:", linkError);
+      }
+
+      const recoveryUrl = linkData?.properties?.action_link || "";
+      console.log("User created and recovery link generated for:", email, "URL exists:", !!recoveryUrl);
+
+      // Get company name
       const { data: company } = await adminClient
         .from("companies")
         .select("name")
@@ -136,37 +173,13 @@ serve(async (req) => {
       const companyName = company?.name || "nossa empresa";
       const userName = fullName || "Usuário";
 
-      if (resendApiKey) {
-        // Strategy: Create user with generateLink (no email sent by Supabase) + send via Resend
-        const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
-          type: "invite",
-          email,
-          options: {
-            data: {
-              full_name: fullName || "",
-              phone: phone || "",
-            },
-            redirectTo: redirectUrl,
-          },
-        });
+      // Try to send email via Resend
+      const resendApiKey = Deno.env.get("RESEND_API_KEY");
+      let emailSent = false;
 
-        if (linkError) {
-          console.error("Generate link error:", linkError);
-          return new Response(JSON.stringify({ error: linkError.message }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        userId = linkData.user.id;
-        const confirmUrl = linkData.properties?.action_link || "";
-
-        console.log("Generated invite link for:", email, "URL exists:", !!confirmUrl);
-
-        // Send custom Portuguese email via Resend
+      if (resendApiKey && recoveryUrl) {
         try {
           const resend = new Resend(resendApiKey);
-
           const emailResult = await resend.emails.send({
             from: "Sistema <onboarding@resend.dev>",
             to: [email],
@@ -178,18 +191,18 @@ serve(async (req) => {
                   Você foi convidado para fazer parte da equipe <strong>${companyName}</strong>.
                 </p>
                 <p style="color: #555; font-size: 16px;">
-                  Clique no botão abaixo para ativar sua conta e definir sua senha:
+                  Clique no botão abaixo para definir sua senha e acessar o sistema:
                 </p>
                 <div style="text-align: center; margin: 30px 0;">
-                  <a href="${confirmUrl}" 
+                  <a href="${recoveryUrl}" 
                      style="background-color: #4F46E5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold; display: inline-block;">
-                    Ativar Minha Conta
+                    Definir Senha e Acessar
                   </a>
                 </div>
                 <p style="color: #888; font-size: 14px;">
                   Se o botão não funcionar, copie e cole este link no seu navegador:
                 </p>
-                <p style="color: #888; font-size: 12px; word-break: break-all;">${confirmUrl}</p>
+                <p style="color: #888; font-size: 12px; word-break: break-all;">${recoveryUrl}</p>
                 <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
                 <p style="color: #aaa; font-size: 12px;">
                   Se você não esperava este convite, pode ignorar este e-mail com segurança.
@@ -197,47 +210,28 @@ serve(async (req) => {
               </div>
             `,
           });
-          
-          if (emailResult.error) {
-            console.error("Resend API error:", JSON.stringify(emailResult.error));
-            // Return error but still include the invite link so admin can share manually
-            return new Response(JSON.stringify({ 
-              error: `Falha ao enviar e-mail: ${emailResult.error.message}. Você pode copiar e enviar o link manualmente.`,
-              inviteLink: confirmUrl,
-              userId,
-            }), {
-              status: 200,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-          }
 
-          console.log("Resend email sent successfully to:", email);
+          if (!emailResult.error) {
+            emailSent = true;
+            console.log("Resend email sent successfully to:", email);
+          } else {
+            console.error("Resend API error:", JSON.stringify(emailResult.error));
+          }
         } catch (emailErr) {
           console.error("Resend email error:", emailErr);
-          return new Response(JSON.stringify({ error: "Usuário criado mas falha ao enviar e-mail. Tente novamente." }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
         }
-      } else {
-        // Fallback: Use inviteUserByEmail (sends Supabase default email)
-        const { data: newUser, error: createError } = await adminClient.auth.admin.inviteUserByEmail(email, {
-          data: {
-            full_name: fullName || "",
-            phone: phone || "",
-          },
-          redirectTo: redirectUrl,
+      }
+
+      // Always return the link so admin can share manually if email fails
+      if (!emailSent && recoveryUrl) {
+        return new Response(JSON.stringify({
+          success: true,
+          message: "Usuário criado! O e-mail não pôde ser enviado. Copie o link e envie ao usuário.",
+          inviteLink: recoveryUrl,
+          userId,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
-
-        if (createError) {
-          console.error("Invite user error:", createError);
-          return new Response(JSON.stringify({ error: createError.message }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        userId = newUser.user.id;
       }
     }
 
