@@ -1,14 +1,46 @@
 import { useState } from "react";
-import { CreditCard, Plus, Edit2, Trash2, Users, Package, ShoppingCart } from "lucide-react";
+import { CreditCard, Plus, Edit2, Trash2, Users, ShoppingCart, FileText, Receipt } from "lucide-react";
 import { motion } from "framer-motion";
 import type { ResellerPlan } from "@/hooks/useReseller";
 
 interface Props {
   plans: ResellerPlan[];
   markupPercentage: number;
-  onCreatePlan: (plan: { name: string; description?: string; max_users: number; max_products: number; base_price: number; reseller_price: number }) => Promise<void>;
+  onCreatePlan: (plan: any) => Promise<void>;
   onUpdatePlan: (planId: string, updates: Partial<ResellerPlan>) => Promise<void>;
   onDeletePlan: (planId: string) => Promise<void>;
+}
+
+const LIMIT_OPTIONS = [
+  { label: "100", value: 100 },
+  { label: "500", value: 500 },
+  { label: "1.000", value: 1000 },
+  { label: "5.000", value: 5000 },
+  { label: "Ilimitado", value: null },
+];
+
+function LimitSelect({ label, value, onChange }: { label: string; value: number | null; onChange: (v: number | null) => void }) {
+  return (
+    <div>
+      <label className="text-sm font-medium text-foreground mb-1 block">{label}</label>
+      <select
+        value={value === null ? "null" : String(value)}
+        onChange={(e) => onChange(e.target.value === "null" ? null : Number(e.target.value))}
+        className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm"
+      >
+        {LIMIT_OPTIONS.map((opt) => (
+          <option key={opt.label} value={opt.value === null ? "null" : String(opt.value)}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function formatLimit(v: number | null | undefined) {
+  if (v === null || v === undefined) return "Ilimitado";
+  return v.toLocaleString("pt-BR");
 }
 
 export function ResellerPlans({ plans, markupPercentage, onCreatePlan, onUpdatePlan, onDeletePlan }: Props) {
@@ -18,13 +50,15 @@ export function ResellerPlans({ plans, markupPercentage, onCreatePlan, onUpdateP
     name: "",
     description: "",
     max_users: 1,
-    max_products: 100,
+    max_monthly_sales: null as number | null,
+    max_nfe: null as number | null,
+    max_nfce: null as number | null,
     base_price: 0,
     reseller_price: 0,
   });
 
   const resetForm = () => {
-    setForm({ name: "", description: "", max_users: 1, max_products: 100, base_price: 0, reseller_price: 0 });
+    setForm({ name: "", description: "", max_users: 1, max_monthly_sales: null, max_nfe: null, max_nfce: null, base_price: 0, reseller_price: 0 });
     setShowForm(false);
     setEditingId(null);
   };
@@ -32,7 +66,7 @@ export function ResellerPlans({ plans, markupPercentage, onCreatePlan, onUpdateP
   const handleSubmit = async () => {
     if (!form.name) return;
     if (editingId) {
-      await onUpdatePlan(editingId, form);
+      await onUpdatePlan(editingId, form as any);
     } else {
       await onCreatePlan(form);
     }
@@ -44,7 +78,9 @@ export function ResellerPlans({ plans, markupPercentage, onCreatePlan, onUpdateP
       name: plan.name,
       description: plan.description || "",
       max_users: plan.max_users,
-      max_products: plan.max_products,
+      max_monthly_sales: (plan as any).max_monthly_sales ?? null,
+      max_nfe: (plan as any).max_nfe ?? null,
+      max_nfce: (plan as any).max_nfce ?? null,
       base_price: plan.base_price,
       reseller_price: plan.reseller_price,
     });
@@ -91,10 +127,9 @@ export function ResellerPlans({ plans, markupPercentage, onCreatePlan, onUpdateP
               <label className="text-sm font-medium text-foreground mb-1 block">Máx. Usuários</label>
               <input type="number" value={form.max_users} onChange={(e) => setForm({ ...form, max_users: +e.target.value })} className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm" />
             </div>
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1 block">Máx. Produtos</label>
-              <input type="number" value={form.max_products} onChange={(e) => setForm({ ...form, max_products: +e.target.value })} className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm" />
-            </div>
+            <LimitSelect label="Limite de Vendas/mês" value={form.max_monthly_sales} onChange={(v) => setForm({ ...form, max_monthly_sales: v })} />
+            <LimitSelect label="Limite de NFe/mês" value={form.max_nfe} onChange={(v) => setForm({ ...form, max_nfe: v })} />
+            <LimitSelect label="Limite de NFCe/mês" value={form.max_nfce} onChange={(v) => setForm({ ...form, max_nfce: v })} />
             <div>
               <label className="text-sm font-medium text-foreground mb-1 block">Preço Base (custo)</label>
               <input type="number" step="0.01" value={form.base_price} onChange={(e) => setForm({ ...form, base_price: +e.target.value })} className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm font-mono" />
@@ -145,8 +180,16 @@ export function ResellerPlans({ plans, markupPercentage, onCreatePlan, onUpdateP
                   <span>Até {plan.max_users} usuários</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-foreground">
-                  <Package className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Até {plan.max_products} produtos</span>
+                  <ShoppingCart className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span>Vendas: {formatLimit((plan as any).max_monthly_sales)}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-foreground">
+                  <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span>NFe: {formatLimit((plan as any).max_nfe)}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-foreground">
+                  <Receipt className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span>NFCe: {formatLimit((plan as any).max_nfce)}</span>
                 </div>
               </div>
               <div className="pt-3 border-t border-border space-y-1">
