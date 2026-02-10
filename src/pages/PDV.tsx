@@ -37,9 +37,9 @@ export default function PDV() {
     const query = barcodeInput.trim();
     if (!query) return;
 
-    // Try exact match first (barcode/sku/id)
+    // Try exact match first (barcode/sku/id/ncm)
     const exactMatch = pdv.products.find(
-      (p) => p.sku === query || p.barcode === query || p.id === query
+      (p) => p.sku === query || p.barcode === query || p.id === query || p.ncm === query
     );
     if (exactMatch) {
       pdv.addToCart(exactMatch);
@@ -48,11 +48,12 @@ export default function PDV() {
       return;
     }
 
-    // Try partial name/sku search
+    // Try partial name/sku/ncm search
     const searchMatch = pdv.products.find(
       (p) =>
         p.name.toLowerCase().includes(query.toLowerCase()) ||
-        p.sku.toLowerCase().includes(query.toLowerCase())
+        p.sku.toLowerCase().includes(query.toLowerCase()) ||
+        (p.ncm && p.ncm.includes(query))
     );
     if (searchMatch) {
       pdv.addToCart(searchMatch);
