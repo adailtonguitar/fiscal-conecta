@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { localSignerService, type CertificateInfo } from "@/services/WebPKIService";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/hooks/useCompany";
+import forge from "node-forge";
 
 interface FiscalConfigSection {
   id?: string;
@@ -64,6 +65,7 @@ export default function FiscalConfig() {
   const [a3SelectedThumbprint, setA3SelectedThumbprint] = useState("");
   const [a3Loading, setA3Loading] = useState(false);
   const [a3Initialized, setA3Initialized] = useState(false);
+  const [certValidating, setCertValidating] = useState(false);
 
   // Load configs from database
   useEffect(() => {
@@ -362,21 +364,47 @@ export default function FiscalConfig() {
                     </button>
                   )}
                   <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                    certPassword.trim()
+                    certPassword.trim() && !certValidating
                       ? "bg-primary text-primary-foreground cursor-pointer hover:opacity-90"
                       : "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
                   }`}>
-                    <Upload className="w-4 h-4" />
-                    {certFile ? "Trocar" : "Enviar"} .PFX
+                    {certValidating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                    {certValidating ? "Validando..." : `${certFile ? "Trocar" : "Enviar"} .PFX`}
                     <input
                       type="file"
                       accept=".pfx,.p12"
                       className="hidden"
-                      disabled={!certPassword.trim()}
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) {
-                          setCertFile(e.target.files[0].name);
-                          toast.info("Arquivo selecionado. Lembre-se de salvar as configurações.");
+                      disabled={!certPassword.trim() || certValidating}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setCertValidating(true);
+                        try {
+                          const arrayBuffer = await file.arrayBuffer();
+                          const binary = String.fromCharCode(...new Uint8Array(arrayBuffer));
+                          const asn1 = forge.asn1.fromDer(binary);
+                          const p12 = forge.pkcs12.pkcs12FromAsn1(asn1, certPassword);
+                          
+                          // Extract certificate info
+                          const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
+                          const certs = certBags[forge.pki.oids.certBag];
+                          if (certs && certs.length > 0 && certs[0].cert) {
+                            const cert = certs[0].cert;
+                            const validTo = cert.validity.notAfter;
+                            setCertExpiry(validTo.toISOString().split("T")[0]);
+                          }
+                          
+                          setCertFile(file.name);
+                          toast.success("Certificado A1 validado com sucesso!");
+                        } catch (err: any) {
+                          toast.error("Senha incorreta ou certificado inválido. Verifique e tente novamente.");
+                          e.target.value = "";
+                        } finally {
+                          setCertValidating(false);
                         }
                       }}
                     />
