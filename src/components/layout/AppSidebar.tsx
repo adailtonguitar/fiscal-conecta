@@ -57,6 +57,7 @@ const navItems: NavEntry[] = [
   { icon: ScrollText, label: "Auditoria", path: "/fiscal/auditoria" },
   { icon: Download, label: "Assinador Digital", path: "/fiscal/assinador" },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
+  { icon: Download, label: "Instalar App", path: "/install" },
 ];
 
 const resellerNavItem: NavItem = { icon: Building2, label: "Revendas", path: "/revendas" };
