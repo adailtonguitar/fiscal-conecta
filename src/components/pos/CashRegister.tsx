@@ -1,60 +1,41 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   DollarSign,
   Lock,
   Unlock,
   ArrowDownCircle,
   ArrowUpCircle,
-  Clock,
-  CheckCircle,
-  TrendingUp,
-  CreditCard,
   Banknote,
+  CreditCard,
   QrCode,
   X,
+  Loader2,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/mock-data";
 import { motion, AnimatePresence } from "framer-motion";
+import { CashSessionService } from "@/services";
+import { useAuth } from "@/hooks/useAuth";
+import { useCompany } from "@/hooks/useCompany";
+import { toast } from "sonner";
+import type { Tables } from "@/integrations/supabase/types";
 
 type CashView = "status" | "open" | "close" | "movement";
-
-interface CashSessionData {
-  isOpen: boolean;
-  openingBalance: number;
-  terminal: string;
-  openedAt: string;
-  salesCount: number;
-  totalDinheiro: number;
-  totalDebito: number;
-  totalCredito: number;
-  totalPix: number;
-  totalSangria: number;
-  totalSuprimento: number;
-  totalVendas: number;
-}
-
-const mockSession: CashSessionData = {
-  isOpen: true,
-  openingBalance: 200,
-  terminal: "Caixa 01",
-  openedAt: new Date().toISOString(),
-  salesCount: 12,
-  totalDinheiro: 345.50,
-  totalDebito: 289.90,
-  totalCredito: 567.00,
-  totalPix: 198.40,
-  totalSangria: 200.00,
-  totalSuprimento: 100.00,
-  totalVendas: 1400.80,
-};
+type CashSession = Tables<"cash_sessions">;
 
 interface CashRegisterProps {
   onClose: () => void;
 }
 
 export function CashRegister({ onClose }: CashRegisterProps) {
+  const { user } = useAuth();
+  const { companyId } = useCompany();
+
   const [view, setView] = useState<CashView>("status");
-  const [session, setSession] = useState<CashSessionData>(mockSession);
+  const [session, setSession] = useState<CashSession | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Form states
   const [openingBalance, setOpeningBalance] = useState("200");
   const [movementAmount, setMovementAmount] = useState("");
   const [movementDesc, setMovementDesc] = useState("");
@@ -65,11 +46,125 @@ export function CashRegister({ onClose }: CashRegisterProps) {
   const [countedPix, setCountedPix] = useState("");
   const [closingNotes, setClosingNotes] = useState("");
 
-  const expectedCash = session.openingBalance + session.totalDinheiro + session.totalSuprimento - session.totalSangria;
+  const loadSession = useCallback(async () => {
+    if (!companyId) return;
+    setLoading(true);
+    try {
+      const data = await CashSessionService.getCurrentSession(companyId);
+      setSession(data);
+    } catch {
+      // no session
+    } finally {
+      setLoading(false);
+    }
+  }, [companyId]);
+
+  useEffect(() => {
+    loadSession();
+  }, [loadSession]);
+
+  const isOpen = session?.status === "aberto";
+
+  const totalDinheiro = Number(session?.total_dinheiro || 0);
+  const totalDebito = Number(session?.total_debito || 0);
+  const totalCredito = Number(session?.total_credito || 0);
+  const totalPix = Number(session?.total_pix || 0);
+  const totalSangria = Number(session?.total_sangria || 0);
+  const totalSuprimento = Number(session?.total_suprimento || 0);
+  const totalVendas = Number(session?.total_vendas || 0);
+  const salesCount = Number(session?.sales_count || 0);
+  const openBalance = Number(session?.opening_balance || 0);
+
+  const expectedCash = openBalance + totalDinheiro + totalSuprimento - totalSangria;
 
   const totalCounted = (Number(countedDinheiro) || 0) + (Number(countedDebito) || 0) + (Number(countedCredito) || 0) + (Number(countedPix) || 0);
-  const totalExpected = session.totalDinheiro + session.totalDebito + session.totalCredito + session.totalPix + session.openingBalance + session.totalSuprimento - session.totalSangria;
+  const totalExpected = openBalance + totalDinheiro + totalDebito + totalCredito + totalPix + totalSuprimento - totalSangria;
   const difference = totalCounted - totalExpected;
+
+  const handleOpen = async () => {
+    if (!companyId || !user) return;
+    setSubmitting(true);
+    try {
+      const data = await CashSessionService.open({
+        companyId,
+        userId: user.id,
+        openingBalance: Number(openingBalance) || 0,
+      });
+      setSession(data);
+      setView("status");
+      toast.success("Caixa aberto com sucesso");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleClose = async () => {
+    if (!companyId || !user || !session) return;
+    setSubmitting(true);
+    try {
+      await CashSessionService.close({
+        sessionId: session.id,
+        companyId,
+        userId: user.id,
+        countedDinheiro: Number(countedDinheiro) || 0,
+        countedDebito: Number(countedDebito) || 0,
+        countedCredito: Number(countedCredito) || 0,
+        countedPix: Number(countedPix) || 0,
+        notes: closingNotes || undefined,
+      });
+      setSession(null);
+      setView("status");
+      toast.success("Caixa fechado com sucesso");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleMovement = async () => {
+    if (!companyId || !user || !session) return;
+    const amount = Number(movementAmount);
+    if (amount <= 0) return;
+    setSubmitting(true);
+    try {
+      await CashSessionService.registerMovement({
+        companyId,
+        userId: user.id,
+        sessionId: session.id,
+        type: movementType,
+        amount,
+        description: movementDesc || undefined,
+      });
+      setMovementAmount("");
+      setMovementDesc("");
+      toast.success(`${movementType === "sangria" ? "Sangria" : "Suprimento"} registrado`);
+      await loadSession();
+      setView("status");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm"
+      >
+        <div className="bg-card rounded-2xl border border-border card-shadow p-12 flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground">Carregando caixa...</span>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -93,7 +188,7 @@ export function CashRegister({ onClose }: CashRegisterProps) {
             </div>
             <div>
               <h3 className="text-base font-semibold text-foreground">Controle de Caixa</h3>
-              <p className="text-xs text-muted-foreground">{session.terminal}</p>
+              <p className="text-xs text-muted-foreground">Terminal {session?.terminal_id || "01"}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
@@ -105,15 +200,14 @@ export function CashRegister({ onClose }: CashRegisterProps) {
           {/* Status View */}
           {view === "status" && (
             <motion.div key="status" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 space-y-4">
-              {/* Session status */}
-              <div className={`flex items-center gap-3 p-4 rounded-xl ${session.isOpen ? "bg-success/10" : "bg-muted"}`}>
-                {session.isOpen ? (
+              <div className={`flex items-center gap-3 p-4 rounded-xl ${isOpen ? "bg-success/10" : "bg-muted"}`}>
+                {isOpen ? (
                   <>
                     <Unlock className="w-5 h-5 text-success" />
                     <div>
                       <p className="text-sm font-semibold text-foreground">Caixa Aberto</p>
                       <p className="text-xs text-muted-foreground">
-                        Desde {new Date(session.openedAt).toLocaleString("pt-BR")}
+                        Desde {session?.opened_at ? new Date(session.opened_at).toLocaleString("pt-BR") : ""}
                       </p>
                     </div>
                   </>
@@ -125,21 +219,20 @@ export function CashRegister({ onClose }: CashRegisterProps) {
                 )}
               </div>
 
-              {session.isOpen && (
+              {isOpen && (
                 <>
-                  {/* Summary cards */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-muted/50 rounded-xl p-4">
                       <p className="text-xs text-muted-foreground mb-1">Fundo Inicial</p>
-                      <p className="text-lg font-bold font-mono text-foreground">{formatCurrency(session.openingBalance)}</p>
+                      <p className="text-lg font-bold font-mono text-foreground">{formatCurrency(openBalance)}</p>
                     </div>
                     <div className="bg-muted/50 rounded-xl p-4">
                       <p className="text-xs text-muted-foreground mb-1">Total Vendas</p>
-                      <p className="text-lg font-bold font-mono text-primary">{formatCurrency(session.totalVendas)}</p>
+                      <p className="text-lg font-bold font-mono text-primary">{formatCurrency(totalVendas)}</p>
                     </div>
                     <div className="bg-muted/50 rounded-xl p-4">
                       <p className="text-xs text-muted-foreground mb-1">Nº Vendas</p>
-                      <p className="text-lg font-bold font-mono text-foreground">{session.salesCount}</p>
+                      <p className="text-lg font-bold font-mono text-foreground">{salesCount}</p>
                     </div>
                     <div className="bg-muted/50 rounded-xl p-4">
                       <p className="text-xs text-muted-foreground mb-1">Dinheiro Esperado</p>
@@ -147,14 +240,13 @@ export function CashRegister({ onClose }: CashRegisterProps) {
                     </div>
                   </div>
 
-                  {/* Payment breakdown */}
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-foreground">Formas de Pagamento</p>
                     {[
-                      { label: "Dinheiro", value: session.totalDinheiro, icon: Banknote },
-                      { label: "Débito", value: session.totalDebito, icon: CreditCard },
-                      { label: "Crédito", value: session.totalCredito, icon: CreditCard },
-                      { label: "PIX", value: session.totalPix, icon: QrCode },
+                      { label: "Dinheiro", value: totalDinheiro, icon: Banknote },
+                      { label: "Débito", value: totalDebito, icon: CreditCard },
+                      { label: "Crédito", value: totalCredito, icon: CreditCard },
+                      { label: "PIX", value: totalPix, icon: QrCode },
                     ].map((pm) => (
                       <div key={pm.label} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/30">
                         <div className="flex items-center gap-2">
@@ -169,18 +261,17 @@ export function CashRegister({ onClose }: CashRegisterProps) {
                         <ArrowDownCircle className="w-4 h-4 text-destructive" />
                         <span className="text-sm text-foreground">Sangrias</span>
                       </div>
-                      <span className="font-mono font-semibold text-destructive">-{formatCurrency(session.totalSangria)}</span>
+                      <span className="font-mono font-semibold text-destructive">-{formatCurrency(totalSangria)}</span>
                     </div>
                     <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-success/5">
                       <div className="flex items-center gap-2">
                         <ArrowUpCircle className="w-4 h-4 text-success" />
                         <span className="text-sm text-foreground">Suprimentos</span>
                       </div>
-                      <span className="font-mono font-semibold text-success">+{formatCurrency(session.totalSuprimento)}</span>
+                      <span className="font-mono font-semibold text-success">+{formatCurrency(totalSuprimento)}</span>
                     </div>
                   </div>
 
-                  {/* Actions */}
                   <div className="flex gap-3 pt-2">
                     <button
                       onClick={() => { setMovementType("sangria"); setView("movement"); }}
@@ -207,7 +298,7 @@ export function CashRegister({ onClose }: CashRegisterProps) {
                 </>
               )}
 
-              {!session.isOpen && (
+              {!isOpen && (
                 <button
                   onClick={() => setView("open")}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all"
@@ -230,6 +321,7 @@ export function CashRegister({ onClose }: CashRegisterProps) {
                   step="0.01"
                   value={openingBalance}
                   onChange={(e) => setOpeningBalance(e.target.value)}
+                  autoFocus
                   className="w-full px-4 py-3 rounded-xl bg-background border border-border text-foreground text-lg font-mono text-center focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
               </div>
@@ -238,16 +330,18 @@ export function CashRegister({ onClose }: CashRegisterProps) {
                   Cancelar
                 </button>
                 <button
-                  onClick={() => { setSession({ ...session, isOpen: true, openingBalance: Number(openingBalance) }); setView("status"); }}
-                  className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all"
+                  onClick={handleOpen}
+                  disabled={submitting}
+                  className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
+                  {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                   Abrir Caixa
                 </button>
               </div>
             </motion.div>
           )}
 
-          {/* Cash Movement (sangria/suprimento) */}
+          {/* Cash Movement */}
           {view === "movement" && (
             <motion.div key="movement" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 space-y-4">
               <h4 className="text-base font-semibold text-foreground">
@@ -279,23 +373,11 @@ export function CashRegister({ onClose }: CashRegisterProps) {
                   Cancelar
                 </button>
                 <button
-                  onClick={() => {
-                    const amount = Number(movementAmount);
-                    if (amount > 0) {
-                      setSession((prev) => ({
-                        ...prev,
-                        ...(movementType === "sangria"
-                          ? { totalSangria: prev.totalSangria + amount }
-                          : { totalSuprimento: prev.totalSuprimento + amount }),
-                      }));
-                      setMovementAmount("");
-                      setMovementDesc("");
-                      setView("status");
-                    }
-                  }}
-                  disabled={!movementAmount || Number(movementAmount) <= 0}
-                  className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
+                  onClick={handleMovement}
+                  disabled={!movementAmount || Number(movementAmount) <= 0 || submitting}
+                  className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
+                  {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                   Confirmar
                 </button>
               </div>
@@ -311,9 +393,9 @@ export function CashRegister({ onClose }: CashRegisterProps) {
               <div className="space-y-3">
                 {[
                   { label: "Dinheiro", expected: expectedCash, value: countedDinheiro, setter: setCountedDinheiro, icon: Banknote },
-                  { label: "Débito", expected: session.totalDebito, value: countedDebito, setter: setCountedDebito, icon: CreditCard },
-                  { label: "Crédito", expected: session.totalCredito, value: countedCredito, setter: setCountedCredito, icon: CreditCard },
-                  { label: "PIX", expected: session.totalPix, value: countedPix, setter: setCountedPix, icon: QrCode },
+                  { label: "Débito", expected: totalDebito, value: countedDebito, setter: setCountedDebito, icon: CreditCard },
+                  { label: "Crédito", expected: totalCredito, value: countedCredito, setter: setCountedCredito, icon: CreditCard },
+                  { label: "PIX", expected: totalPix, value: countedPix, setter: setCountedPix, icon: QrCode },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center gap-3">
                     <item.icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
@@ -335,7 +417,6 @@ export function CashRegister({ onClose }: CashRegisterProps) {
                 ))}
               </div>
 
-              {/* Difference */}
               {totalCounted > 0 && (
                 <div className={`flex justify-between items-center p-4 rounded-xl ${
                   Math.abs(difference) < 0.01 ? "bg-success/10" : Math.abs(difference) < 5 ? "bg-warning/10" : "bg-destructive/10"
@@ -365,12 +446,11 @@ export function CashRegister({ onClose }: CashRegisterProps) {
                   Voltar
                 </button>
                 <button
-                  onClick={() => {
-                    setSession((prev) => ({ ...prev, isOpen: false }));
-                    setView("status");
-                  }}
-                  className="flex-1 py-3 rounded-xl bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 transition-all"
+                  onClick={handleClose}
+                  disabled={submitting}
+                  className="flex-1 py-3 rounded-xl bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
+                  {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                   Confirmar Fechamento
                 </button>
               </div>
