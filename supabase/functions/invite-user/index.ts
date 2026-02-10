@@ -78,6 +78,7 @@ serve(async (req) => {
     const existingUser = existingUsers?.users?.find((u) => u.email === email);
 
     let userId: string;
+    let needsNewUser = false;
 
     if (existingUser) {
       // Check if already linked to this company
@@ -90,10 +91,9 @@ serve(async (req) => {
 
       if (existingLink) {
         if (existingLink.is_active) {
-          // If user hasn't confirmed email yet, resend invite
           if (!existingUser.email_confirmed_at) {
             await adminClient.auth.admin.deleteUser(existingUser.id);
-            // Will fall through to create new invite below
+            needsNewUser = true;
           } else {
             return new Response(JSON.stringify({ error: "Este usuário já está vinculado à empresa" }), {
               status: 409,
@@ -107,26 +107,36 @@ serve(async (req) => {
             .update({ is_active: true, role })
             .eq("id", existingLink.id);
 
+          // Generate recovery link for reactivated user too
+          const redirectUrl = `${req.headers.get("origin") || "https://id-preview--e5ef5c79-efef-4e2f-b9c1-39921fc0a605.lovable.app"}/auth`;
+          const { data: linkData } = await adminClient.auth.admin.generateLink({
+            type: "recovery",
+            email,
+            options: { redirectTo: redirectUrl },
+          });
+          const recoveryUrl = linkData?.properties?.action_link || "";
+
           return new Response(
-            JSON.stringify({ success: true, message: "Usuário reativado com sucesso!", userId: existingUser.id }),
+            JSON.stringify({ success: true, message: "Usuário reativado com sucesso!", userId: existingUser.id, inviteLink: recoveryUrl }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
       } else if (existingUser.email_confirmed_at) {
-        // User exists and confirmed but not linked to this company - just link
+        // User exists and confirmed but not linked to this company
         userId = existingUser.id;
       } else {
         // User exists but unconfirmed and not linked - delete and re-invite
         await adminClient.auth.admin.deleteUser(existingUser.id);
+        needsNewUser = true;
       }
+    } else {
+      needsNewUser = true;
     }
 
     // Create new user if needed
-    let recoveryUrl = "";
-    if (!userId) {
-      const redirectUrl = `${req.headers.get("origin") || "https://id-preview--e5ef5c79-efef-4e2f-b9c1-39921fc0a605.lovable.app"}/auth`;
+    const redirectUrl = `${req.headers.get("origin") || "https://id-preview--e5ef5c79-efef-4e2f-b9c1-39921fc0a605.lovable.app"}/auth`;
 
-      // Create user with a temporary password (email auto-confirmed)
+    if (needsNewUser) {
       const tempPassword = crypto.randomUUID();
       const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
         email,
@@ -147,23 +157,21 @@ serve(async (req) => {
       }
 
       userId = newUser.user.id;
-
-      // Generate a password recovery link so user can set their own password
-      const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
-        type: "recovery",
-        email,
-        options: {
-          redirectTo: redirectUrl,
-        },
-      });
-
-      if (linkError) {
-        console.error("Generate recovery link error:", linkError);
-      }
-
-      recoveryUrl = linkData?.properties?.action_link || "";
-      console.log("User created. Recovery link for:", email, "URL exists:", !!recoveryUrl);
     }
+
+    // Always generate a recovery link
+    const { data: linkData, error: genLinkError } = await adminClient.auth.admin.generateLink({
+      type: "recovery",
+      email,
+      options: { redirectTo: redirectUrl },
+    });
+
+    if (genLinkError) {
+      console.error("Generate recovery link error:", genLinkError);
+    }
+
+    const recoveryUrl = linkData?.properties?.action_link || "";
+    console.log("Recovery link for:", email, "URL exists:", !!recoveryUrl);
 
     // Link user to company with specified role
     const { error: linkError } = await adminClient
