@@ -42,38 +42,37 @@ export function usePDV() {
   const total = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   // Load products from DB or cache
-  useEffect(() => {
+  const loadProducts = useCallback(async () => {
     if (!companyId) return;
+    setLoadingProducts(true);
+    try {
+      if (navigator.onLine) {
+        const { data, error } = await supabase
+          .from("products")
+          .select("id, name, price, category, sku, ncm, unit, stock_quantity, barcode")
+          .eq("company_id", companyId)
+          .eq("is_active", true)
+          .order("name");
 
-    const loadProducts = async () => {
-      setLoadingProducts(true);
-      try {
-        if (navigator.onLine) {
-          const { data, error } = await supabase
-            .from("products")
-            .select("id, name, price, category, sku, ncm, unit, stock_quantity, barcode")
-            .eq("company_id", companyId)
-            .eq("is_active", true)
-            .order("name");
-
-          if (!error && data) {
-            setProducts(data as PDVProduct[]);
-            await cacheEntities("products", data);
-          }
-        } else {
-          const cached = await getCachedEntities<PDVProduct>("products");
-          setProducts(cached);
+        if (!error && data) {
+          setProducts(data as PDVProduct[]);
+          await cacheEntities("products", data);
         }
-      } catch {
+      } else {
         const cached = await getCachedEntities<PDVProduct>("products");
         setProducts(cached);
-      } finally {
-        setLoadingProducts(false);
       }
-    };
+    } catch {
+      const cached = await getCachedEntities<PDVProduct>("products");
+      setProducts(cached);
+    } finally {
+      setLoadingProducts(false);
+    }
+  }, [companyId]);
 
+  useEffect(() => {
     loadProducts();
-  }, [companyId, sync.isOnline]);
+  }, [loadProducts, sync.isOnline]);
 
   // Load current cash session
   useEffect(() => {
@@ -208,6 +207,7 @@ export function usePDV() {
     // Products
     products,
     loadingProducts,
+    refreshProducts: loadProducts,
 
     // Cart
     cartItems,
