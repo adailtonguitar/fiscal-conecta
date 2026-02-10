@@ -19,7 +19,7 @@ interface NCMSuggestion {
 
 const schema = z.object({
   name: z.string().trim().min(1, "Nome obrigatório").max(200),
-  sku: z.string().trim().min(1, "SKU obrigatório").max(50),
+  sku: z.string().trim().max(50).optional().or(z.literal("")),
   ncm: z.string().trim().max(20).optional(),
   category: z.string().trim().max(50).optional(),
   unit: z.string().trim().min(1).max(10),
