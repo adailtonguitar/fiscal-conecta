@@ -25,7 +25,7 @@ interface Props {
 }
 
 export function InviteUserDialog({ open, onOpenChange }: Props) {
-  const { companyId } = useCompany();
+  const { companyId, loading: companyLoading } = useCompany();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
@@ -41,6 +41,7 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
       return;
     }
     if (!companyId) {
+      console.error("InviteUserDialog: companyId is null/undefined. companyLoading:", companyLoading);
       toast.error("Empresa não identificada. Faça login novamente.");
       return;
     }
@@ -191,7 +192,7 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading || !email.trim()}>
+            <Button type="submit" disabled={loading || companyLoading || !email.trim()}>
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
