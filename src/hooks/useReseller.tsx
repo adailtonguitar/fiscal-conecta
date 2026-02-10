@@ -104,7 +104,7 @@ export function useReseller() {
     fetchReseller();
   }, [fetchReseller]);
 
-  const createReseller = async (data: { name: string; email?: string; cnpj?: string; brand_name?: string; primary_color?: string }) => {
+  const createReseller = async (data: { name: string; email?: string; cnpj?: string; phone?: string; trade_name?: string; brand_name?: string; primary_color?: string }) => {
     if (!user) return;
     try {
       const { error } = await supabase.from("resellers").insert({
@@ -112,6 +112,8 @@ export function useReseller() {
         name: data.name,
         email: data.email || null,
         cnpj: data.cnpj || null,
+        phone: data.phone || null,
+        trade_name: data.trade_name || null,
         brand_name: data.brand_name || "PDV Fiscal",
         primary_color: data.primary_color || "#1a9e7a",
       });
