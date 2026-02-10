@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { PDVProductGrid } from "@/components/pdv/PDVProductGrid";
 import { PDVCart } from "@/components/pdv/PDVCart";
 import { SaleReceipt } from "@/components/pos/SaleReceipt";
@@ -6,8 +6,8 @@ import { TEFProcessor, type TEFResult } from "@/components/pos/TEFProcessor";
 import { CashRegister } from "@/components/pos/CashRegister";
 import { usePDV } from "@/hooks/usePDV";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
-import { AnimatePresence } from "framer-motion";
-import { DollarSign, Wifi, WifiOff, RefreshCw, AlertTriangle } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { DollarSign, Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard } from "lucide-react";
 import { toast } from "sonner";
 import type { PaymentResult } from "@/services/types";
 
@@ -31,11 +31,80 @@ export default function PDV() {
     nfceNumber: string;
   } | null>(null);
 
+  const [showShortcuts, setShowShortcuts] = useState(false);
+
   useBarcodeScanner(pdv.handleBarcodeScan);
 
-  const handleCheckout = () => {
+  const handleCheckout = useCallback(() => {
     if (pdv.cartItems.length > 0) setShowTEF(true);
-  };
+  }, [pdv.cartItems.length]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Ignore when typing in inputs
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      // Ignore when overlays are open
+      if (showTEF || receipt || showCashRegister) {
+        // ESC to close overlays
+        if (e.key === "Escape") {
+          e.preventDefault();
+          if (receipt) setReceipt(null);
+          else if (showCashRegister) setShowCashRegister(false);
+        }
+        return;
+      }
+
+      switch (e.key) {
+        case "F2": // Finalizar venda
+          e.preventDefault();
+          handleCheckout();
+          break;
+        case "F3": // Focar busca de produtos
+          e.preventDefault();
+          const searchInput = document.querySelector<HTMLInputElement>('[data-pdv-search]');
+          searchInput?.focus();
+          break;
+        case "F4": // Abrir caixa
+          e.preventDefault();
+          setShowCashRegister(true);
+          break;
+        case "F6": // Limpar carrinho
+          e.preventDefault();
+          if (pdv.cartItems.length > 0) {
+            pdv.clearCart();
+            toast.info("Carrinho limpo");
+          }
+          break;
+        case "F9": // Sincronizar
+          e.preventDefault();
+          if (pdv.pendingCount > 0 && pdv.isOnline) {
+            pdv.syncAll();
+          }
+          break;
+        case "F1": // Ajuda de atalhos
+          e.preventDefault();
+          setShowShortcuts((prev) => !prev);
+          break;
+        case "Escape":
+          e.preventDefault();
+          setShowShortcuts(false);
+          break;
+        case "Delete": // Remover último item
+          e.preventDefault();
+          if (pdv.cartItems.length > 0) {
+            const lastItem = pdv.cartItems[pdv.cartItems.length - 1];
+            pdv.removeItem(lastItem.id);
+            toast.info(`${lastItem.name} removido`);
+          }
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showTEF, receipt, showCashRegister, handleCheckout, pdv]);
 
   const handleTEFComplete = async (tefResults: TEFResult[]) => {
     const allApproved = tefResults.every((r) => r.approved);
@@ -106,6 +175,14 @@ export default function PDV() {
           <DollarSign className="w-3.5 h-3.5" />
           Caixa
         </button>
+        <button
+          onClick={() => setShowShortcuts((p) => !p)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pos-surface border border-pos-border text-pos-text-muted hover:text-pos-text hover:bg-pos-surface-hover transition-all text-xs font-medium"
+          title="Atalhos do teclado (F1)"
+        >
+          <Keyboard className="w-3.5 h-3.5" />
+          F1
+        </button>
       </div>
 
       {/* Product area */}
@@ -166,6 +243,57 @@ export default function PDV() {
       <AnimatePresence>
         {showCashRegister && (
           <CashRegister onClose={() => setShowCashRegister(false)} />
+        )}
+      </AnimatePresence>
+
+      {/* Keyboard shortcuts overlay */}
+      <AnimatePresence>
+        {showShortcuts && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+            onClick={() => setShowShortcuts(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card rounded-2xl border border-border shadow-2xl p-6 w-full max-w-md mx-4"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Keyboard className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-bold text-foreground">Atalhos do Teclado</h2>
+              </div>
+              <div className="space-y-2">
+                {[
+                  { key: "F1", action: "Mostrar/ocultar atalhos" },
+                  { key: "F2", action: "Finalizar venda (pagamento)" },
+                  { key: "F3", action: "Buscar produto" },
+                  { key: "F4", action: "Abrir caixa" },
+                  { key: "F6", action: "Limpar carrinho" },
+                  { key: "F9", action: "Sincronizar pendentes" },
+                  { key: "Delete", action: "Remover último item" },
+                  { key: "ESC", action: "Fechar janela/overlay" },
+                ].map(({ key, action }) => (
+                  <div key={key} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
+                    <span className="text-sm text-muted-foreground">{action}</span>
+                    <kbd className="px-2.5 py-1 rounded-lg bg-background border border-border text-xs font-mono font-semibold text-foreground">
+                      {key}
+                    </kbd>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowShortcuts(false)}
+                className="w-full mt-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all"
+              >
+                Entendi
+              </button>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
