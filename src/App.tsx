@@ -9,6 +9,7 @@ import { useCompany } from "@/hooks/useCompany";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { toast } from "sonner";
 import Dashboard from "./pages/Dashboard";
+import LandingPage from "./pages/LandingPage";
 import Produtos from "./pages/Produtos";
 import Vendas from "./pages/Vendas";
 import RelatorioVendas from "./pages/RelatorioVendas";
@@ -84,9 +85,13 @@ function AppRoutes() {
 
   return (
     <Routes>
+      {/* Public landing page for unauthenticated users */}
+      <Route path="/" element={
+        user ? <Navigate to="/dashboard" replace /> : <LandingPage />
+      } />
       <Route path="/auth" element={
         user && !window.location.hash.includes("type=") && sessionStorage.getItem("needs-password-setup") !== "true"
-          ? <Navigate to="/" replace /> 
+          ? <Navigate to="/dashboard" replace /> 
           : <Auth />
       } />
       <Route path="/install" element={<Instalar />} />
@@ -107,7 +112,7 @@ function AppRoutes() {
           <ProtectedRoute>
             <AppLayout>
               <Routes>
-                <Route path="/" element={<Dashboard />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/produtos" element={<Produtos />} />
                 <Route path="/vendas" element={<Vendas />} />
