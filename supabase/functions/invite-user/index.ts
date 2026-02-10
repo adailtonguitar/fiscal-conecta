@@ -96,7 +96,7 @@ serve(async (req) => {
             needsNewUser = true;
           } else {
             return new Response(JSON.stringify({ error: "Este usuário já está vinculado à empresa" }), {
-              status: 409,
+              status: 200,
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
           }
