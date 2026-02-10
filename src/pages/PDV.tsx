@@ -363,7 +363,12 @@ export default function PDV() {
       {stockMovementProduct && (
         <StockMovementDialog
           open={!!stockMovementProduct}
-          onOpenChange={(v) => !v && setStockMovementProduct(null)}
+          onOpenChange={(v) => {
+            if (!v) {
+              setStockMovementProduct(null);
+              pdv.refreshProducts();
+            }
+          }}
           product={{
             ...stockMovementProduct,
             id: stockMovementProduct.id,
