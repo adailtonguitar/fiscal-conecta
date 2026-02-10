@@ -15,6 +15,7 @@ import RelatorioVendas from "./pages/RelatorioVendas";
 import Caixa from "./pages/Caixa";
 import Fiscal from "./pages/Fiscal";
 import FiscalConfig from "./pages/FiscalConfig";
+import FiscalConfigEdit from "./pages/FiscalConfigEdit";
 import AssinadorDownload from "./pages/AssinadorDownload";
 import AuditLogs from "./pages/AuditLogs";
 import Financeiro from "./pages/Financeiro";
@@ -108,6 +109,7 @@ function AppRoutes() {
                 <Route path="/caixa" element={<Caixa />} />
                 <Route path="/fiscal" element={<Fiscal />} />
                 <Route path="/fiscal/config" element={<FiscalConfig />} />
+                <Route path="/fiscal/config/edit" element={<FiscalConfigEdit />} />
                 <Route path="/fiscal/assinador" element={<AssinadorDownload />} />
                 <Route path="/fiscal/auditoria" element={<AuditLogs />} />
                 <Route path="/financeiro" element={<Financeiro />} />
