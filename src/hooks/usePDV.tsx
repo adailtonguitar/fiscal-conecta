@@ -96,10 +96,18 @@ export function usePDV() {
     loadSession();
   }, [companyId]);
 
-  // Cart operations
-  const addToCart = useCallback((product: PDVProduct) => {
+  // Cart operations — returns false if product has no stock
+  const addToCart = useCallback((product: PDVProduct): boolean => {
+    if (product.stock_quantity <= 0) {
+      return false;
+    }
     setCartItems((prev) => {
       const existing = prev.find((item) => item.id === product.id);
+      const currentQty = existing ? existing.quantity : 0;
+      if (currentQty + 1 > product.stock_quantity) {
+        toast.warning(`Estoque insuficiente. Disponível: ${product.stock_quantity} ${product.unit}`);
+        return prev;
+      }
       if (existing) {
         return prev.map((item) =>
           item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
@@ -107,6 +115,7 @@ export function usePDV() {
       }
       return [...prev, { ...product, quantity: 1 }];
     });
+    return true;
   }, []);
 
   const updateQuantity = useCallback((id: string, delta: number) => {
@@ -185,8 +194,11 @@ export function usePDV() {
       (p) => p.sku === barcode || p.barcode === barcode || p.id === barcode
     );
     if (product) {
-      addToCart(product);
-      toast.success(`${product.name} adicionado`);
+      const added = addToCart(product);
+      if (added) {
+        toast.success(`${product.name} adicionado`);
+      }
+      // if not added, addToCart already handles the reason (zero stock or insufficient)
     } else {
       toast.error(`Produto não encontrado: ${barcode}`);
     }

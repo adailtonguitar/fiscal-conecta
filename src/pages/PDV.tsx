@@ -4,10 +4,11 @@ import { PDVCart } from "@/components/pdv/PDVCart";
 import { SaleReceipt } from "@/components/pos/SaleReceipt";
 import { TEFProcessor, type TEFResult } from "@/components/pos/TEFProcessor";
 import { CashRegister } from "@/components/pos/CashRegister";
-import { usePDV } from "@/hooks/usePDV";
+import { StockMovementDialog } from "@/components/stock/StockMovementDialog";
+import { usePDV, type PDVProduct } from "@/hooks/usePDV";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { AnimatePresence, motion } from "framer-motion";
-import { Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard, ArrowLeft, Maximize, ScanBarcode, DollarSign } from "lucide-react";
+import { Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard, ArrowLeft, Maximize, ScanBarcode, DollarSign, PackageX } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { PaymentResult } from "@/services/types";
@@ -25,6 +26,8 @@ export default function PDV() {
   } | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
+  const [zeroStockProduct, setZeroStockProduct] = useState<PDVProduct | null>(null);
+  const [stockMovementProduct, setStockMovementProduct] = useState<PDVProduct | null>(null);
 
   useBarcodeScanner(pdv.handleBarcodeScan);
 
@@ -42,6 +45,11 @@ export default function PDV() {
       (p) => p.sku === query || p.barcode === query || p.id === query || p.ncm === query
     );
     if (exactMatch) {
+      if (exactMatch.stock_quantity <= 0) {
+        setZeroStockProduct(exactMatch);
+        setBarcodeInput("");
+        return;
+      }
       pdv.addToCart(exactMatch);
       toast.success(`${exactMatch.name} adicionado`);
       setBarcodeInput("");
@@ -56,6 +64,11 @@ export default function PDV() {
         (p.ncm && p.ncm.includes(query))
     );
     if (searchMatch) {
+      if (searchMatch.stock_quantity <= 0) {
+        setZeroStockProduct(searchMatch);
+        setBarcodeInput("");
+        return;
+      }
       pdv.addToCart(searchMatch);
       toast.success(`${searchMatch.name} adicionado`);
     } else {
@@ -63,6 +76,18 @@ export default function PDV() {
     }
     setBarcodeInput("");
   };
+
+  // Wrapper for grid add that checks stock
+  const handleAddToCart = useCallback((product: PDVProduct) => {
+    if (product.stock_quantity <= 0) {
+      setZeroStockProduct(product);
+      return;
+    }
+    const added = pdv.addToCart(product);
+    if (added) {
+      toast.success(`${product.name} adicionado`);
+    }
+  }, [pdv]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -256,7 +281,7 @@ export default function PDV() {
           <PDVProductGrid
             products={pdv.products}
             loading={pdv.loadingProducts}
-            onAddToCart={pdv.addToCart}
+            onAddToCart={handleAddToCart}
           />
         </div>
       </div>
@@ -286,6 +311,80 @@ export default function PDV() {
       <AnimatePresence>
         {showCashRegister && <CashRegister onClose={() => setShowCashRegister(false)} />}
       </AnimatePresence>
+
+      {/* Zero stock dialog */}
+      <AnimatePresence>
+        {zeroStockProduct && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+            onClick={() => setZeroStockProduct(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card rounded-2xl border border-border shadow-2xl p-6 w-full max-w-sm mx-4"
+            >
+              <div className="flex flex-col items-center text-center gap-3">
+                <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <PackageX className="w-7 h-7 text-destructive" />
+                </div>
+                <h2 className="text-lg font-bold text-foreground">Produto sem Estoque</h2>
+                <p className="text-sm text-muted-foreground">
+                  <strong>{zeroStockProduct.name}</strong> está com estoque zerado e não pode ser vendido.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Deseja adicionar estoque agora?
+                </p>
+                <div className="flex gap-3 w-full mt-2">
+                  <button
+                    onClick={() => setZeroStockProduct(null)}
+                    className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-all"
+                  >
+                    Fechar
+                  </button>
+                  <button
+                    onClick={() => {
+                      setStockMovementProduct(zeroStockProduct);
+                      setZeroStockProduct(null);
+                    }}
+                    className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all"
+                  >
+                    Adicionar Estoque
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Stock movement dialog from PDV */}
+      {stockMovementProduct && (
+        <StockMovementDialog
+          open={!!stockMovementProduct}
+          onOpenChange={(v) => !v && setStockMovementProduct(null)}
+          product={{
+            ...stockMovementProduct,
+            id: stockMovementProduct.id,
+            name: stockMovementProduct.name,
+            sku: stockMovementProduct.sku,
+            unit: stockMovementProduct.unit,
+            stock_quantity: stockMovementProduct.stock_quantity,
+            price: stockMovementProduct.price,
+            is_active: true,
+            created_at: "",
+            updated_at: "",
+            company_id: "",
+            ncm: stockMovementProduct.ncm,
+            category: stockMovementProduct.category,
+            barcode: stockMovementProduct.barcode,
+            cost_price: null,
+            min_stock: null,
+          }}
+        />
+      )}
+
 
       {/* Keyboard shortcuts overlay */}
       <AnimatePresence>
