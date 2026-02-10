@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppLayout } from "@/components/layout/AppLayout";
-import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Produtos from "./pages/Produtos";
 import Vendas from "./pages/Vendas";
@@ -25,6 +24,7 @@ import Funcionarios from "./pages/Funcionarios";
 import Transportadoras from "./pages/Transportadoras";
 import Categorias from "./pages/Categorias";
 import Auth from "./pages/Auth";
+import PDV from "./pages/PDV";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,13 +58,22 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={user ? <Navigate to="/" replace /> : <Auth />} />
+      {/* PDV: full-screen, outside AppLayout */}
+      <Route
+        path="/pdv"
+        element={
+          <ProtectedRoute>
+            <PDV />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/*"
         element={
           <ProtectedRoute>
             <AppLayout>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<Dashboard />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/produtos" element={<Produtos />} />
                 <Route path="/vendas" element={<Vendas />} />

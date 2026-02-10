@@ -7,7 +7,8 @@ import { CashRegister } from "@/components/pos/CashRegister";
 import { usePDV } from "@/hooks/usePDV";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { AnimatePresence, motion } from "framer-motion";
-import { DollarSign, Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard } from "lucide-react";
+import { DollarSign, Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard, ArrowLeft, Maximize, Minimize } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { PaymentResult } from "@/services/types";
 
@@ -22,6 +23,7 @@ const methodLabels: Record<string, string> = {
 
 export default function PDV() {
   const pdv = usePDV();
+  const navigate = useNavigate();
   const [showTEF, setShowTEF] = useState(false);
   const [showCashRegister, setShowCashRegister] = useState(false);
   const [receipt, setReceipt] = useState<{
@@ -142,51 +144,78 @@ export default function PDV() {
   };
 
   return (
-    <div className="flex h-full pos-screen relative">
-      {/* Status bar */}
-      <div className="absolute top-3 right-[354px] z-10 flex items-center gap-2">
-        {pdv.pendingCount > 0 && (
+    <div className="flex h-screen pos-screen relative overflow-hidden">
+      {/* Top bar */}
+      <div className="absolute top-0 left-0 right-[340px] z-10 flex items-center justify-between px-4 h-12 border-b border-pos-border bg-pos-surface/80 backdrop-blur-sm">
+        <div className="flex items-center gap-3">
           <button
-            onClick={pdv.syncAll}
-            disabled={pdv.syncing || !pdv.isOnline}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pos-surface border border-pos-border text-warning hover:bg-pos-surface-hover transition-all text-xs font-medium"
+            onClick={() => navigate("/")}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-pos-text-muted hover:text-pos-text hover:bg-pos-surface-hover transition-all text-xs font-medium"
+            title="Voltar ao sistema"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${pdv.syncing ? "animate-spin" : ""}`} />
-            {pdv.pendingCount} pendentes
+            <ArrowLeft className="w-4 h-4" />
+            Sair do PDV
           </button>
-        )}
-        {pdv.stats.failed > 0 && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium">
-            <AlertTriangle className="w-3.5 h-3.5" />
-            {pdv.stats.failed} erros
-          </div>
-        )}
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pos-surface border border-pos-border text-xs font-medium">
-          {pdv.isOnline ? (
-            <><Wifi className="w-3.5 h-3.5 text-success" /><span className="text-success">Online</span></>
-          ) : (
-            <><WifiOff className="w-3.5 h-3.5 text-warning" /><span className="text-warning">Offline</span></>
-          )}
+          <div className="h-5 w-px bg-pos-border" />
+          <span className="text-xs font-semibold text-pos-text">PDV Fiscal</span>
         </div>
-        <button
-          onClick={() => setShowCashRegister(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pos-surface border border-pos-border text-pos-text-muted hover:text-pos-text hover:bg-pos-surface-hover transition-all text-xs font-medium"
-        >
-          <DollarSign className="w-3.5 h-3.5" />
-          Caixa
-        </button>
-        <button
-          onClick={() => setShowShortcuts((p) => !p)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pos-surface border border-pos-border text-pos-text-muted hover:text-pos-text hover:bg-pos-surface-hover transition-all text-xs font-medium"
-          title="Atalhos do teclado (F1)"
-        >
-          <Keyboard className="w-3.5 h-3.5" />
-          F1
-        </button>
+
+        <div className="flex items-center gap-2">
+          {pdv.pendingCount > 0 && (
+            <button
+              onClick={pdv.syncAll}
+              disabled={pdv.syncing || !pdv.isOnline}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pos-surface border border-pos-border text-warning hover:bg-pos-surface-hover transition-all text-xs font-medium"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${pdv.syncing ? "animate-spin" : ""}`} />
+              {pdv.pendingCount} pendentes
+            </button>
+          )}
+          {pdv.stats.failed > 0 && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              {pdv.stats.failed} erros
+            </div>
+          )}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pos-surface border border-pos-border text-xs font-medium">
+            {pdv.isOnline ? (
+              <><Wifi className="w-3.5 h-3.5 text-success" /><span className="text-success">Online</span></>
+            ) : (
+              <><WifiOff className="w-3.5 h-3.5 text-warning" /><span className="text-warning">Offline</span></>
+            )}
+          </div>
+          <button
+            onClick={() => setShowCashRegister(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pos-surface border border-pos-border text-pos-text-muted hover:text-pos-text hover:bg-pos-surface-hover transition-all text-xs font-medium"
+          >
+            <DollarSign className="w-3.5 h-3.5" />
+            Caixa
+          </button>
+          <button
+            onClick={() => {
+              if (document.fullscreenElement) {
+                document.exitFullscreen();
+              } else {
+                document.documentElement.requestFullscreen();
+              }
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-pos-surface border border-pos-border text-pos-text-muted hover:text-pos-text hover:bg-pos-surface-hover transition-all text-xs font-medium"
+            title="Tela cheia (F11)"
+          >
+            <Maximize className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => setShowShortcuts((p) => !p)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-pos-surface border border-pos-border text-pos-text-muted hover:text-pos-text hover:bg-pos-surface-hover transition-all text-xs font-medium"
+            title="Atalhos do teclado (F1)"
+          >
+            <Keyboard className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Product area */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 pt-12">
         <PDVProductGrid
           products={pdv.products}
           loading={pdv.loadingProducts}
