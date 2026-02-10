@@ -29,11 +29,11 @@ const signerOptions: SignerOption[] = [
     free: true,
   },
   {
-    name: "Assinador Soluti",
+    name: "Soluti IntelliSign",
     description:
-      "Assinador digital da certificadora Soluti. Suporte a múltiplos formatos e certificados A1/A3.",
-    url: "https://www.integracao.soluti.com.br/downloads",
-    platforms: ["Windows"],
+      "Plataforma de assinatura digital da certificadora Soluti. Suporte a certificados A1/A3 com validade jurídica ICP-Brasil.",
+    url: "https://www.soluti.com.br/intellisign-assinatura-digital/",
+    platforms: ["Windows", "macOS"],
     free: true,
   },
   {
