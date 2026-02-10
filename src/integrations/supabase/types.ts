@@ -1260,36 +1260,60 @@ export type Database = {
       }
       reseller_licenses: {
         Row: {
+          client_cnpj: string | null
+          client_email: string | null
+          client_name: string | null
+          client_phone: string | null
+          client_trade_name: string | null
           company_id: string
           created_at: string
           expires_at: string | null
           id: string
           plan_id: string
           reseller_id: string
+          seller_email: string | null
+          seller_name: string | null
+          seller_phone: string | null
           started_at: string
           status: string
           trial_ends_at: string | null
           updated_at: string
         }
         Insert: {
+          client_cnpj?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          client_trade_name?: string | null
           company_id: string
           created_at?: string
           expires_at?: string | null
           id?: string
           plan_id: string
           reseller_id: string
+          seller_email?: string | null
+          seller_name?: string | null
+          seller_phone?: string | null
           started_at?: string
           status?: string
           trial_ends_at?: string | null
           updated_at?: string
         }
         Update: {
+          client_cnpj?: string | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          client_trade_name?: string | null
           company_id?: string
           created_at?: string
           expires_at?: string | null
           id?: string
           plan_id?: string
           reseller_id?: string
+          seller_email?: string | null
+          seller_name?: string | null
+          seller_phone?: string | null
           started_at?: string
           status?: string
           trial_ends_at?: string | null
