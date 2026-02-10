@@ -162,7 +162,11 @@ export function usePDV() {
           total,
           paymentMethod: paymentMethodLabel,
           paymentResults,
+          customerCpf: undefined, // TODO: pass from checkout form when available
+          customerName: undefined,
         });
+
+        toast.success("Venda finalizada! NFC-e sendo emitida...");
 
         setCartItems([]);
         return result;

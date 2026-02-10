@@ -96,6 +96,23 @@ export class SaleService {
       });
     }
 
+    // 5. Trigger NFC-e emission (fire-and-forget, don't block the sale)
+    try {
+      const { FiscalEmissionService } = await import("./FiscalEmissionService");
+      FiscalEmissionService.emitirNfce({
+        fiscalDocumentId: doc.id,
+        items,
+        total,
+        paymentMethod,
+        customerCpf,
+        customerName,
+      }).catch((err) => {
+        console.warn("[NFC-e] Emissão automática falhou, será retentada:", err.message);
+      });
+    } catch {
+      // FiscalEmissionService not available (e.g. offline) — skip
+    }
+
     return {
       fiscalDocId: doc.id,
       nfceNumber: String(doc.number || doc.id.slice(0, 6)).padStart(6, "0"),
