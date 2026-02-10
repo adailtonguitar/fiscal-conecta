@@ -199,10 +199,22 @@ export default function PDV() {
               type="text"
               value={barcodeInput}
               onChange={(e) => setBarcodeInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleBarcodeSubmit(); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleBarcodeSubmit();
+                }
+              }}
               placeholder="Leia ou digite o código..."
               className="flex-1 px-3 py-1.5 rounded bg-pos-surface border border-pos-border text-pos-text text-xs font-mono focus:outline-none focus:ring-1 focus:ring-pos-accent/40 focus:border-pos-accent transition-all"
             />
+            <button
+              onClick={handleBarcodeSubmit}
+              className="px-3 py-1.5 rounded bg-pos-accent text-primary-foreground text-xs font-bold hover:opacity-90 transition-all"
+            >
+              OK
+            </button>
           </div>
 
           {/* Cart items table */}
