@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   ShoppingCart,
@@ -17,7 +18,9 @@ import {
   Cloud,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PLANS } from "@/hooks/useSubscription";
+import { PLANS, useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const features = [
   { icon: ShoppingCart, title: "PDV Completo", desc: "Terminal de vendas com atalhos de teclado, leitor de código de barras e pagamentos múltiplos." },
@@ -61,6 +64,27 @@ const fadeUp = {
 };
 
 export default function LandingPage() {
+  const { user } = useAuth();
+  const { createCheckout } = useSubscription();
+  const navigate = useNavigate();
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  const handlePlanClick = async (plan: typeof plans[0]) => {
+    if (!plan.priceId) return; // Enterprise = contact sales
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    try {
+      setLoadingPlan(plan.name);
+      await createCheckout(plan.priceId);
+    } catch {
+      toast.error("Erro ao iniciar checkout. Tente novamente.");
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Nav */}
@@ -214,13 +238,16 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Button
-                  asChild
                   className="mt-6 w-full"
                   variant={plan.highlighted ? "default" : "outline"}
+                  disabled={loadingPlan === plan.name}
+                  onClick={() => handlePlanClick(plan)}
                 >
-                  <Link to="/auth">
-                    {plan.price === "Sob consulta" ? "Falar com vendas" : "Começar grátis"}
-                  </Link>
+                  {loadingPlan === plan.name
+                    ? "Redirecionando..."
+                    : plan.price === "Sob consulta"
+                      ? "Falar com vendas"
+                      : "Começar grátis"}
                 </Button>
               </motion.div>
             ))}
