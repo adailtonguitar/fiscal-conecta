@@ -33,6 +33,7 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
   const [role, setRole] = useState<CompanyRole>("caixa");
   const [loading, setLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,10 +61,12 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
         },
       });
 
-      console.log("invite-user response:", JSON.stringify(data), "error:", error);
+      console.log("invite-user response data:", JSON.stringify(data), "error:", error);
 
       if (error) throw error;
       if (data?.error && !data?.inviteLink) throw new Error(data.error);
+
+      setSubmitted(true);
 
       // Invalidate queries in a try-catch to avoid crashes
       try {
@@ -200,7 +203,7 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
             <Button type="button" variant="outline" onClick={() => { setInviteLink(null); onOpenChange(false); }}>
               {inviteLink ? "Fechar" : "Cancelar"}
             </Button>
-            {!inviteLink && (
+            {!inviteLink && !submitted && (
               <Button type="submit" disabled={loading || companyLoading || !email.trim()}>
                 {loading ? (
                   <>
@@ -213,6 +216,17 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
                     Convidar
                   </>
                 )}
+              </Button>
+            )}
+            {submitted && !inviteLink && (
+              <Button type="button" variant="outline" onClick={() => {
+                setSubmitted(false);
+                setEmail("");
+                setFullName("");
+                setPhone("");
+                setRole("caixa");
+              }}>
+                Convidar outro
               </Button>
             )}
           </div>
