@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { InviteUserDialog } from "@/components/users/InviteUserDialog";
 import {
   Users,
   Shield,
@@ -52,6 +53,7 @@ export default function Usuarios() {
   const { logs, isLoading: logsLoading } = useActionLogs();
   const [tab, setTab] = useState<"users" | "permissions" | "logs">("users");
   const [searchLogs, setSearchLogs] = useState("");
+  const [showInvite, setShowInvite] = useState(false);
 
   const canManage = canEdit("usuarios");
 
@@ -65,11 +67,22 @@ export default function Usuarios() {
 
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Controle de Usuários</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Gerencie perfis, permissões e visualize logs de ações
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Controle de Usuários</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Gerencie perfis, permissões e visualize logs de ações
+          </p>
+        </div>
+        {canManage && (
+          <button
+            onClick={() => setShowInvite(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Convidar Usuário
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -114,6 +127,8 @@ export default function Usuarios() {
           onSearchChange={setSearchLogs}
         />
       )}
+
+      <InviteUserDialog open={showInvite} onOpenChange={setShowInvite} />
     </div>
   );
 }
