@@ -1327,6 +1327,8 @@ export type Database = {
           id: string
           is_active: boolean
           max_monthly_sales: number | null
+          max_nfce: number | null
+          max_nfe: number | null
           max_products: number
           max_users: number
           name: string
@@ -1341,6 +1343,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_monthly_sales?: number | null
+          max_nfce?: number | null
+          max_nfe?: number | null
           max_products?: number
           max_users?: number
           name: string
@@ -1355,6 +1359,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_monthly_sales?: number | null
+          max_nfce?: number | null
+          max_nfe?: number | null
           max_products?: number
           max_users?: number
           name?: string
