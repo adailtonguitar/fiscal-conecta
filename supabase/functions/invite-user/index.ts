@@ -82,16 +82,28 @@ serve(async (req) => {
       // Check if already linked to this company
       const { data: existingLink } = await adminClient
         .from("company_users")
-        .select("id")
+        .select("id, is_active")
         .eq("user_id", existingUser.id)
         .eq("company_id", companyId)
         .single();
 
       if (existingLink) {
-        return new Response(JSON.stringify({ error: "Este usuário já está vinculado à empresa" }), {
-          status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        if (existingLink.is_active) {
+          return new Response(JSON.stringify({ error: "Este usuário já está vinculado à empresa" }), {
+            status: 409,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        // Reactivate inactive user with new role
+        await adminClient
+          .from("company_users")
+          .update({ is_active: true, role })
+          .eq("id", existingLink.id);
+
+        return new Response(
+          JSON.stringify({ success: true, message: "Usuário reativado com sucesso!", userId: existingUser.id }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
 
       userId = existingUser.id;
