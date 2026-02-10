@@ -1,10 +1,13 @@
+import { useEffect, useRef } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { useCompany } from "@/hooks/useCompany";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { toast } from "sonner";
 import Dashboard from "./pages/Dashboard";
 import Produtos from "./pages/Produtos";
 import Vendas from "./pages/Vendas";
@@ -30,9 +33,19 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
+  const { companyId, loading: companyLoading } = useCompany();
+  const hasSignedOut = useRef(false);
 
-  if (loading) {
+  useEffect(() => {
+    if (!loading && !companyLoading && user && !companyId && !hasSignedOut.current) {
+      hasSignedOut.current = true;
+      toast.error("Sua conta foi desativada. Entre em contato com o administrador.");
+      signOut();
+    }
+  }, [loading, companyLoading, user, companyId, signOut]);
+
+  if (loading || companyLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -41,6 +54,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+  if (!companyId) return <Navigate to="/auth" replace />;
+
   return <>{children}</>;
 }
 
