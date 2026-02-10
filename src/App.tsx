@@ -38,12 +38,20 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const hasSignedOut = useRef(false);
 
   useEffect(() => {
-    if (!loading && !companyLoading && user && !companyId && !hasSignedOut.current) {
+    // Only sign out if user exists, company finished loading, and no company found
+    if (!loading && !companyLoading && user && companyId === null && !hasSignedOut.current) {
       hasSignedOut.current = true;
       toast.error("Sua conta foi desativada. Entre em contato com o administrador.");
       signOut();
     }
   }, [loading, companyLoading, user, companyId, signOut]);
+
+  // Reset the ref when user changes (e.g., logs back in)
+  useEffect(() => {
+    if (!user) {
+      hasSignedOut.current = false;
+    }
+  }, [user]);
 
   if (loading || companyLoading) {
     return (
