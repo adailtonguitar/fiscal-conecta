@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { Search, X } from "lucide-react";
-import { motion } from "framer-motion";
 import type { PDVProduct } from "@/hooks/usePDV";
 
 const formatCurrency = (value: number) =>
@@ -32,7 +31,6 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
     return matchCategory && matchSearch;
   });
 
-  // Suggestions: only when typing, max 8
   const suggestions = search.length >= 1
     ? products.filter((p) =>
         p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -41,12 +39,8 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
       ).slice(0, 8)
     : [];
 
-  // Reset highlight when suggestions change
-  useEffect(() => {
-    setHighlightIdx(-1);
-  }, [search]);
+  useEffect(() => { setHighlightIdx(-1); }, [search]);
 
-  // Close suggestions on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (
@@ -71,7 +65,6 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!showSuggestions || suggestions.length === 0) return;
-
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setHighlightIdx((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
@@ -87,7 +80,6 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
     }
   };
 
-  // Scroll highlighted item into view
   useEffect(() => {
     if (highlightIdx >= 0 && suggestionsRef.current) {
       const items = suggestionsRef.current.querySelectorAll("[data-suggestion]");
@@ -97,39 +89,42 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-pos-border">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-pos-border bg-[hsl(220,30%,18%)]">
+        <h2 className="text-xs font-bold text-pos-text uppercase tracking-wider">Lista de Produtos</h2>
+      </div>
+
+      {/* Search */}
+      <div className="p-2 border-b border-pos-border">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-pos-text-muted" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-pos-text-muted" />
           <input
             ref={inputRef}
             type="text"
-            placeholder="Buscar produto, código ou código de barras... (F3)"
+            placeholder="Buscar produto... (F3)"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
               setShowSuggestions(e.target.value.length >= 1);
             }}
-            onFocus={() => {
-              if (search.length >= 1) setShowSuggestions(true);
-            }}
+            onFocus={() => { if (search.length >= 1) setShowSuggestions(true); }}
             onKeyDown={handleKeyDown}
             data-pdv-search
-            className="w-full pl-10 pr-10 py-2.5 rounded-lg bg-pos-surface border border-pos-border text-pos-text placeholder:text-pos-text-muted text-sm focus:outline-none focus:ring-2 focus:ring-pos-accent/30 focus:border-pos-accent transition-all"
+            className="w-full pl-8 pr-8 py-2 rounded-md bg-pos-surface border border-pos-border text-pos-text placeholder:text-pos-text-muted text-xs focus:outline-none focus:ring-1 focus:ring-pos-accent/40 focus:border-pos-accent transition-all"
           />
           {search && (
             <button
               onClick={() => { setSearch(""); setShowSuggestions(false); inputRef.current?.focus(); }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-pos-text-muted hover:text-pos-text transition-colors"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-pos-text-muted hover:text-pos-text transition-colors"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
 
-          {/* Suggestions dropdown */}
           {showSuggestions && suggestions.length > 0 && (
             <div
               ref={suggestionsRef}
-              className="absolute top-full left-0 right-0 mt-1 z-50 bg-card border border-border rounded-xl shadow-xl overflow-hidden max-h-80 overflow-y-auto"
+              className="absolute top-full left-0 right-0 mt-1 z-50 bg-card border border-border rounded-lg shadow-xl overflow-hidden max-h-64 overflow-y-auto"
             >
               {suggestions.map((product, idx) => (
                 <button
@@ -137,39 +132,34 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
                   data-suggestion
                   onClick={() => selectProduct(product)}
                   onMouseEnter={() => setHighlightIdx(idx)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
-                    idx === highlightIdx
-                      ? "bg-primary/10"
-                      : "hover:bg-muted/50"
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors text-xs ${
+                    idx === highlightIdx ? "bg-primary/10" : "hover:bg-muted/50"
                   } ${idx > 0 ? "border-t border-border/50" : ""}`}
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-foreground truncate">{product.name}</div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="font-medium text-foreground truncate">{product.name}</div>
+                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                       <span className="font-mono">{product.sku}</span>
                       {product.barcode && <span>· {product.barcode}</span>}
-                      <span>· {product.stock_quantity} {product.unit}</span>
                     </div>
                   </div>
-                  <span className="text-sm font-semibold text-primary whitespace-nowrap">
+                  <span className="font-semibold text-primary whitespace-nowrap">
                     {formatCurrency(product.price)}
                   </span>
                 </button>
               ))}
-              <div className="px-4 py-2 bg-muted/30 text-[10px] text-muted-foreground text-center">
-                ↑↓ navegar · Enter selecionar · Esc fechar
-              </div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto border-b border-pos-border">
+      {/* Category tabs */}
+      <div className="flex gap-1 px-2 py-1.5 overflow-x-auto border-b border-pos-border">
         {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+            className={`px-2.5 py-1 rounded text-[10px] font-medium whitespace-nowrap transition-all ${
               selectedCategory === cat
                 ? "bg-pos-accent text-primary-foreground"
                 : "bg-pos-surface text-pos-text-muted hover:bg-pos-surface-hover hover:text-pos-text"
@@ -180,35 +170,43 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      {/* Product list */}
+      <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="w-6 h-6 border-2 border-pos-accent border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-pos-accent border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-sm text-pos-text-muted">Nenhum produto encontrado</p>
+            <p className="text-xs text-pos-text-muted">Nenhum produto encontrado</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {filtered.map((product, i) => (
-              <motion.button
-                key={product.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.02 }}
-                onClick={() => onAddToCart(product)}
-                className="pos-surface rounded-xl p-4 text-left hover:bg-pos-surface-hover transition-all active:scale-[0.97] group"
-              >
-                <div className="text-xs text-pos-text-muted mb-1 font-mono">{product.sku}</div>
-                <div className="text-sm font-medium text-pos-text mb-2 leading-tight">{product.name}</div>
-                <div className="flex items-end justify-between">
-                  <span className="pos-price text-lg">{formatCurrency(product.price)}</span>
-                  <span className="text-[10px] text-pos-text-muted">{product.stock_quantity} {product.unit}</span>
-                </div>
-              </motion.button>
-            ))}
-          </div>
+          <table className="w-full text-xs">
+            <thead className="sticky top-0 bg-[hsl(220,30%,15%)]">
+              <tr className="text-pos-text-muted text-left">
+                <th className="px-2 py-1.5 font-medium">Código</th>
+                <th className="px-2 py-1.5 font-medium">Descrição</th>
+                <th className="px-2 py-1.5 font-medium text-right">Preço</th>
+                <th className="px-2 py-1.5 font-medium text-right">Estoque</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((product, i) => (
+                <tr
+                  key={product.id}
+                  onClick={() => onAddToCart(product)}
+                  className={`cursor-pointer transition-colors hover:bg-pos-surface-hover active:bg-pos-accent/10 ${
+                    i % 2 === 0 ? "bg-pos-surface/30" : ""
+                  }`}
+                >
+                  <td className="px-2 py-1.5 font-mono text-pos-text-muted">{product.sku}</td>
+                  <td className="px-2 py-1.5 text-pos-text">{product.name}</td>
+                  <td className="px-2 py-1.5 text-right pos-price">{formatCurrency(product.price)}</td>
+                  <td className="px-2 py-1.5 text-right text-pos-text-muted">{product.stock_quantity} {product.unit}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>
