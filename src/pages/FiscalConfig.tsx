@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Shield,
   Upload,
@@ -17,8 +17,11 @@ import {
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { localSignerService, type CertificateInfo } from "@/services/WebPKIService";
+import { supabase } from "@/integrations/supabase/client";
+import { useCompany } from "@/hooks/useCompany";
 
 interface FiscalConfigSection {
+  id?: string;
   docType: "nfce" | "nfe" | "sat";
   label: string;
   serie: number;
@@ -27,29 +30,167 @@ interface FiscalConfigSection {
   cscId: string;
   cscToken: string;
   isActive: boolean;
+  certificateType: "A1" | "A3";
+  certificatePath: string | null;
+  certificateExpiresAt: string | null;
+  a3Thumbprint: string;
+  a3SubjectName: string;
 }
 
-const initialConfigs: FiscalConfigSection[] = [
-  { docType: "nfce", label: "NFC-e", serie: 1, nextNumber: 4, environment: "homologacao", cscId: "1", cscToken: "ABC123DEF456GHI789", isActive: true },
-  { docType: "nfe", label: "NF-e", serie: 1, nextNumber: 3, environment: "homologacao", cscId: "", cscToken: "", isActive: true },
-  { docType: "sat", label: "SAT/CF-e", serie: 1, nextNumber: 2, environment: "producao", cscId: "", cscToken: "", isActive: false },
+const defaultConfigs: FiscalConfigSection[] = [
+  { docType: "nfce", label: "NFC-e", serie: 1, nextNumber: 1, environment: "homologacao", cscId: "", cscToken: "", isActive: true, certificateType: "A1", certificatePath: null, certificateExpiresAt: null, a3Thumbprint: "", a3SubjectName: "" },
+  { docType: "nfe", label: "NF-e", serie: 1, nextNumber: 1, environment: "homologacao", cscId: "", cscToken: "", isActive: true, certificateType: "A1", certificatePath: null, certificateExpiresAt: null, a3Thumbprint: "", a3SubjectName: "" },
+  { docType: "sat", label: "SAT/CF-e", serie: 1, nextNumber: 1, environment: "producao", cscId: "", cscToken: "", isActive: false, certificateType: "A1", certificatePath: null, certificateExpiresAt: null, a3Thumbprint: "", a3SubjectName: "" },
 ];
 
 export default function FiscalConfig() {
-  const [configs, setConfigs] = useState(initialConfigs);
+  const { companyId } = useCompany();
+  const [configs, setConfigs] = useState<FiscalConfigSection[]>(defaultConfigs);
   const [certType, setCertType] = useState<"A1" | "A3">("A1");
   const [certFile, setCertFile] = useState<string | null>(null);
-  const [certExpiry, setCertExpiry] = useState("2027-06-15");
-  const [a3Provider, setA3Provider] = useState("");
-  const [a3SlotIndex, setA3SlotIndex] = useState("0");
+  const [certPassword, setCertPassword] = useState("");
+  const [certExpiry, setCertExpiry] = useState("");
   const [satSerial, setSatSerial] = useState("");
   const [satActivation, setSatActivation] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   // Web PKI A3 state
   const [a3Certificates, setA3Certificates] = useState<CertificateInfo[]>([]);
   const [a3SelectedThumbprint, setA3SelectedThumbprint] = useState("");
   const [a3Loading, setA3Loading] = useState(false);
   const [a3Initialized, setA3Initialized] = useState(false);
+
+  // Load configs from database
+  useEffect(() => {
+    if (!companyId) return;
+
+    const loadConfigs = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("fiscal_configs")
+          .select("*")
+          .eq("company_id", companyId);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const loaded = defaultConfigs.map((def) => {
+            const dbConfig = data.find((d) => d.doc_type === def.docType);
+            if (dbConfig) {
+              return {
+                ...def,
+                id: dbConfig.id,
+                serie: dbConfig.serie,
+                nextNumber: dbConfig.next_number,
+                environment: dbConfig.environment as "homologacao" | "producao",
+                cscId: dbConfig.csc_id || "",
+                cscToken: dbConfig.csc_token || "",
+                isActive: dbConfig.is_active,
+                certificateType: (dbConfig as any).certificate_type || "A1",
+                certificatePath: dbConfig.certificate_path,
+                certificateExpiresAt: dbConfig.certificate_expires_at,
+                a3Thumbprint: (dbConfig as any).a3_thumbprint || "",
+                a3SubjectName: (dbConfig as any).a3_subject_name || "",
+              } as FiscalConfigSection;
+            }
+            return def;
+          });
+          setConfigs(loaded);
+
+          // Set global cert type from first config that has it
+          const firstWithCert = data.find((d) => (d as any).certificate_type);
+          if (firstWithCert) {
+            setCertType((firstWithCert as any).certificate_type || "A1");
+          }
+          // Set A3 thumbprint if available
+          const firstWithA3 = data.find((d) => (d as any).a3_thumbprint);
+          if (firstWithA3) {
+            setA3SelectedThumbprint((firstWithA3 as any).a3_thumbprint || "");
+          }
+          // Set cert file info
+          const firstWithCertPath = data.find((d) => d.certificate_path);
+          if (firstWithCertPath) {
+            setCertFile(firstWithCertPath.certificate_path);
+            if (firstWithCertPath.certificate_expires_at) {
+              setCertExpiry(firstWithCertPath.certificate_expires_at.split("T")[0]);
+            }
+          }
+          // SAT info
+          const satConfig = data.find((d) => d.doc_type === "sat");
+          if (satConfig) {
+            setSatSerial(satConfig.sat_serial_number || "");
+            setSatActivation(satConfig.sat_activation_code || "");
+          }
+        }
+      } catch (err: any) {
+        toast.error(`Erro ao carregar configurações: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadConfigs();
+  }, [companyId]);
+
+  // Save configs to database
+  const handleSave = async () => {
+    if (!companyId) return;
+    setSaving(true);
+
+    try {
+      for (const config of configs) {
+        const record: Record<string, unknown> = {
+          company_id: companyId,
+          doc_type: config.docType,
+          serie: config.serie,
+          next_number: config.nextNumber,
+          environment: config.environment,
+          csc_id: config.cscId || null,
+          csc_token: config.cscToken || null,
+          is_active: config.isActive,
+          certificate_type: certType,
+          certificate_path: certFile || null,
+          certificate_expires_at: certExpiry ? new Date(certExpiry).toISOString() : null,
+          certificate_password_hash: certPassword || null,
+          a3_thumbprint: certType === "A3" ? a3SelectedThumbprint || null : null,
+          a3_subject_name: certType === "A3" ? (a3Certificates.find(c => c.thumbprint === a3SelectedThumbprint)?.subjectName || null) : null,
+          sat_serial_number: config.docType === "sat" ? satSerial || null : null,
+          sat_activation_code: config.docType === "sat" ? satActivation || null : null,
+          updated_at: new Date().toISOString(),
+        };
+
+        if (config.id) {
+          // Update existing
+          const { error } = await supabase
+            .from("fiscal_configs")
+            .update(record as any)
+            .eq("id", config.id);
+          if (error) throw error;
+        } else {
+          // Insert new
+          const { data, error } = await supabase
+            .from("fiscal_configs")
+            .insert(record as any)
+            .select("id")
+            .single();
+          if (error) throw error;
+          if (data) {
+            config.id = data.id;
+          }
+        }
+      }
+
+      // Update local state with IDs
+      setConfigs([...configs]);
+      toast.success("Configurações fiscais salvas com sucesso!");
+    } catch (err: any) {
+      toast.error(`Erro ao salvar: ${err.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const initSigner = useCallback(async () => {
     setA3Loading(true);
@@ -93,6 +234,14 @@ export default function FiscalConfig() {
   const updateConfig = (idx: number, updates: Partial<FiscalConfigSection>) => {
     setConfigs((prev) => prev.map((c, i) => (i === idx ? { ...c, ...updates } : c)));
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto">
@@ -142,9 +291,9 @@ export default function FiscalConfig() {
                   )}
                   <div>
                     <p className="text-sm font-medium text-foreground">
-                      {certFile ? "Certificado A1 instalado" : "Nenhum certificado A1 instalado"}
+                      {certFile ? "Certificado A1 configurado" : "Nenhum certificado A1 configurado"}
                     </p>
-                    {certFile && (
+                    {certFile && certExpiry && (
                       <p className="text-xs text-muted-foreground">
                         Validade: {new Date(certExpiry).toLocaleDateString("pt-BR")}
                       </p>
@@ -159,23 +308,43 @@ export default function FiscalConfig() {
                     accept=".pfx,.p12"
                     className="hidden"
                     onChange={(e) => {
-                      if (e.target.files?.[0]) setCertFile(e.target.files[0].name);
+                      if (e.target.files?.[0]) {
+                        setCertFile(e.target.files[0].name);
+                        toast.info("Arquivo selecionado. Lembre-se de salvar as configurações.");
+                      }
                     }}
                   />
                 </label>
               </div>
-              {certFile && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-foreground mb-1.5 block">
                     Senha do Certificado
                   </label>
                   <input
                     type="password"
+                    value={certPassword}
+                    onChange={(e) => setCertPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full max-w-sm px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   />
                 </div>
-              )}
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">
+                    Data de Validade
+                  </label>
+                  <input
+                    type="date"
+                    value={certExpiry}
+                    onChange={(e) => setCertExpiry(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 text-primary text-xs">
+                <Shield className="w-4 h-4 flex-shrink-0" />
+                O certificado A1 (.PFX) deve ser cadastrado diretamente na plataforma Nuvem Fiscal para emissão de documentos.
+              </div>
             </>
           ) : (
             <>
@@ -184,7 +353,7 @@ export default function FiscalConfig() {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">Certificado A3 (Token/Smartcard)</p>
                   <p className="text-xs text-muted-foreground">
-                    Assinatura digital via Lacuna Web PKI — o token deve estar conectado
+                    Assinatura digital via agente local — o token deve estar conectado
                   </p>
                 </div>
               </div>
@@ -254,7 +423,7 @@ export default function FiscalConfig() {
 
               <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 text-primary text-xs">
                 <Cpu className="w-4 h-4 flex-shrink-0" />
-                O certificado A3 requer o Web PKI instalado e o token/smartcard conectado durante a emissão.
+                O certificado A3 requer o assinador digital instalado e o token/smartcard conectado durante a emissão.
               </div>
             </>
           )}
@@ -278,6 +447,9 @@ export default function FiscalConfig() {
                 <Settings2 className="w-4 h-4 text-primary" />
               )}
               <h2 className="text-base font-semibold text-foreground">{config.label}</h2>
+              {config.id && (
+                <span className="px-2 py-0.5 rounded-full bg-success/10 text-success text-[10px] font-semibold uppercase">Salvo</span>
+              )}
             </div>
             <button
               onClick={() => updateConfig(idx, { isActive: !config.isActive })}
@@ -413,9 +585,13 @@ export default function FiscalConfig() {
         </motion.div>
       ))}
 
-      <button className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all">
-        <Save className="w-4 h-4" />
-        Salvar Configurações Fiscais
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50"
+      >
+        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+        {saving ? "Salvando..." : "Salvar Configurações Fiscais"}
       </button>
     </div>
   );

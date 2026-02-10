@@ -873,9 +873,12 @@ export type Database = {
       }
       fiscal_configs: {
         Row: {
+          a3_subject_name: string | null
+          a3_thumbprint: string | null
           certificate_expires_at: string | null
           certificate_password_hash: string | null
           certificate_path: string | null
+          certificate_type: string
           company_id: string
           created_at: string
           csc_id: string | null
@@ -891,9 +894,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          a3_subject_name?: string | null
+          a3_thumbprint?: string | null
           certificate_expires_at?: string | null
           certificate_password_hash?: string | null
           certificate_path?: string | null
+          certificate_type?: string
           company_id: string
           created_at?: string
           csc_id?: string | null
@@ -909,9 +915,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          a3_subject_name?: string | null
+          a3_thumbprint?: string | null
           certificate_expires_at?: string | null
           certificate_password_hash?: string | null
           certificate_path?: string | null
+          certificate_type?: string
           company_id?: string
           created_at?: string
           csc_id?: string | null
