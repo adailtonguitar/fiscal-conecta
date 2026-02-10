@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
 import { InviteUserDialog } from "@/components/users/InviteUserDialog";
+import { toast } from "sonner";
 import {
   Users,
   Shield,
@@ -49,6 +51,7 @@ const moduleLabels: Record<string, string> = {
 
 export default function Usuarios() {
   const { users, isLoading, updateRole, toggleActive, removeUser } = useCompanyUsers();
+  const { user: currentUser } = useAuth();
   const { canEdit } = usePermissions();
   const { logs, isLoading: logsLoading } = useActionLogs();
   const [tab, setTab] = useState<"users" | "permissions" | "logs">("users");
@@ -112,6 +115,7 @@ export default function Usuarios() {
           users={users}
           isLoading={isLoading}
           canManage={canManage}
+          currentUserId={currentUser?.id}
           updateRole={updateRole}
           toggleActive={toggleActive}
           removeUser={removeUser}
@@ -138,6 +142,7 @@ function UsersTab({
   users,
   isLoading,
   canManage,
+  currentUserId,
   updateRole,
   toggleActive,
   removeUser,
@@ -145,6 +150,7 @@ function UsersTab({
   users: CompanyUser[];
   isLoading: boolean;
   canManage: boolean;
+  currentUserId?: string;
   updateRole: (id: string, role: CompanyRole) => Promise<void>;
   toggleActive: (id: string, isActive: boolean) => Promise<void>;
   removeUser: (id: string) => Promise<void>;
@@ -201,7 +207,8 @@ function UsersTab({
                 <select
                   value={u.role}
                   onChange={(e) => updateRole(u.id, e.target.value as CompanyRole)}
-                  className="appearance-none bg-background border border-border rounded-lg pl-3 pr-7 py-1.5 text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  disabled={u.user_id === currentUserId}
+                  className="appearance-none bg-background border border-border rounded-lg pl-3 pr-7 py-1.5 text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
                 >
                   <option value="admin">Admin</option>
                   <option value="gerente">Gerente</option>
@@ -212,25 +219,41 @@ function UsersTab({
               </div>
 
               <button
-                onClick={() => toggleActive(u.id, u.is_active)}
+                onClick={() => {
+                  if (u.user_id === currentUserId) {
+                    toast.error("Você não pode desativar sua própria conta");
+                    return;
+                  }
+                  toggleActive(u.id, u.is_active);
+                }}
                 className={`p-1.5 rounded-lg transition-colors ${
-                  u.is_active
-                    ? "text-success hover:bg-success/10"
-                    : "text-destructive hover:bg-destructive/10"
+                  u.user_id === currentUserId
+                    ? "opacity-50 cursor-not-allowed"
+                    : u.is_active
+                      ? "text-success hover:bg-success/10"
+                      : "text-destructive hover:bg-destructive/10"
                 }`}
-                title={u.is_active ? "Desativar" : "Ativar"}
+                title={u.user_id === currentUserId ? "Você não pode desativar sua própria conta" : u.is_active ? "Desativar" : "Ativar"}
               >
                 {u.is_active ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
               </button>
 
               <button
                 onClick={() => {
+                  if (u.user_id === currentUserId) {
+                    toast.error("Você não pode remover sua própria conta");
+                    return;
+                  }
                   if (confirm("Tem certeza que deseja remover este usuário da empresa?")) {
                     removeUser(u.id);
                   }
                 }}
-                className="p-1.5 rounded-lg text-destructive hover:bg-destructive/10 transition-colors"
-                title="Remover usuário"
+                className={`p-1.5 rounded-lg transition-colors ${
+                  u.user_id === currentUserId
+                    ? "opacity-50 cursor-not-allowed"
+                    : "text-destructive hover:bg-destructive/10"
+                }`}
+                title={u.user_id === currentUserId ? "Você não pode remover sua própria conta" : "Remover usuário"}
               >
                 <Trash2 className="w-4 h-4" />
               </button>
