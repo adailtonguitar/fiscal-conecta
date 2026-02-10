@@ -413,7 +413,7 @@ export default function FiscalConfig() {
               </div>
               <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 text-primary text-xs">
                 <Shield className="w-4 h-4 flex-shrink-0" />
-                O certificado A1 (.PFX) deve ser cadastrado diretamente na plataforma Nuvem Fiscal para emissão de documentos.
+                O certificado A1 é validado localmente. A senha e os dados são usados para autenticar a emissão de documentos fiscais.
               </div>
             </>
           ) : (
