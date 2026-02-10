@@ -8,13 +8,13 @@ export const PLANS = {
     product_id: "prod_TxH3ZeNDCtALce",
     price_id: "price_1SzMVh5ZkhRjWpdwabX6OoEF",
     name: "Essencial",
-    price: 149,
+    price: 150,
   },
   profissional: {
     product_id: "prod_TxH3SQG86jZyc7",
     price_id: "price_1SzMVs5ZkhRjWpdwAPrV29FW",
     name: "Profissional",
-    price: 299,
+    price: 200,
   },
 } as const;
 

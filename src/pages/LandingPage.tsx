@@ -34,7 +34,7 @@ const features = [
 const plans = [
   {
     name: "Essencial",
-    price: "149",
+    price: "150",
     desc: "Para pequenos comércios",
     features: ["1 terminal PDV", "100 produtos", "NFC-e ilimitada", "Suporte por e-mail"],
     highlighted: false,
@@ -42,7 +42,7 @@ const plans = [
   },
   {
     name: "Profissional",
-    price: "299",
+    price: "200",
     desc: "Para negócios em crescimento",
     features: ["3 terminais PDV", "Produtos ilimitados", "NF-e + NFC-e", "Relatórios avançados", "Suporte prioritário"],
     highlighted: true,
