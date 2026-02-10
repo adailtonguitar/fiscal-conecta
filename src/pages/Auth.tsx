@@ -12,9 +12,19 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"login" | "set-password" | "processing">(() => {
-    // Check if we need to show set-password from a previous redirect
+    // Check sessionStorage first (set by useAuth or previous redirect)
     if (sessionStorage.getItem("needs-password-setup") === "true") {
       return "set-password";
+    }
+    // Also check URL hash directly (before Supabase consumes it)
+    const hash = window.location.hash;
+    if (hash) {
+      const hashParams = new URLSearchParams(hash.substring(1));
+      const type = hashParams.get("type");
+      if (type === "recovery" || type === "invite" || type === "magiclink") {
+        sessionStorage.setItem("needs-password-setup", "true");
+        return "set-password";
+      }
     }
     return "processing";
   });
