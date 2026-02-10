@@ -73,9 +73,13 @@ serve(async (req) => {
       });
     }
 
-    // Check if user already exists
-    const { data: existingUsers } = await adminClient.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find((u) => u.email === email);
+    // Check if user already exists - search by email directly instead of listing all
+    const { data: { users: matchedUsers } } = await adminClient.auth.admin.listUsers({
+      filter: `email.eq.${email}`,
+      page: 1,
+      perPage: 1,
+    });
+    const existingUser = matchedUsers?.[0] || null;
 
     let userId: string;
     let needsNewUser = false;
