@@ -89,26 +89,39 @@ serve(async (req) => {
 
       if (existingLink) {
         if (existingLink.is_active) {
-          return new Response(JSON.stringify({ error: "Este usuário já está vinculado à empresa" }), {
-            status: 409,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          // If user hasn't confirmed email yet, resend invite
+          if (!existingUser.email_confirmed_at) {
+            await adminClient.auth.admin.deleteUser(existingUser.id);
+            // Will fall through to create new invite below
+          } else {
+            return new Response(JSON.stringify({ error: "Este usuário já está vinculado à empresa" }), {
+              status: 409,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        } else {
+          // Reactivate inactive user with new role
+          await adminClient
+            .from("company_users")
+            .update({ is_active: true, role })
+            .eq("id", existingLink.id);
+
+          return new Response(
+            JSON.stringify({ success: true, message: "Usuário reativado com sucesso!", userId: existingUser.id }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
         }
-        // Reactivate inactive user with new role
-        await adminClient
-          .from("company_users")
-          .update({ is_active: true, role })
-          .eq("id", existingLink.id);
-
-        return new Response(
-          JSON.stringify({ success: true, message: "Usuário reativado com sucesso!", userId: existingUser.id }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      } else if (existingUser.email_confirmed_at) {
+        // User exists and confirmed but not linked to this company - just link
+        userId = existingUser.id;
+      } else {
+        // User exists but unconfirmed and not linked - delete and re-invite
+        await adminClient.auth.admin.deleteUser(existingUser.id);
       }
+    }
 
-      userId = existingUser.id;
-    } else {
-      // Create new user via invite (sends email automatically)
+    // Create new user via invite if needed (sends email automatically)
+    if (!userId) {
       const { data: newUser, error: createError } = await adminClient.auth.admin.inviteUserByEmail(email, {
         data: {
           full_name: fullName || "",
