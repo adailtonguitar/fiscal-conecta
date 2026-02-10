@@ -89,7 +89,10 @@ export default function Auth() {
         }
       }
       
-      setMode("login");
+      // Only switch to login if we're NOT in set-password mode (from sessionStorage)
+      if (sessionStorage.getItem("needs-password-setup") !== "true") {
+        setMode("login");
+      }
     };
 
     handleAuthCallback();
