@@ -295,6 +295,39 @@ export default function FiscalConfig() {
 
           {certType === "A1" ? (
             <>
+              {/* Password first */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">
+                    Senha do Certificado
+                  </label>
+                  <input
+                    type="password"
+                    value={certPassword}
+                    onChange={(e) => setCertPassword(e.target.value)}
+                    placeholder="Digite a senha do certificado"
+                    className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  />
+                  {!certPassword && !certFile && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Informe a senha antes de enviar o certificado
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">
+                    Data de Validade
+                  </label>
+                  <input
+                    type="date"
+                    value={certExpiry}
+                    onChange={(e) => setCertExpiry(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Certificate status & actions */}
               <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
                 <div className="flex items-center gap-3">
                   {certFile ? (
@@ -328,13 +361,18 @@ export default function FiscalConfig() {
                       Remover
                     </button>
                   )}
-                  <label className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium cursor-pointer hover:opacity-90 transition-all">
+                  <label className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                    certPassword.trim()
+                      ? "bg-primary text-primary-foreground cursor-pointer hover:opacity-90"
+                      : "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
+                  }`}>
                     <Upload className="w-4 h-4" />
                     {certFile ? "Trocar" : "Enviar"} .PFX
                     <input
                       type="file"
                       accept=".pfx,.p12"
                       className="hidden"
+                      disabled={!certPassword.trim()}
                       onChange={(e) => {
                         if (e.target.files?.[0]) {
                           setCertFile(e.target.files[0].name);
@@ -343,31 +381,6 @@ export default function FiscalConfig() {
                       }}
                     />
                   </label>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">
-                    Senha do Certificado
-                  </label>
-                  <input
-                    type="password"
-                    value={certPassword}
-                    onChange={(e) => setCertPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">
-                    Data de Validade
-                  </label>
-                  <input
-                    type="date"
-                    value={certExpiry}
-                    onChange={(e) => setCertExpiry(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  />
                 </div>
               </div>
               <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 text-primary text-xs">
