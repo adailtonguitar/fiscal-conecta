@@ -34,10 +34,33 @@ export default function PDV() {
 
   // Barcode manual input
   const handleBarcodeSubmit = () => {
-    if (barcodeInput.trim()) {
-      pdv.handleBarcodeScan(barcodeInput.trim());
+    const query = barcodeInput.trim();
+    if (!query) return;
+
+    // Try exact match first (barcode/sku/id)
+    const exactMatch = pdv.products.find(
+      (p) => p.sku === query || p.barcode === query || p.id === query
+    );
+    if (exactMatch) {
+      pdv.addToCart(exactMatch);
+      toast.success(`${exactMatch.name} adicionado`);
       setBarcodeInput("");
+      return;
     }
+
+    // Try partial name/sku search
+    const searchMatch = pdv.products.find(
+      (p) =>
+        p.name.toLowerCase().includes(query.toLowerCase()) ||
+        p.sku.toLowerCase().includes(query.toLowerCase())
+    );
+    if (searchMatch) {
+      pdv.addToCart(searchMatch);
+      toast.success(`${searchMatch.name} adicionado`);
+    } else {
+      toast.error(`Produto não encontrado: ${query}`);
+    }
+    setBarcodeInput("");
   };
 
   // Keyboard shortcuts
