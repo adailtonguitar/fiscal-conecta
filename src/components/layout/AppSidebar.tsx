@@ -56,18 +56,6 @@ const navItems: NavEntry[] = [
   { icon: Shield, label: "Config. Fiscal", path: "/fiscal/config" },
   { icon: ScrollText, label: "Auditoria", path: "/fiscal/auditoria" },
   { icon: Download, label: "Assinador Digital", path: "/fiscal/assinador" },
-  {
-    icon: Landmark,
-    label: "Administração Site",
-    children: [
-      { icon: DollarSign, label: "Comprar Créditos", path: "/admin/creditos" },
-      { icon: Users, label: "Usuários cadastrados", path: "/admin/usuarios" },
-      { icon: Building2, label: "Empresas cadastradas", path: "/admin/empresas" },
-      { icon: UserCheck, label: "Parceiros", path: "/admin/parceiros" },
-      { icon: BarChart3, label: "Relatórios", path: "/admin/relatorios" },
-      { icon: Settings, label: "Config. Ambiente", path: "/admin/configuracao" },
-    ],
-  },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
 ];
 
