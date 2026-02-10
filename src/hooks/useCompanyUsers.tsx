@@ -86,5 +86,18 @@ export function useCompanyUsers() {
     queryClient.invalidateQueries({ queryKey: ["company-users"] });
   };
 
-  return { users, isLoading, updateRole, toggleActive, removeUser };
+  const updateUserName = async (userId: string, fullName: string) => {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name: fullName })
+      .eq("id", userId);
+    if (error) {
+      toast.error("Erro ao atualizar nome");
+      return;
+    }
+    toast.success("Nome atualizado com sucesso");
+    queryClient.invalidateQueries({ queryKey: ["company-users"] });
+  };
+
+  return { users, isLoading, updateRole, toggleActive, removeUser, updateUserName };
 }
