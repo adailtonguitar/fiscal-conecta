@@ -197,22 +197,24 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
           )}
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
+            <Button type="button" variant="outline" onClick={() => { setInviteLink(null); onOpenChange(false); }}>
+              {inviteLink ? "Fechar" : "Cancelar"}
             </Button>
-            <Button type="submit" disabled={loading || companyLoading || !email.trim()}>
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Enviando...
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Convidar
-                </>
-              )}
-            </Button>
+            {!inviteLink && (
+              <Button type="submit" disabled={loading || companyLoading || !email.trim()}>
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Convidar
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </form>
       </DialogContent>
