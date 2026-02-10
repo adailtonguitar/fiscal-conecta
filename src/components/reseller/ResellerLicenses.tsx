@@ -59,7 +59,7 @@ export function ResellerLicenses({ licenses, plans, onCreateLicense, onUpdateLic
 
     const payload = {
       plan_id: form.plan_id,
-      company_id: form.company_id || "00000000-0000-0000-0000-000000000000",
+      company_id: form.company_id || null,
       status: form.status,
       client_name: form.client_name.trim(),
       client_trade_name: form.client_trade_name.trim() || null,
