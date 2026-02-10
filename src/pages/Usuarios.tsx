@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { InviteUserDialog } from "@/components/users/InviteUserDialog";
@@ -50,7 +50,7 @@ const moduleLabels: Record<string, string> = {
 };
 
 export default function Usuarios() {
-  const { users, isLoading, updateRole, toggleActive, removeUser } = useCompanyUsers();
+  const { users, isLoading, updateRole, toggleActive, removeUser, updateUserName } = useCompanyUsers();
   const { user: currentUser } = useAuth();
   const { canEdit } = usePermissions();
   const { logs, isLoading: logsLoading } = useActionLogs();
@@ -119,6 +119,7 @@ export default function Usuarios() {
           updateRole={updateRole}
           toggleActive={toggleActive}
           removeUser={removeUser}
+          updateUserName={updateUserName}
         />
       )}
 
@@ -146,6 +147,7 @@ function UsersTab({
   updateRole,
   toggleActive,
   removeUser,
+  updateUserName,
 }: {
   users: CompanyUser[];
   isLoading: boolean;
@@ -154,7 +156,26 @@ function UsersTab({
   updateRole: (id: string, role: CompanyRole) => Promise<void>;
   toggleActive: (id: string, isActive: boolean) => Promise<void>;
   removeUser: (id: string) => Promise<void>;
+  updateUserName: (userId: string, fullName: string) => Promise<void>;
 }) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+
+  const startEdit = useCallback((u: CompanyUser) => {
+    setEditingId(u.user_id);
+    setEditName(u.profile?.full_name || "");
+  }, []);
+
+  const saveEdit = useCallback(async () => {
+    if (!editingId || !editName.trim()) return;
+    await updateUserName(editingId, editName.trim());
+    setEditingId(null);
+  }, [editingId, editName, updateUserName]);
+
+  const cancelEdit = useCallback(() => {
+    setEditingId(null);
+  }, []);
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -189,12 +210,36 @@ function UsersTab({
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground truncate">
-              {u.profile?.full_name || "Sem nome"}
-            </p>
-            <p className="text-xs text-muted-foreground truncate">
-              {u.profile?.email || u.user_id}
-            </p>
+            {editingId === u.user_id ? (
+              <div className="flex items-center gap-2">
+                <input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") saveEdit();
+                    if (e.key === "Escape") cancelEdit();
+                  }}
+                  autoFocus
+                  className="text-sm font-semibold text-foreground bg-background border border-border rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary/20 w-full max-w-[200px]"
+                  placeholder="Nome completo"
+                />
+                <button onClick={saveEdit} className="text-xs px-2 py-1 rounded-lg bg-primary text-primary-foreground hover:opacity-90">
+                  Salvar
+                </button>
+                <button onClick={cancelEdit} className="text-xs px-2 py-1 rounded-lg bg-secondary text-secondary-foreground hover:opacity-90">
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm font-semibold text-foreground truncate">
+                  {u.profile?.full_name || "Sem nome"}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {u.profile?.email || u.user_id}
+                </p>
+              </>
+            )}
           </div>
 
           <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${roleColors[u.role]}`}>
@@ -203,6 +248,16 @@ function UsersTab({
 
           {canManage && (
             <div className="flex items-center gap-2">
+              {editingId !== u.user_id && (
+                <button
+                  onClick={() => startEdit(u)}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:bg-secondary transition-colors"
+                  title="Editar nome"
+                >
+                  <PenLine className="w-4 h-4" />
+                </button>
+              )}
+
               <div className="relative">
                 <select
                   value={u.role}
