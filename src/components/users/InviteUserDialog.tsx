@@ -60,13 +60,19 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
         },
       });
 
+      console.log("invite-user response:", JSON.stringify(data), "error:", error);
+
       if (error) throw error;
       if (data?.error && !data?.inviteLink) throw new Error(data.error);
 
-      queryClient.invalidateQueries({ queryKey: ["company-users"] });
+      // Invalidate queries in a try-catch to avoid crashes
+      try {
+        await queryClient.invalidateQueries({ queryKey: ["company-users"] });
+      } catch (e) {
+        console.warn("Failed to invalidate queries:", e);
+      }
 
       if (data?.inviteLink) {
-        // Show the invite link to admin (always shown for new users)
         setInviteLink(data.inviteLink);
         if (data?.emailSent) {
           toast.success("Convite enviado por e-mail! O link também está disponível abaixo.");
@@ -74,7 +80,7 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
           toast.warning("Copie o link abaixo e envie ao usuário por WhatsApp.");
         }
       } else {
-        toast.success(data.message || "Usuário vinculado com sucesso!");
+        toast.success(data?.message || "Usuário vinculado com sucesso!");
         setEmail("");
         setFullName("");
         setPhone("");
@@ -82,6 +88,7 @@ export function InviteUserDialog({ open, onOpenChange }: Props) {
         onOpenChange(false);
       }
     } catch (err: any) {
+      console.error("Invite error:", err);
       toast.error(err.message || "Erro ao convidar usuário");
     } finally {
       setLoading(false);
