@@ -2,3 +2,6 @@ project_id = "xvopwjwgvriisizysbkf"
 
 [functions.export-company-data]
 verify_jwt = false
+
+[functions.ncm-lookup]
+verify_jwt = false
