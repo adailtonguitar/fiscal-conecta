@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { Tags, FolderTree } from "lucide-react";
+import { Tags, FolderTree, Zap } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CrudPage, type FieldConfig } from "@/components/cadastro/CrudPage";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useProductCategories, useCreateProductCategory, useUpdateProductCategory, useDeleteProductCategory } from "@/hooks/useProductCategories";
 import { useFiscalCategories, useCreateFiscalCategory, useUpdateFiscalCategory, useDeleteFiscalCategory } from "@/hooks/useFiscalCategories";
+import { toast } from "sonner";
 
 const categoryFields: FieldConfig[] = [
   { key: "name", label: "Nome", required: true, showInTable: true },
@@ -38,8 +41,34 @@ const fiscalFields: FieldConfig[] = [
   { key: "ipi_rate", label: "Alíq. IPI %", type: "number" },
 ];
 
+interface FiscalTemplate {
+  name: string;
+  description: string;
+  data: Record<string, any>;
+}
+
+const FISCAL_TEMPLATES: FiscalTemplate[] = [
+  // Simples Nacional
+  { name: "SN - Normal Interna", description: "Simples Nacional, mercadoria normal, operação interna (CFOP 5102, CSOSN 102)", data: { name: "SN - Normal Interna", regime: "simples_nacional", operation_type: "interna", product_type: "normal", cfop: "5102", csosn: "102", icms_rate: 0, pis_rate: 1.65, cofins_rate: 7.60 } },
+  { name: "SN - Normal Interestadual", description: "Simples Nacional, mercadoria normal, operação interestadual (CFOP 6102, CSOSN 102)", data: { name: "SN - Normal Interestadual", regime: "simples_nacional", operation_type: "interestadual", product_type: "normal", cfop: "6102", csosn: "102", icms_rate: 0, pis_rate: 1.65, cofins_rate: 7.60 } },
+  { name: "SN - ST Interna", description: "Simples Nacional, substituição tributária, operação interna (CFOP 5405, CSOSN 500)", data: { name: "SN - ST Interna", regime: "simples_nacional", operation_type: "interna", product_type: "st", cfop: "5405", csosn: "500", icms_rate: 0, pis_rate: 1.65, cofins_rate: 7.60 } },
+  { name: "SN - ST Interestadual", description: "Simples Nacional, substituição tributária, operação interestadual (CFOP 6404, CSOSN 500)", data: { name: "SN - ST Interestadual", regime: "simples_nacional", operation_type: "interestadual", product_type: "st", cfop: "6404", csosn: "500", icms_rate: 0, pis_rate: 1.65, cofins_rate: 7.60 } },
+  // Lucro Presumido
+  { name: "LP - Normal Interna", description: "Lucro Presumido, mercadoria normal, operação interna (CFOP 5102, CST 00)", data: { name: "LP - Normal Interna", regime: "lucro_presumido", operation_type: "interna", product_type: "normal", cfop: "5102", cst_icms: "00", icms_rate: 18, pis_rate: 0.65, cofins_rate: 3.00 } },
+  { name: "LP - Normal Interestadual", description: "Lucro Presumido, mercadoria normal, operação interestadual (CFOP 6102, CST 00)", data: { name: "LP - Normal Interestadual", regime: "lucro_presumido", operation_type: "interestadual", product_type: "normal", cfop: "6102", cst_icms: "00", icms_rate: 12, pis_rate: 0.65, cofins_rate: 3.00 } },
+  { name: "LP - ST Interna", description: "Lucro Presumido, ST, operação interna (CFOP 5405, CST 60)", data: { name: "LP - ST Interna", regime: "lucro_presumido", operation_type: "interna", product_type: "st", cfop: "5405", cst_icms: "60", icms_rate: 0, pis_rate: 0.65, cofins_rate: 3.00 } },
+  { name: "LP - ST Interestadual", description: "Lucro Presumido, ST, operação interestadual (CFOP 6404, CST 10)", data: { name: "LP - ST Interestadual", regime: "lucro_presumido", operation_type: "interestadual", product_type: "st", cfop: "6404", cst_icms: "10", icms_rate: 12, pis_rate: 0.65, cofins_rate: 3.00 } },
+  // Lucro Real
+  { name: "LR - Normal Interna", description: "Lucro Real, mercadoria normal, operação interna (CFOP 5102, CST 00)", data: { name: "LR - Normal Interna", regime: "lucro_real", operation_type: "interna", product_type: "normal", cfop: "5102", cst_icms: "00", icms_rate: 18, pis_rate: 1.65, cofins_rate: 7.60 } },
+  { name: "LR - Normal Interestadual", description: "Lucro Real, mercadoria normal, operação interestadual (CFOP 6102, CST 00)", data: { name: "LR - Normal Interestadual", regime: "lucro_real", operation_type: "interestadual", product_type: "normal", cfop: "6102", cst_icms: "00", icms_rate: 12, pis_rate: 1.65, cofins_rate: 7.60 } },
+  { name: "LR - ST Interna", description: "Lucro Real, ST, operação interna (CFOP 5405, CST 60)", data: { name: "LR - ST Interna", regime: "lucro_real", operation_type: "interna", product_type: "st", cfop: "5405", cst_icms: "60", icms_rate: 0, pis_rate: 1.65, cofins_rate: 7.60 } },
+  { name: "LR - ST Interestadual", description: "Lucro Real, ST, operação interestadual (CFOP 6404, CST 10)", data: { name: "LR - ST Interestadual", regime: "lucro_real", operation_type: "interestadual", product_type: "st", cfop: "6404", cst_icms: "10", icms_rate: 12, pis_rate: 1.65, cofins_rate: 7.60 } },
+];
+
 export default function Categorias() {
   const [tab, setTab] = useState("product");
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [creatingTemplate, setCreatingTemplate] = useState<string | null>(null);
 
   const prodCats = useProductCategories();
   const createProdCat = useCreateProductCategory();
@@ -50,6 +79,21 @@ export default function Categorias() {
   const createFiscalCat = useCreateFiscalCategory();
   const updateFiscalCat = useUpdateFiscalCategory();
   const deleteFiscalCat = useDeleteFiscalCategory();
+
+  const existingNames = (fiscalCats.data ?? []).map((c: any) => c.name);
+
+  const handleCreateFromTemplate = async (template: FiscalTemplate) => {
+    if (existingNames.includes(template.name)) {
+      toast.info(`"${template.name}" já existe`);
+      return;
+    }
+    setCreatingTemplate(template.name);
+    try {
+      await createFiscalCat.mutateAsync(template.data as any);
+    } finally {
+      setCreatingTemplate(null);
+    }
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -79,6 +123,12 @@ export default function Categorias() {
         </TabsContent>
 
         <TabsContent value="fiscal">
+          <div className="mb-4">
+            <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)} className="gap-2">
+              <Zap className="w-4 h-4" />
+              Criar a partir de modelo
+            </Button>
+          </div>
           <CrudPage
             title="Categorias Fiscais"
             icon={<Tags className="w-5 h-5" />}
@@ -93,6 +143,39 @@ export default function Categorias() {
           />
         </TabsContent>
       </Tabs>
+
+      {/* Template selector dialog */}
+      <Dialog open={showTemplates} onOpenChange={setShowTemplates}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Modelos de Categoria Fiscal</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground mb-4">
+            Selecione um modelo para criar automaticamente com todos os campos preenchidos.
+          </p>
+          <div className="space-y-2">
+            {FISCAL_TEMPLATES.map((t) => {
+              const alreadyExists = existingNames.includes(t.name);
+              const isCreating = creatingTemplate === t.name;
+              return (
+                <button
+                  key={t.name}
+                  disabled={alreadyExists || isCreating}
+                  onClick={() => handleCreateFromTemplate(t)}
+                  className="w-full text-left p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-sm text-foreground">{t.name}</span>
+                    {alreadyExists && <span className="text-xs text-muted-foreground">Já criada</span>}
+                    {isCreating && <span className="text-xs text-primary">Criando...</span>}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t.description}</p>
+                </button>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
