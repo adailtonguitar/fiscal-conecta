@@ -335,20 +335,18 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                 <Select
                   onValueChange={(v) => {
                     field.onChange(v === "__none__" ? "" : v);
-                    // Auto-fill fiscal fields from selected category
+                    // Auto-fill ALL fiscal fields from selected category
                     if (v && v !== "__none__") {
-                      const cat = fiscalCategories.find(c => c.id === v);
+                      const cat = fiscalCategories.find(c => c.id === v) as any;
                       if (cat) {
-                        if (cat.type === "CFOP") form.setValue("cfop", cat.code);
-                        else if (cat.type === "CSOSN") form.setValue("csosn", cat.code);
-                        else if (cat.type === "CST_ICMS") form.setValue("cst_icms", cat.code);
-                        else if (cat.type === "CST_PIS") {
-                          form.setValue("cst_pis", cat.code);
-                          if (cat.tax_rate != null) form.setValue("aliq_pis", cat.tax_rate);
-                        } else if (cat.type === "CST_COFINS") {
-                          form.setValue("cst_cofins", cat.code);
-                          if (cat.tax_rate != null) form.setValue("aliq_cofins", cat.tax_rate);
-                        }
+                        form.setValue("cfop", cat.cfop || "5102");
+                        form.setValue("csosn", cat.csosn || "");
+                        form.setValue("cst_icms", cat.cst_icms || "");
+                        form.setValue("aliq_icms", cat.icms_rate ?? 0);
+                        form.setValue("aliq_pis", cat.pis_rate ?? 1.65);
+                        form.setValue("aliq_cofins", cat.cofins_rate ?? 7.60);
+                        if (cat.cest) form.setValue("cest", cat.cest);
+                        if (cat.ncm) form.setValue("ncm", cat.ncm);
                       }
                     }
                   }}
@@ -359,9 +357,9 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="__none__">Nenhuma</SelectItem>
-                    {fiscalCategories.filter(c => c.is_active).map(c => (
+                    {fiscalCategories.filter((c: any) => c.is_active).map((c: any) => (
                       <SelectItem key={c.id} value={c.id}>
-                        [{c.type}] {c.code} — {c.description}
+                        {c.name} ({c.cfop} - {c.operation_type})
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -826,39 +826,69 @@ export type Database = {
       }
       fiscal_categories: {
         Row: {
-          code: string
+          cest: string | null
+          cfop: string
+          cofins_rate: number
           company_id: string
           created_at: string
-          description: string
+          csosn: string | null
+          cst_icms: string | null
+          icms_rate: number
+          icms_st_rate: number | null
           id: string
+          ipi_rate: number | null
           is_active: boolean
-          notes: string | null
-          tax_rate: number | null
-          type: string
+          mva: number | null
+          name: string
+          ncm: string | null
+          operation_type: string
+          pis_rate: number
+          product_type: string
+          regime: string
           updated_at: string
         }
         Insert: {
-          code: string
+          cest?: string | null
+          cfop?: string
+          cofins_rate?: number
           company_id: string
           created_at?: string
-          description: string
+          csosn?: string | null
+          cst_icms?: string | null
+          icms_rate?: number
+          icms_st_rate?: number | null
           id?: string
+          ipi_rate?: number | null
           is_active?: boolean
-          notes?: string | null
-          tax_rate?: number | null
-          type: string
+          mva?: number | null
+          name?: string
+          ncm?: string | null
+          operation_type?: string
+          pis_rate?: number
+          product_type?: string
+          regime?: string
           updated_at?: string
         }
         Update: {
-          code?: string
+          cest?: string | null
+          cfop?: string
+          cofins_rate?: number
           company_id?: string
           created_at?: string
-          description?: string
+          csosn?: string | null
+          cst_icms?: string | null
+          icms_rate?: number
+          icms_st_rate?: number | null
           id?: string
+          ipi_rate?: number | null
           is_active?: boolean
-          notes?: string | null
-          tax_rate?: number | null
-          type?: string
+          mva?: number | null
+          name?: string
+          ncm?: string | null
+          operation_type?: string
+          pis_rate?: number
+          product_type?: string
+          regime?: string
           updated_at?: string
         }
         Relationships: [

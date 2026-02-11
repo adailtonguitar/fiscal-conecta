@@ -1,11 +1,32 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "./useCompany";
-import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 
-export type FiscalCategory = Tables<"fiscal_categories">;
-export type FiscalCategoryInsert = TablesInsert<"fiscal_categories">;
+export interface FiscalCategory {
+  id: string;
+  company_id: string;
+  name: string;
+  regime: "simples_nacional" | "lucro_presumido" | "lucro_real";
+  operation_type: "interna" | "interestadual";
+  product_type: "normal" | "st";
+  ncm: string | null;
+  cest: string | null;
+  cfop: string;
+  csosn: string | null;
+  cst_icms: string | null;
+  icms_rate: number;
+  icms_st_rate: number | null;
+  mva: number | null;
+  pis_rate: number;
+  cofins_rate: number;
+  ipi_rate: number | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type FiscalCategoryInsert = Omit<FiscalCategory, "id" | "company_id" | "created_at" | "updated_at">;
 
 export function useFiscalCategories() {
   const { companyId } = useCompany();
@@ -13,9 +34,13 @@ export function useFiscalCategories() {
     queryKey: ["fiscal_categories", companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const { data, error } = await supabase.from("fiscal_categories").select("*").eq("company_id", companyId).order("type").order("code");
+      const { data, error } = await supabase
+        .from("fiscal_categories")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("name");
       if (error) throw error;
-      return data as FiscalCategory[];
+      return data as unknown as FiscalCategory[];
     },
     enabled: !!companyId,
   });
@@ -25,9 +50,13 @@ export function useCreateFiscalCategory() {
   const qc = useQueryClient();
   const { companyId } = useCompany();
   return useMutation({
-    mutationFn: async (c: Omit<FiscalCategoryInsert, "company_id">) => {
+    mutationFn: async (c: Partial<FiscalCategoryInsert> & { name: string }) => {
       if (!companyId) throw new Error("Empresa não encontrada");
-      const { data, error } = await supabase.from("fiscal_categories").insert({ ...c, company_id: companyId }).select().single();
+      const { data, error } = await supabase
+        .from("fiscal_categories")
+        .insert({ ...c, company_id: companyId } as any)
+        .select()
+        .single();
       if (error) throw error;
       return data;
     },
@@ -40,7 +69,12 @@ export function useUpdateFiscalCategory() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<FiscalCategory> & { id: string }) => {
-      const { data, error } = await supabase.from("fiscal_categories").update(updates).eq("id", id).select().single();
+      const { data, error } = await supabase
+        .from("fiscal_categories")
+        .update(updates as any)
+        .eq("id", id)
+        .select()
+        .single();
       if (error) throw error;
       return data;
     },
