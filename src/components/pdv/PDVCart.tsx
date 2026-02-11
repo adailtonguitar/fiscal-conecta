@@ -12,6 +12,8 @@ interface PDVCartProps {
   onRemoveItem: (id: string) => void;
   onClearCart: () => void;
   onCheckout: () => void;
+  selectedItemId?: string | null;
+  onSelectItem?: (id: string | null) => void;
 }
 
 function LiveClock() {
@@ -27,11 +29,11 @@ function LiveClock() {
   );
 }
 
-export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, onCheckout }: PDVCartProps) {
+export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, onCheckout, selectedItemId, onSelectItem }: PDVCartProps) {
   const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
   const totalQuantity = items.reduce((acc, item) => acc + item.quantity, 0);
-  const lastItem = items.length > 0 ? items[items.length - 1] : null;
+  const selectedItem = selectedItemId ? items.find((i) => i.id === selectedItemId) || null : (items.length > 0 ? items[items.length - 1] : null);
 
   return (
     <div className="flex flex-col h-full">
@@ -56,18 +58,18 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
         <LiveClock />
       </div>
 
-      {/* Last product name - big display */}
+      {/* Selected product name - big display */}
       <div className="px-4 py-3 bg-white border-b border-gray-200 min-h-[56px] flex items-center">
         <AnimatePresence mode="wait">
-          {lastItem ? (
+          {selectedItem ? (
             <motion.h2
-              key={lastItem.id + lastItem.quantity}
+              key={selectedItem.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               className="text-2xl font-black text-gray-900 uppercase tracking-wide truncate"
             >
-              {lastItem.name}
+              {selectedItem.name}
             </motion.h2>
           ) : (
             <motion.h2
@@ -84,9 +86,9 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
 
       {/* Main content: left product detail + right items table */}
       <div className="flex flex-1 min-h-0 bg-[hsl(210,20%,95%)]">
-        {/* LEFT: Last product detail */}
+        {/* LEFT: Selected product detail */}
         <div className="w-[280px] flex-shrink-0 border-r border-gray-300 bg-white p-4 flex flex-col gap-4">
-          {lastItem ? (
+          {selectedItem ? (
             <>
               {/* Product image placeholder */}
               <div className="w-full aspect-square rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden">
@@ -100,20 +102,20 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
               <div className="space-y-2">
                 <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
                   <span className="text-xs font-bold text-gray-500 uppercase">Código:</span>
-                  <span className="text-sm font-mono font-bold text-gray-800">{lastItem.sku}</span>
+                  <span className="text-sm font-mono font-bold text-gray-800">{selectedItem.sku}</span>
                 </div>
                 <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
                   <span className="text-xs font-bold text-gray-500 uppercase">Preço:</span>
-                  <span className="text-lg font-bold text-blue-700">{formatCurrency(lastItem.price)}</span>
+                  <span className="text-lg font-bold text-blue-700">{formatCurrency(selectedItem.price)}</span>
                 </div>
                 <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
                   <span className="text-xs font-bold text-gray-500 uppercase">Quantidade:</span>
-                  <span className="text-lg font-bold text-gray-800 font-mono">{lastItem.quantity}</span>
+                  <span className="text-lg font-bold text-gray-800 font-mono">{selectedItem.quantity}</span>
                 </div>
                 <div className="flex justify-between items-center py-1.5">
                   <span className="text-xs font-bold text-gray-500 uppercase">Subtotal:</span>
                   <span className="text-lg font-bold text-blue-700">
-                    {formatCurrency(lastItem.price * lastItem.quantity)}
+                    {formatCurrency(selectedItem.price * selectedItem.quantity)}
                   </span>
                 </div>
               </div>
@@ -158,7 +160,12 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
                         initial={{ opacity: 0, y: -8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className={`${idx % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-blue-50 transition-colors border-b border-gray-200`}
+                        onClick={() => onSelectItem?.(item.id)}
+                        className={`cursor-pointer transition-colors border-b border-gray-200 ${
+                          selectedItemId === item.id
+                            ? "bg-blue-100 ring-1 ring-blue-400"
+                            : idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                        } hover:bg-blue-50`}
                       >
                         <td className="px-3 py-2 font-bold text-gray-500">{idx + 1}</td>
                         <td className="px-3 py-2 font-mono text-gray-600">{item.sku}</td>
