@@ -120,11 +120,25 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   }, [checkSubscription]);
 
   const createCheckout = useCallback(async (priceId: string) => {
-    const { data, error } = await supabase.functions.invoke("create-checkout", {
-      body: { priceId },
-    });
-    if (error) throw error;
-    if (data?.url) window.open(data.url, "_blank");
+    // Open window immediately to avoid popup blocker (must be in user click handler)
+    const newWindow = window.open("", "_blank");
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { priceId },
+      });
+      if (error) throw error;
+      if (data?.url && newWindow) {
+        newWindow.location.href = data.url;
+      } else if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        newWindow?.close();
+        throw new Error("URL de checkout não retornada");
+      }
+    } catch (err) {
+      newWindow?.close();
+      throw err;
+    }
   }, []);
 
   const openCustomerPortal = useCallback(async () => {

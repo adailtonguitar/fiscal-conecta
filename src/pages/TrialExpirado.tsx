@@ -32,12 +32,16 @@ export default function TrialExpirado() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
   const handlePlanClick = async (plan: typeof plans[0]) => {
-    if (!user) return;
+    if (!user) {
+      toast.error("Você precisa estar logado para assinar um plano.");
+      return;
+    }
     try {
       setLoadingPlan(plan.name);
       await createCheckout(plan.priceId);
-    } catch {
-      toast.error("Erro ao iniciar checkout. Tente novamente.");
+    } catch (err: any) {
+      console.error("Checkout error:", err);
+      toast.error(err?.message || "Erro ao iniciar checkout. Tente novamente.");
     } finally {
       setLoadingPlan(null);
     }
