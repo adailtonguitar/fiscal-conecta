@@ -111,7 +111,7 @@ export default function TrialExpirado() {
       </div>
 
       <p className="mt-6 text-sm text-muted-foreground text-center">
-        Pagamento seguro via Mercado Pago • PIX, cartão de crédito ou boleto
+        Pagamento seguro via Mercado Pago • PIX, cartão de crédito, boleto ou saldo MP
       </p>
 
       <div className="mt-4 text-center">
