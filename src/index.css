@@ -90,32 +90,31 @@
     --input: 220 18% 18%;
     --ring: 168 72% 42%;
   }
+}
 
-
-  /* PDV Terminal Theme - azul escuro suave */
-  .pdv-theme {
-    --background: 220 22% 22%;
-    --foreground: 210 20% 92%;
-    --card: 220 24% 26%;
-    --card-foreground: 210 20% 92%;
-    --popover: 220 24% 26%;
-    --popover-foreground: 210 20% 92%;
-    --primary: 213 75% 52%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 22% 28%;
-    --secondary-foreground: 210 20% 90%;
-    --muted: 220 22% 28%;
-    --muted-foreground: 210 12% 58%;
-    --accent: 213 40% 30%;
-    --accent-foreground: 213 75% 72%;
-    --destructive: 0 65% 50%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 220 20% 32%;
-    --input: 220 20% 32%;
-    --ring: 213 75% 52%;
-    --sidebar-background: 220 25% 16%;
-    --sidebar-foreground: 210 15% 78%;
-  }
+/* PDV Terminal Theme - azul escuro suave, fora do @layer para prioridade */
+.pdv-theme {
+  --background: 220 22% 22%;
+  --foreground: 210 20% 92%;
+  --card: 220 24% 26%;
+  --card-foreground: 210 20% 92%;
+  --popover: 220 24% 26%;
+  --popover-foreground: 210 20% 92%;
+  --primary: 213 75% 52%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 22% 28%;
+  --secondary-foreground: 210 20% 90%;
+  --muted: 220 22% 28%;
+  --muted-foreground: 210 12% 58%;
+  --accent: 213 40% 30%;
+  --accent-foreground: 213 75% 72%;
+  --destructive: 0 65% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 220 20% 32%;
+  --input: 220 20% 32%;
+  --ring: 213 75% 52%;
+  --sidebar-background: 220 25% 16%;
+  --sidebar-foreground: 210 15% 78%;
 }
 
 @layer base {
