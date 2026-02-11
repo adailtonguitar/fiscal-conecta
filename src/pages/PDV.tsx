@@ -291,20 +291,23 @@ export default function PDV() {
           />
         </div>
 
-        {/* PRODUCT LIST: slide-over panel */}
+        {/* PRODUCT LIST: fullscreen overlay */}
         <AnimatePresence>
           {showProductList && (
             <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="absolute inset-y-0 right-0 w-[380px] z-30 border-l border-pos-border shadow-2xl"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 z-30 bg-pos-bg"
             >
               <PDVProductGrid
                 products={pdv.products}
                 loading={pdv.loadingProducts}
-                onAddToCart={handleAddToCart}
+                onAddToCart={(product) => {
+                  handleAddToCart(product);
+                  setShowProductList(false);
+                }}
               />
             </motion.div>
           )}
