@@ -6,8 +6,9 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 
 export default function Auth() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => localStorage.getItem("remember-email") || "");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(() => localStorage.getItem("remember-email") !== null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -129,6 +130,11 @@ export default function Auth() {
     setLoading(true);
 
     try {
+      if (rememberMe) {
+        localStorage.setItem("remember-email", email);
+      } else {
+        localStorage.removeItem("remember-email");
+      }
       sessionStorage.removeItem("needs-password-setup");
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
@@ -255,6 +261,16 @@ export default function Auth() {
                     />
                   </div>
                 </div>
+
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary"
+                  />
+                  <span className="text-sm text-muted-foreground">Manter-me conectado</span>
+                </label>
 
                 <button
                   type="submit"
