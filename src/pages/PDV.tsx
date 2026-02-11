@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { isScaleBarcode } from "@/lib/scale-barcode";
 import { PDVProductGrid } from "@/components/pdv/PDVProductGrid";
 import { PDVCart } from "@/components/pdv/PDVCart";
+import { PDVQuickProductDialog } from "@/components/pdv/PDVQuickProductDialog";
 import { SaleReceipt } from "@/components/pos/SaleReceipt";
 import { TEFProcessor, type TEFResult } from "@/components/pos/TEFProcessor";
 import { CashRegister } from "@/components/pos/CashRegister";
@@ -10,7 +11,7 @@ import { usePDV, type PDVProduct } from "@/hooks/usePDV";
 import { useCompany } from "@/hooks/useCompany";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { AnimatePresence, motion } from "framer-motion";
-import { Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard, ArrowLeft, Maximize, ScanBarcode, DollarSign, PackageX } from "lucide-react";
+import { Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard, ArrowLeft, Maximize, ScanBarcode, DollarSign, PackageX, PackagePlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { PaymentResult } from "@/services/types";
@@ -33,6 +34,8 @@ export default function PDV() {
   const [selectedCartItemId, setSelectedCartItemId] = useState<string | null>(null);
   const [zeroStockProduct, setZeroStockProduct] = useState<PDVProduct | null>(null);
   const [stockMovementProduct, setStockMovementProduct] = useState<PDVProduct | null>(null);
+  const [showQuickProduct, setShowQuickProduct] = useState(false);
+  const [quickProductBarcode, setQuickProductBarcode] = useState("");
 
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
@@ -93,7 +96,15 @@ export default function PDV() {
       pdv.addToCart(searchMatch);
       toast.success(`${searchMatch.name} adicionado`);
     } else {
-      toast.error(`Produto não encontrado: ${query}`);
+      toast.error(`Produto não encontrado: ${query}`, {
+        action: {
+          label: "Cadastrar",
+          onClick: () => {
+            setQuickProductBarcode(query);
+            setShowQuickProduct(true);
+          },
+        },
+      });
     }
     setBarcodeInput("");
   };
@@ -131,6 +142,7 @@ export default function PDV() {
           setShowProductList((p) => !p);
           break;
         case "F4": e.preventDefault(); setShowCashRegister(true); break;
+        case "F5": e.preventDefault(); setQuickProductBarcode(""); setShowQuickProduct(true); break;
         case "F6":
           e.preventDefault();
           if (pdv.cartItems.length > 0) { pdv.clearCart(); toast.info("Carrinho limpo"); }
@@ -288,6 +300,13 @@ export default function PDV() {
           className="px-3 py-1.5 rounded bg-muted border border-border text-muted-foreground hover:text-foreground text-xs font-medium hover:bg-accent transition-all"
         >
           {showProductList ? "Ocultar Produtos" : "Mostrar Produtos (F3)"}
+        </button>
+        <button
+          onClick={() => { setQuickProductBarcode(""); setShowQuickProduct(true); }}
+          className="px-3 py-1.5 rounded bg-primary/10 border border-primary/20 text-primary text-xs font-medium hover:bg-primary/20 transition-all flex items-center gap-1.5"
+        >
+          <PackagePlus className="w-3 h-3" />
+          Cadastrar (F5)
         </button>
       </div>
 
@@ -447,6 +466,13 @@ export default function PDV() {
         />
       )}
 
+      {/* Quick product registration from PDV */}
+      <PDVQuickProductDialog
+        open={showQuickProduct}
+        onOpenChange={setShowQuickProduct}
+        initialBarcode={quickProductBarcode}
+        onProductCreated={() => pdv.refreshProducts()}
+      />
 
       {/* Fixed shortcuts bar at bottom */}
       <div className="flex items-center justify-center gap-2 px-4 py-2.5 bg-sidebar-background border-t border-border flex-shrink-0 flex-wrap">
@@ -455,6 +481,7 @@ export default function PDV() {
           { key: "F2", label: "Pagamento", action: handleCheckout },
           { key: "F3", label: "Buscar", action: () => setShowProductList((p) => !p) },
           { key: "F4", label: "Caixa", action: () => setShowCashRegister(true) },
+          { key: "F5", label: "Cadastrar", action: () => { setQuickProductBarcode(""); setShowQuickProduct(true); } },
           { key: "F6", label: "Limpar", action: () => { if (pdv.cartItems.length > 0) { pdv.clearCart(); toast.info("Carrinho limpo"); } } },
           { key: "F9", label: "Sincronizar", action: () => { if (pdv.pendingCount > 0 && pdv.isOnline) pdv.syncAll(); } },
           { key: "Del", label: "Remover", action: () => { if (pdv.cartItems.length > 0) { const last = pdv.cartItems[pdv.cartItems.length - 1]; pdv.removeItem(last.id); toast.info(`${last.name} removido`); } } },
