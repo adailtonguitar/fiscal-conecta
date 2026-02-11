@@ -53,8 +53,6 @@ serve(async (req) => {
     const searchUrl = new URL("https://api.mercadopago.com/preapproval/search");
     searchUrl.searchParams.set("payer_email", user.email);
     searchUrl.searchParams.set("status", "authorized");
-    searchUrl.searchParams.set("sort", "date_created");
-    searchUrl.searchParams.set("criteria", "desc");
     searchUrl.searchParams.set("limit", "1");
 
     const response = await fetch(searchUrl.toString(), {
@@ -97,8 +95,6 @@ serve(async (req) => {
       const pendingUrl = new URL("https://api.mercadopago.com/preapproval/search");
       pendingUrl.searchParams.set("payer_email", user.email);
       pendingUrl.searchParams.set("status", "pending");
-      pendingUrl.searchParams.set("sort", "date_created");
-      pendingUrl.searchParams.set("criteria", "desc");
       pendingUrl.searchParams.set("limit", "1");
 
       const pendingRes = await fetch(pendingUrl.toString(), {

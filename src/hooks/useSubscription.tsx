@@ -70,18 +70,19 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       setState({ ...defaultState, loading: false });
       return;
     }
+    // Always fetch company_users for trial calc, even if MP call fails
+    let createdAt = user.created_at;
     try {
-      const [subResult, profileResult] = await Promise.all([
-        supabase.functions.invoke("check-subscription"),
-        supabase.from("company_users").select("created_at").eq("user_id", user.id).eq("is_active", true).limit(1).single(),
-      ]);
+      const cuResult = await supabase.from("company_users").select("created_at").eq("user_id", user.id).eq("is_active", true).limit(1).single();
+      if (cuResult.data?.created_at) createdAt = cuResult.data.created_at;
+    } catch { /* ignore */ }
 
-      if (subResult.error) throw subResult.error;
+    try {
+      const { data, error } = await supabase.functions.invoke("check-subscription");
+      if (error) throw error;
 
-      const isSubscribed = subResult.data?.subscribed ?? false;
-      const planKey = subResult.data?.plan_key ?? null;
-
-      const createdAt = profileResult.data?.created_at ?? user.created_at;
+      const isSubscribed = data?.subscribed ?? false;
+      const planKey = data?.plan_key ?? null;
       const trial = isSubscribed
         ? { trialActive: false, trialDaysLeft: null, trialExpired: false }
         : calcTrial(createdAt);
@@ -89,12 +90,13 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       setState({
         subscribed: isSubscribed,
         planKey,
-        subscriptionEnd: subResult.data?.subscription_end ?? null,
+        subscriptionEnd: data?.subscription_end ?? null,
         loading: false,
         ...trial,
       });
     } catch {
-      setState((s) => ({ ...s, loading: false }));
+      const trial = calcTrial(createdAt);
+      setState((s) => ({ ...s, loading: false, ...trial }));
     }
   }, [user]);
 
