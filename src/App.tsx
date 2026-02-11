@@ -37,6 +37,8 @@ import NotFound from "./pages/NotFound";
 import Instalar from "./pages/Instalar";
 import Termos from "./pages/Termos";
 import Privacidade from "./pages/Privacidade";
+import PainelLucro from "./pages/PainelLucro";
+import AlertaFinanceiro from "./pages/AlertaFinanceiro";
 
 const queryClient = new QueryClient();
 
@@ -126,7 +128,8 @@ function AppRoutes() {
             <AppLayout>
               <Routes>
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/painel-lucro" element={<PainelLucro />} />
+                <Route path="/alertas" element={<AlertaFinanceiro />} />
                 <Route path="/produtos" element={<Produtos />} />
                 <Route path="/vendas" element={<Vendas />} />
                 <Route path="/relatorio-vendas" element={<RelatorioVendas />} />
