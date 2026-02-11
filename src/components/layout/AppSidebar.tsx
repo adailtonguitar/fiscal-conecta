@@ -5,7 +5,7 @@ import {
   Wifi, WifiOff, RefreshCw, ChevronLeft, ChevronRight, ChevronDown,
   Store, Receipt, Shield, ScrollText, LogOut, DollarSign, Landmark,
   Users, Building2, ClipboardList, UserCheck, Factory, Truck, Tags, BarChart3,
-  Download,
+  Download, Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -52,6 +52,7 @@ const navItems: NavEntry[] = [
       { icon: Users, label: "Usuários", path: "/usuarios" },
     ],
   },
+  { icon: Tag, label: "Etiquetas", path: "/etiquetas" },
   { icon: Receipt, label: "Fiscal", path: "/fiscal" },
   { icon: Shield, label: "Config. Fiscal", path: "/fiscal/config" },
   { icon: ScrollText, label: "Auditoria", path: "/fiscal/auditoria" },
