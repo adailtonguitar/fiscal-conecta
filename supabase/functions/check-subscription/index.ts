@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -26,8 +25,8 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
+    const mpToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
+    if (!mpToken) throw new Error("MERCADO_PAGO_ACCESS_TOKEN não configurado");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -50,38 +49,91 @@ serve(async (req) => {
     const user = userData.user;
     logStep("User authenticated", { email: user.email });
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    // Search for active preapprovals (subscriptions) by payer email
+    const searchUrl = new URL("https://api.mercadopago.com/preapproval/search");
+    searchUrl.searchParams.set("payer_email", user.email);
+    searchUrl.searchParams.set("status", "authorized");
+    searchUrl.searchParams.set("sort", "date_created");
+    searchUrl.searchParams.set("criteria", "desc");
+    searchUrl.searchParams.set("limit", "1");
 
-    if (customers.data.length === 0) {
-      logStep("No Stripe customer found");
-      return new Response(JSON.stringify({ subscribed: false }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
-    const customerId = customers.data[0].id;
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1,
+    const response = await fetch(searchUrl.toString(), {
+      headers: { "Authorization": `Bearer ${mpToken}` },
     });
 
-    const hasActiveSub = subscriptions.data.length > 0;
-    let productId: string | null = null;
+    const result = await response.json();
+
+    if (!response.ok) {
+      logStep("MP search error", result);
+      throw new Error("Erro ao consultar assinaturas no Mercado Pago");
+    }
+
+    const results = result.results || [];
+    const hasActiveSub = results.length > 0;
+    let planKey: string | null = null;
     let subscriptionEnd: string | null = null;
 
     if (hasActiveSub) {
-      const sub = subscriptions.data[0];
-      subscriptionEnd = new Date(sub.current_period_end * 1000).toISOString();
-      productId = sub.items.data[0].price.product as string;
-      logStep("Active subscription found", { productId, subscriptionEnd });
+      const sub = results[0];
+      subscriptionEnd = sub.next_payment_date || null;
+
+      // Extract planKey from external_reference (format: "userId|planKey")
+      const extRef = sub.external_reference || "";
+      const parts = extRef.split("|");
+      if (parts.length >= 2) {
+        planKey = parts[1];
+      }
+
+      // Fallback: detect plan by amount
+      if (!planKey && sub.auto_recurring?.transaction_amount) {
+        const amount = sub.auto_recurring.transaction_amount;
+        if (amount === 150) planKey = "essencial";
+        else if (amount === 200) planKey = "profissional";
+      }
+
+      logStep("Active subscription found", { id: sub.id, planKey, subscriptionEnd });
+    } else {
+      // Also check "pending" status (user approved but first payment not yet processed)
+      const pendingUrl = new URL("https://api.mercadopago.com/preapproval/search");
+      pendingUrl.searchParams.set("payer_email", user.email);
+      pendingUrl.searchParams.set("status", "pending");
+      pendingUrl.searchParams.set("sort", "date_created");
+      pendingUrl.searchParams.set("criteria", "desc");
+      pendingUrl.searchParams.set("limit", "1");
+
+      const pendingRes = await fetch(pendingUrl.toString(), {
+        headers: { "Authorization": `Bearer ${mpToken}` },
+      });
+      const pendingResult = await pendingRes.json();
+      const pendingResults = pendingResult.results || [];
+
+      if (pendingResults.length > 0) {
+        const sub = pendingResults[0];
+        const extRef = sub.external_reference || "";
+        const parts = extRef.split("|");
+        if (parts.length >= 2) planKey = parts[1];
+        if (!planKey && sub.auto_recurring?.transaction_amount) {
+          const amount = sub.auto_recurring.transaction_amount;
+          if (amount === 150) planKey = "essencial";
+          else if (amount === 200) planKey = "profissional";
+        }
+        logStep("Pending subscription found (treating as active)", { id: sub.id, planKey });
+        return new Response(JSON.stringify({
+          subscribed: true,
+          plan_key: planKey,
+          subscription_end: sub.next_payment_date || null,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
+      logStep("No active subscription found");
     }
 
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
-      product_id: productId,
+      plan_key: planKey,
       subscription_end: subscriptionEnd,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
