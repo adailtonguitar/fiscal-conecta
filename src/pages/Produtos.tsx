@@ -62,6 +62,19 @@ export default function Produtos() {
     );
   }
 
+  if (showForm) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <ProductFormDialog
+          key={editingProduct?.id ?? "new"}
+          open={showForm}
+          onOpenChange={handleCloseForm}
+          product={editingProduct}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
@@ -210,13 +223,6 @@ export default function Produtos() {
         </div>
       </motion.div>
 
-      {/* Dialogs */}
-      <ProductFormDialog
-        key={editingProduct?.id ?? "new"}
-        open={showForm}
-        onOpenChange={handleCloseForm}
-        product={editingProduct}
-      />
 
       {movementProduct && (
         <StockMovementDialog

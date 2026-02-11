@@ -2,11 +2,10 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { useCreateProduct, useUpdateProduct, type Product } from "@/hooks/useProducts";
 import { useFiscalCategories } from "@/hooks/useFiscalCategories";
 import { supabase } from "@/integrations/supabase/client";
@@ -143,236 +142,245 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
 
   const isPending = createProduct.isPending || updateProduct.isPending;
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] w-full max-h-[95vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? "Editar Produto" : "Novo Produto"}</DialogTitle>
-        </DialogHeader>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">{isEditing ? "Editar Produto" : "Novo Produto"}</h1>
+        <Button variant="outline" onClick={() => onOpenChange(false)}>
+          ← Voltar para Produtos
+        </Button>
+      </div>
+
+      <div className="bg-card rounded-xl border border-border p-6">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={form.control} name="name" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nome</FormLabel>
-                <FormControl><Input placeholder="Nome do produto" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Dados Básicos */}
+            <div>
+              <h2 className="text-lg font-semibold text-foreground mb-4">Dados Básicos</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField control={form.control} name="name" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome</FormLabel>
+                    <FormControl><Input placeholder="Nome do produto" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="sku" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>SKU</FormLabel>
+                      <FormControl><Input placeholder="BEB001" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="barcode" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Código de Barras</FormLabel>
+                      <FormControl><Input placeholder="7891234567890" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+              </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="sku" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>SKU</FormLabel>
-                  <FormControl><Input placeholder="BEB001" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="barcode" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Código de Barras</FormLabel>
-                  <FormControl><Input placeholder="7891234567890" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="ncm" render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    NCM
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 px-1.5 text-[10px] gap-1 text-primary hover:text-primary"
-                      onClick={lookupNCM}
-                      disabled={ncmLoading}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                <FormField control={form.control} name="ncm" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      NCM
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 px-1.5 text-[10px] gap-1 text-primary hover:text-primary"
+                        onClick={lookupNCM}
+                        disabled={ncmLoading}
+                      >
+                        {ncmLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                        Buscar por IA
+                      </Button>
+                    </FormLabel>
+                    <FormControl><Input placeholder="22021000" {...field} /></FormControl>
+                    {showNcmSuggestions && ncmSuggestions.length > 0 && (
+                      <div className="mt-1 border border-border rounded-lg overflow-hidden bg-popover shadow-lg">
+                        {ncmSuggestions.map((s, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => selectNCM(s.ncm)}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent transition-colors border-b border-border last:border-0"
+                          >
+                            <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                            <span className="font-mono font-medium text-foreground">{s.ncm}</span>
+                            <span className="text-muted-foreground text-xs truncate">— {s.description}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="category" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="unit" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Unidade</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {units.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="fiscal_category_id" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria Fiscal</FormLabel>
+                    <Select
+                      onValueChange={(v) => {
+                        field.onChange(v === "__none__" ? "" : v);
+                        if (v && v !== "__none__") {
+                          const cat = fiscalCategories.find(c => c.id === v) as any;
+                          if (cat) {
+                            form.setValue("cfop", cat.cfop || "5102");
+                            form.setValue("csosn", cat.csosn || "");
+                            form.setValue("cst_icms", cat.cst_icms || "");
+                            form.setValue("aliq_icms", cat.icms_rate ?? 0);
+                            form.setValue("aliq_pis", cat.pis_rate ?? 1.65);
+                            form.setValue("aliq_cofins", cat.cofins_rate ?? 7.60);
+                            if (cat.cest) form.setValue("cest", cat.cest);
+                            if (cat.ncm) form.setValue("ncm", cat.ncm);
+                          }
+                        }
+                      }}
+                      defaultValue={field.value || "__none__"}
                     >
-                      {ncmLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                      Buscar por IA
-                    </Button>
-                  </FormLabel>
-                  <FormControl><Input placeholder="22021000" {...field} /></FormControl>
-                  {showNcmSuggestions && ncmSuggestions.length > 0 && (
-                    <div className="mt-1 border border-border rounded-lg overflow-hidden bg-popover shadow-lg">
-                      {ncmSuggestions.map((s, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => selectNCM(s.ncm)}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent transition-colors border-b border-border last:border-0"
-                        >
-                          <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                          <span className="font-mono font-medium text-foreground">{s.ncm}</span>
-                          <span className="text-muted-foreground text-xs truncate">— {s.description}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="category" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Categoria</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
-
-            <div className="grid grid-cols-4 gap-4">
-              <FormField control={form.control} name="unit" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Unidade</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {units.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="cost_price" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preço Custo</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      {...field}
-                      onChange={(e) => {
-                        field.onChange(e);
-                        const cost = parseFloat(e.target.value) || 0;
-                        const price = form.getValues("price");
-                        if (cost > 0 && price > 0) {
-                          setMarginStr((((price - cost) / cost) * 100).toFixed(1));
-                        }
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="price" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preço Venda</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      {...field}
-                      onChange={(e) => {
-                        field.onChange(e);
-                        const price = parseFloat(e.target.value) || 0;
-                        const cost = form.getValues("cost_price") || 0;
-                        if (cost > 0 && price > 0) {
-                          setMarginStr((((price - cost) / cost) * 100).toFixed(1));
-                        }
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <div className="space-y-2">
-                <label className="text-sm font-medium leading-none">Margem %</label>
-                <Input
-                  type="number"
-                  step="any"
-                  placeholder="0"
-                  value={marginStr}
-                  className={(() => {
-                    const m = parseFloat(marginStr);
-                    if (isNaN(m)) return "";
-                    return m > 0 ? "text-green-600 font-semibold" : m < 0 ? "text-destructive font-semibold" : "";
-                  })()}
-                  onChange={(e) => {
-                    setMarginStr(e.target.value);
-                    const m = parseFloat(e.target.value);
-                    const cost = form.getValues("cost_price") || 0;
-                    if (!isNaN(m) && cost > 0) {
-                      const newPrice = +(cost * (1 + m / 100)).toFixed(2);
-                      form.setValue("price", newPrice);
-                    }
-                  }}
-                />
+                      <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="__none__">Nenhuma</SelectItem>
+                        {fiscalCategories.filter((c: any) => c.is_active).map((c: any) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name} ({c.cfop} - {c.operation_type})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="stock_quantity" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estoque Atual</FormLabel>
-                  <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="min_stock" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estoque Mínimo</FormLabel>
-                  <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+            {/* Preços e Estoque */}
+            <div>
+              <h2 className="text-lg font-semibold text-foreground mb-4">Preços e Estoque</h2>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <FormField control={form.control} name="cost_price" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preço Custo</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          const cost = parseFloat(e.target.value) || 0;
+                          const price = form.getValues("price");
+                          if (cost > 0 && price > 0) {
+                            setMarginStr((((price - cost) / cost) * 100).toFixed(1));
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="price" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preço Venda</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          const price = parseFloat(e.target.value) || 0;
+                          const cost = form.getValues("cost_price") || 0;
+                          if (cost > 0 && price > 0) {
+                            setMarginStr((((price - cost) / cost) * 100).toFixed(1));
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none">Margem %</label>
+                  <Input
+                    type="number"
+                    step="any"
+                    placeholder="0"
+                    value={marginStr}
+                    className={(() => {
+                      const m = parseFloat(marginStr);
+                      if (isNaN(m)) return "";
+                      return m > 0 ? "text-green-600 font-semibold" : m < 0 ? "text-destructive font-semibold" : "";
+                    })()}
+                    onChange={(e) => {
+                      setMarginStr(e.target.value);
+                      const m = parseFloat(e.target.value);
+                      const cost = form.getValues("cost_price") || 0;
+                      if (!isNaN(m) && cost > 0) {
+                        const newPrice = +(cost * (1 + m / 100)).toFixed(2);
+                        form.setValue("price", newPrice);
+                      }
+                    }}
+                  />
+                </div>
+                <FormField control={form.control} name="stock_quantity" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estoque Atual</FormLabel>
+                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="min_stock" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estoque Mínimo</FormLabel>
+                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
             </div>
 
-            {/* Categoria Fiscal */}
-            <FormField control={form.control} name="fiscal_category_id" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Categoria Fiscal</FormLabel>
-                <Select
-                  onValueChange={(v) => {
-                    field.onChange(v === "__none__" ? "" : v);
-                    // Auto-fill ALL fiscal fields from selected category
-                    if (v && v !== "__none__") {
-                      const cat = fiscalCategories.find(c => c.id === v) as any;
-                      if (cat) {
-                        form.setValue("cfop", cat.cfop || "5102");
-                        form.setValue("csosn", cat.csosn || "");
-                        form.setValue("cst_icms", cat.cst_icms || "");
-                        form.setValue("aliq_icms", cat.icms_rate ?? 0);
-                        form.setValue("aliq_pis", cat.pis_rate ?? 1.65);
-                        form.setValue("aliq_cofins", cat.cofins_rate ?? 7.60);
-                        if (cat.cest) form.setValue("cest", cat.cest);
-                        if (cat.ncm) form.setValue("ncm", cat.ncm);
-                      }
-                    }
-                  }}
-                  defaultValue={field.value || "__none__"}
-                >
-                  <FormControl>
-                    <SelectTrigger><SelectValue placeholder="Selecione uma categoria fiscal" /></SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="__none__">Nenhuma</SelectItem>
-                    {fiscalCategories.filter((c: any) => c.is_active).map((c: any) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name} ({c.cfop} - {c.operation_type})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )} />
-
             {/* Dados Fiscais */}
-            <div className="border-t pt-4 mt-4">
-              <h3 className="text-sm font-semibold text-foreground mb-3">Dados Fiscais (NF-e)</h3>
+            <div>
+              <h2 className="text-lg font-semibold text-foreground mb-4">Dados Fiscais (NF-e)</h2>
               
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <FormField control={form.control} name="origem" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Origem</FormLabel>
@@ -416,9 +424,16 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                     <FormMessage />
                   </FormItem>
                 )} />
+                <FormField control={form.control} name="gtin_tributavel" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>GTIN Tributável</FormLabel>
+                    <FormControl><Input placeholder="EAN tributável" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
               </div>
 
-              <div className="grid grid-cols-3 gap-4 mt-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                 <FormField control={form.control} name="csosn" render={({ field }) => (
                   <FormItem>
                     <FormLabel>CSOSN (Simples)</FormLabel>
@@ -470,7 +485,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                 )} />
               </div>
 
-              <div className="grid grid-cols-4 gap-4 mt-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                 <FormField control={form.control} name="cst_pis" render={({ field }) => (
                   <FormItem>
                     <FormLabel>CST PIS</FormLabel>
@@ -528,19 +543,9 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                   </FormItem>
                 )} />
               </div>
-
-              <div className="mt-3">
-                <FormField control={form.control} name="gtin_tributavel" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>GTIN Tributável</FormLabel>
-                    <FormControl><Input placeholder="EAN tributável (se diferente do código de barras)" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
               <Button type="submit" disabled={isPending}>
                 {isPending ? "Salvando..." : isEditing ? "Salvar" : "Criar Produto"}
@@ -548,7 +553,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
             </div>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
