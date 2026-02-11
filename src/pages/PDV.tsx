@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { isScaleBarcode } from "@/lib/scale-barcode";
 import { PDVProductGrid } from "@/components/pdv/PDVProductGrid";
 import { PDVCart } from "@/components/pdv/PDVCart";
 import { SaleReceipt } from "@/components/pos/SaleReceipt";
@@ -39,6 +40,13 @@ export default function PDV() {
   const handleBarcodeSubmit = () => {
     const query = barcodeInput.trim();
     if (!query) return;
+
+    // Scale barcode — delegate to PDV hook
+    if (isScaleBarcode(query)) {
+      pdv.handleBarcodeScan(query);
+      setBarcodeInput("");
+      return;
+    }
 
     // Try exact match first (barcode/sku/id/ncm)
     const exactMatch = pdv.products.find(

@@ -57,19 +57,25 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
                     <td className="px-2 py-1.5 text-pos-text-muted">{item.unit}</td>
                     <td className="px-2 py-1.5 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => onUpdateQuantity(item.id, -1)}
-                          className="w-5 h-5 rounded bg-pos-bg flex items-center justify-center text-pos-text-muted hover:text-pos-text text-[10px] font-bold transition-colors"
-                        >
-                          −
-                        </button>
-                        <span className="w-6 text-center font-mono text-pos-text">{item.quantity}</span>
-                        <button
-                          onClick={() => onUpdateQuantity(item.id, 1)}
-                          className="w-5 h-5 rounded bg-pos-bg flex items-center justify-center text-pos-text-muted hover:text-pos-text text-[10px] font-bold transition-colors"
-                        >
-                          +
-                        </button>
+                        {Number.isInteger(item.quantity) ? (
+                          <>
+                            <button
+                              onClick={() => onUpdateQuantity(item.id, -1)}
+                              className="w-5 h-5 rounded bg-pos-bg flex items-center justify-center text-pos-text-muted hover:text-pos-text text-[10px] font-bold transition-colors"
+                            >
+                              −
+                            </button>
+                            <span className="w-6 text-center font-mono text-pos-text">{item.quantity}</span>
+                            <button
+                              onClick={() => onUpdateQuantity(item.id, 1)}
+                              className="w-5 h-5 rounded bg-pos-bg flex items-center justify-center text-pos-text-muted hover:text-pos-text text-[10px] font-bold transition-colors"
+                            >
+                              +
+                            </button>
+                          </>
+                        ) : (
+                          <span className="font-mono text-pos-text">{item.quantity.toFixed(3)}</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-2 py-1.5 text-right pos-price">{formatCurrency(item.price)}</td>
