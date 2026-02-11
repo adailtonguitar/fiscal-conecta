@@ -69,7 +69,16 @@ export function AppSidebar() {
   const { isOnline, pendingCount, syncing, syncAll } = useSync();
   const { signOut } = useAuth();
   const { isReseller } = useIsReseller();
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ Cadastro: false });
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    // Auto-open groups that have an active child on initial load
+    const initial: Record<string, boolean> = {};
+    navItems.forEach((entry) => {
+      if (isGroup(entry)) {
+        initial[entry.label] = entry.children.some((c) => location.pathname === c.path);
+      }
+    });
+    return initial;
+  });
 
   const visibleNavItems: NavEntry[] = isReseller
     ? [...navItems.slice(0, -1), resellerNavItem, navItems[navItems.length - 1]]
@@ -107,7 +116,7 @@ export function AppSidebar() {
       <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
         {visibleNavItems.map((entry) => {
           if (isGroup(entry)) {
-            const groupOpen = openGroups[entry.label] || isChildActive(entry);
+            const groupOpen = !!openGroups[entry.label];
             return (
               <div key={entry.label}>
                 <button
