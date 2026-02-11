@@ -7,6 +7,7 @@ import { TEFProcessor, type TEFResult } from "@/components/pos/TEFProcessor";
 import { CashRegister } from "@/components/pos/CashRegister";
 import { StockMovementDialog } from "@/components/stock/StockMovementDialog";
 import { usePDV, type PDVProduct } from "@/hooks/usePDV";
+import { useCompany } from "@/hooks/useCompany";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { AnimatePresence, motion } from "framer-motion";
 import { Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard, ArrowLeft, Maximize, ScanBarcode, DollarSign, PackageX } from "lucide-react";
@@ -17,6 +18,7 @@ import type { PaymentResult } from "@/services/types";
 export default function PDV() {
   const pdv = usePDV();
   const navigate = useNavigate();
+  const { companyName, logoUrl } = useCompany();
   const [showTEF, setShowTEF] = useState(false);
   const [showCashRegister, setShowCashRegister] = useState(false);
   const [receipt, setReceipt] = useState<{
@@ -301,6 +303,8 @@ export default function PDV() {
             onCheckout={handleCheckout}
             selectedItemId={selectedCartItemId}
             onSelectItem={setSelectedCartItemId}
+            companyName={companyName}
+            logoUrl={logoUrl}
           />
         </div>
 
