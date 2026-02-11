@@ -11,18 +11,31 @@ const categoryFields: FieldConfig[] = [
 ];
 
 const fiscalFields: FieldConfig[] = [
-  { key: "type", label: "Tipo", required: true, showInTable: true, type: "select", options: [
-    { value: "ncm", label: "NCM" },
-    { value: "cfop", label: "CFOP" },
-    { value: "cst_icms", label: "CST ICMS" },
-    { value: "cst_pis", label: "CST PIS" },
-    { value: "cst_cofins", label: "CST COFINS" },
-    { value: "csosn", label: "CSOSN" },
+  { key: "name", label: "Nome", required: true, showInTable: true },
+  { key: "regime", label: "Regime", required: true, showInTable: true, type: "select", options: [
+    { value: "simples_nacional", label: "Simples Nacional" },
+    { value: "lucro_presumido", label: "Lucro Presumido" },
+    { value: "lucro_real", label: "Lucro Real" },
   ]},
-  { key: "code", label: "Código", required: true, showInTable: true },
-  { key: "description", label: "Descrição", required: true, showInTable: true, colSpan: 2 },
-  { key: "tax_rate", label: "Alíquota %", type: "number", showInTable: true },
-  { key: "notes", label: "Observações", colSpan: 2 },
+  { key: "operation_type", label: "Operação", required: true, showInTable: true, type: "select", options: [
+    { value: "interna", label: "Interna" },
+    { value: "interestadual", label: "Interestadual" },
+  ]},
+  { key: "product_type", label: "Tipo Produto", required: true, showInTable: true, type: "select", options: [
+    { value: "normal", label: "Normal" },
+    { value: "st", label: "Substituição Tributária" },
+  ]},
+  { key: "cfop", label: "CFOP", required: true, showInTable: true },
+  { key: "ncm", label: "NCM" },
+  { key: "cest", label: "CEST" },
+  { key: "csosn", label: "CSOSN" },
+  { key: "cst_icms", label: "CST ICMS" },
+  { key: "icms_rate", label: "Alíq. ICMS %", type: "number" },
+  { key: "icms_st_rate", label: "Alíq. ICMS ST %", type: "number" },
+  { key: "mva", label: "MVA %", type: "number" },
+  { key: "pis_rate", label: "Alíq. PIS %", type: "number" },
+  { key: "cofins_rate", label: "Alíq. COFINS %", type: "number" },
+  { key: "ipi_rate", label: "Alíq. IPI %", type: "number" },
 ];
 
 export default function Categorias() {
@@ -75,8 +88,8 @@ export default function Categorias() {
             onCreate={(d) => createFiscalCat.mutateAsync(d as any)}
             onUpdate={(d) => updateFiscalCat.mutateAsync(d as any)}
             onDelete={(id) => deleteFiscalCat.mutateAsync(id)}
-            searchKeys={["code", "description"] as any}
-            nameKey={"description" as any}
+            searchKeys={["name", "cfop"] as any}
+            nameKey={"name" as any}
           />
         </TabsContent>
       </Tabs>
