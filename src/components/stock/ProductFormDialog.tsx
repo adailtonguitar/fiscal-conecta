@@ -149,7 +149,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                 <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Nome</FormLabel>
-                    <FormControl><Input placeholder="Nome do produto" {...field} /></FormControl>
+                    <FormControl><Input placeholder="Nome do produto" autoComplete="off" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
