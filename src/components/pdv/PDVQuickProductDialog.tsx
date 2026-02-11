@@ -69,7 +69,7 @@ export function PDVQuickProductDialog({ open, onOpenChange, initialBarcode = "",
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <PackagePlus className="w-5 h-5 text-primary" />
