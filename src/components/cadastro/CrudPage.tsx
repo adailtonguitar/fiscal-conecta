@@ -12,12 +12,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useCnpjLookup } from "@/hooks/useCnpjLookup";
 
 export interface FieldConfig {
   key: string;
   label: string;
-  type?: "text" | "number" | "date" | "email" | "tel" | "select";
+  type?: "text" | "number" | "date" | "email" | "tel" | "select" | "textarea";
   required?: boolean;
   placeholder?: string;
   options?: { value: string; label: string }[];
@@ -242,14 +243,21 @@ export function CrudPage<T extends { id: string }>({
                       {cnpjLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                     </Button>
                   </div>
-                ) : (
-                  <Input
-                    type={f.type || "text"}
-                    placeholder={f.placeholder}
-                    value={formData[f.key] || ""}
-                    onChange={(e) => setFormData({ ...formData, [f.key]: f.type === "number" ? parseFloat(e.target.value) || 0 : e.target.value })}
-                  />
-                )}
+                 ) : f.type === "textarea" ? (
+                   <Textarea
+                     placeholder={f.placeholder}
+                     value={formData[f.key] || ""}
+                     onChange={(e) => setFormData({ ...formData, [f.key]: e.target.value })}
+                     rows={3}
+                   />
+                 ) : (
+                   <Input
+                     type={f.type || "text"}
+                     placeholder={f.placeholder}
+                     value={formData[f.key] || ""}
+                     onChange={(e) => setFormData({ ...formData, [f.key]: f.type === "number" ? parseFloat(e.target.value) || 0 : e.target.value })}
+                   />
+                 )}
               </div>
             ))}
           </div>

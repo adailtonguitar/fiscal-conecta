@@ -17,7 +17,7 @@ const fields: FieldConfig[] = [
   { key: "address_city", label: "Cidade", showInTable: true },
   { key: "address_state", label: "UF" },
   { key: "address_zip", label: "CEP" },
-  { key: "notes", label: "Observações", colSpan: 2 },
+  { key: "notes", label: "Observações", type: "textarea", colSpan: 2, showInTable: true },
 ];
 
 export default function Clientes() {
