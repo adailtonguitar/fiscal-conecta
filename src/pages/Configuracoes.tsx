@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Store, Save, Globe, FileText, Download, Clock, HardDrive, Search, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Store, Save, Globe, FileText, Download, Clock, HardDrive, Search, Loader2, Upload, X } from "lucide-react";
 import { useCnpjLookup } from "@/hooks/useCnpjLookup";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,8 +9,12 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function Configuracoes() {
   const { user } = useAuth();
-  const { companyId, loading: companyLoading } = useCompany();
+  const { companyId, logoUrl: currentLogoUrl, loading: companyLoading } = useCompany();
   const { lookup: cnpjLookup, loading: cnpjLoading } = useCnpjLookup();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [companyData, setCompanyData] = useState({
     name: "",
     trade_name: "",
@@ -64,11 +68,37 @@ export default function Configuracoes() {
           address_zip: data.address_zip || "",
           address_ibge_code: data.address_ibge_code || "",
         });
+        if (data.logo_url) setLogoPreview(data.logo_url);
       }
       setLoadingData(false);
     };
     fetch();
   }, [companyId]);
+
+  const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Selecione um arquivo de imagem"); return; }
+    if (file.size > 2 * 1024 * 1024) { toast.error("Imagem deve ter no máximo 2MB"); return; }
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
+  };
+
+  const handleLogoRemove = () => {
+    setLogoFile(null);
+    setLogoPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const uploadLogo = async (): Promise<string | null> => {
+    if (!logoFile || !companyId) return logoPreview;
+    const ext = logoFile.name.split(".").pop();
+    const path = `${companyId}/logo.${ext}`;
+    const { error } = await supabase.storage.from("company-logos").upload(path, logoFile, { upsert: true });
+    if (error) throw new Error("Erro ao enviar logo: " + error.message);
+    const { data: urlData } = supabase.storage.from("company-logos").getPublicUrl(path);
+    return urlData.publicUrl + "?t=" + Date.now();
+  };
 
   const handleSave = async () => {
     if (!companyData.name || !companyData.cnpj) {
@@ -77,21 +107,29 @@ export default function Configuracoes() {
     }
     setSaving(true);
     try {
+      let logoUrl: string | null | undefined;
+      if (logoFile) {
+        logoUrl = await uploadLogo();
+      } else if (logoPreview === null && currentLogoUrl) {
+        logoUrl = null; // user removed logo
+      }
+
+      const updateData: Record<string, any> = { ...companyData };
+      if (logoUrl !== undefined) updateData.logo_url = logoUrl;
+
       if (companyId) {
-        // Update existing company
         const { error } = await supabase
           .from("companies")
-          .update(companyData)
+          .update(updateData)
           .eq("id", companyId);
         if (error) throw error;
         toast.success("Dados da empresa salvos com sucesso!");
+        setLogoFile(null);
       } else {
-        // Create new company (trigger auto_assign_company_admin handles company_users link)
         const { error: createError } = await supabase
           .from("companies")
-          .insert(companyData);
+          .insert(updateData as any);
         if (createError) throw createError;
-
         toast.success("Empresa criada com sucesso!");
         window.location.reload();
       }
@@ -184,6 +222,43 @@ export default function Configuracoes() {
           <h2 className="text-base font-semibold text-foreground">Dados Gerais</h2>
         </div>
         <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Logo Upload */}
+          <div className="md:col-span-2">
+            <label className="text-sm font-medium text-foreground mb-1.5 block">Logo da Empresa</label>
+            <div className="flex items-center gap-4">
+              {logoPreview ? (
+                <div className="relative">
+                  <img src={logoPreview} alt="Logo" className="w-20 h-20 rounded-xl object-contain border border-border bg-background" />
+                  <button
+                    type="button"
+                    onClick={handleLogoRemove}
+                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:opacity-90 transition-all"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-20 h-20 rounded-xl border-2 border-dashed border-border bg-muted/50 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-all"
+                >
+                  <Upload className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground mt-1">Upload</span>
+                </div>
+              )}
+              <div className="flex-1">
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleLogoSelect} className="hidden" />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-sm text-primary hover:underline"
+                >
+                  {logoPreview ? "Trocar imagem" : "Selecionar imagem"}
+                </button>
+                <p className="text-xs text-muted-foreground mt-1">PNG, JPG ou SVG. Máx 2MB.</p>
+              </div>
+            </div>
+          </div>
           <div className="md:col-span-2">
             <label className="text-sm font-medium text-foreground mb-1.5 block">Razão Social *</label>
             <input type="text" value={companyData.name} onChange={(e) => updateField("name", e.target.value)} className={inputClass} />
