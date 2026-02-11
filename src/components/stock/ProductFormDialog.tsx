@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useCreateProduct, useUpdateProduct, type Product } from "@/hooks/useProducts";
+import { useFiscalCategories } from "@/hooks/useFiscalCategories";
 import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -28,6 +29,7 @@ const schema = z.object({
   stock_quantity: z.coerce.number().min(0),
   min_stock: z.coerce.number().min(0).optional(),
   barcode: z.string().trim().max(50).optional(),
+  fiscal_category_id: z.string().uuid().optional().or(z.literal("")),
   origem: z.coerce.number().min(0).max(8).optional(),
   cfop: z.string().trim().max(10).optional(),
   cest: z.string().trim().max(10).optional(),
@@ -53,6 +55,7 @@ const categories = ["Bebidas", "Alimentos", "Limpeza", "Higiene", "Hortifrúti",
 const units = ["UN", "KG", "LT", "MT", "CX", "PCT"];
 
 export function ProductFormDialog({ open, onOpenChange, product }: Props) {
+  const { data: fiscalCategories = [] } = useFiscalCategories();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const isEditing = !!product;
@@ -109,6 +112,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
       stock_quantity: product?.stock_quantity ?? 0,
       min_stock: product?.min_stock ?? 0,
       barcode: product?.barcode ?? "",
+      fiscal_category_id: (product as any)?.fiscal_category_id ?? "",
       origem: (product as any)?.origem ?? 0,
       cfop: (product as any)?.cfop ?? "5102",
       cest: (product as any)?.cest ?? "",
@@ -124,10 +128,14 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
   });
 
   const onSubmit = async (data: FormData) => {
+    const payload = {
+      ...data,
+      fiscal_category_id: data.fiscal_category_id || null,
+    };
     if (isEditing && product) {
-      await updateProduct.mutateAsync({ id: product.id, ...data } as any);
+      await updateProduct.mutateAsync({ id: product.id, ...payload } as any);
     } else {
-      await createProduct.mutateAsync({ name: data.name, sku: data.sku, ...data } as any);
+      await createProduct.mutateAsync({ name: payload.name, sku: payload.sku, ...payload } as any);
     }
     onOpenChange(false);
     form.reset();
@@ -319,6 +327,48 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                 </FormItem>
               )} />
             </div>
+
+            {/* Categoria Fiscal */}
+            <FormField control={form.control} name="fiscal_category_id" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Categoria Fiscal</FormLabel>
+                <Select
+                  onValueChange={(v) => {
+                    field.onChange(v === "__none__" ? "" : v);
+                    // Auto-fill fiscal fields from selected category
+                    if (v && v !== "__none__") {
+                      const cat = fiscalCategories.find(c => c.id === v);
+                      if (cat) {
+                        if (cat.type === "CFOP") form.setValue("cfop", cat.code);
+                        else if (cat.type === "CSOSN") form.setValue("csosn", cat.code);
+                        else if (cat.type === "CST_ICMS") form.setValue("cst_icms", cat.code);
+                        else if (cat.type === "CST_PIS") {
+                          form.setValue("cst_pis", cat.code);
+                          if (cat.tax_rate != null) form.setValue("aliq_pis", cat.tax_rate);
+                        } else if (cat.type === "CST_COFINS") {
+                          form.setValue("cst_cofins", cat.code);
+                          if (cat.tax_rate != null) form.setValue("aliq_cofins", cat.tax_rate);
+                        }
+                      }
+                    }
+                  }}
+                  defaultValue={field.value || "__none__"}
+                >
+                  <FormControl>
+                    <SelectTrigger><SelectValue placeholder="Selecione uma categoria fiscal" /></SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="__none__">Nenhuma</SelectItem>
+                    {fiscalCategories.filter(c => c.is_active).map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        [{c.type}] {c.code} — {c.description}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
 
             {/* Dados Fiscais */}
             <div className="border-t pt-4 mt-4">

@@ -405,6 +405,7 @@ export default function PDV() {
             cst_cofins: "01",
             aliq_cofins: 7.60,
             gtin_tributavel: null,
+            fiscal_category_id: null,
           }}
         />
       )}
