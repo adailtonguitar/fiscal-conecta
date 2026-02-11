@@ -186,7 +186,7 @@ export default function PDV() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground relative overflow-hidden">
+    <div className="dark flex flex-col h-screen bg-background text-foreground relative overflow-hidden">
       {/* ===== TOP HEADER BAR ===== */}
       <div className="flex items-center justify-between px-4 h-11 bg-sidebar-background border-b border-border flex-shrink-0">
         <div className="flex items-center gap-3">
