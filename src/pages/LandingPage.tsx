@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { PLANS, useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { UpdateNoticeModal } from "@/components/UpdateNoticeModal";
 
 const features = [
   { icon: ShoppingCart, title: "PDV Completo", desc: "Terminal de vendas com atalhos de teclado, leitor de código de barras e pagamentos múltiplos." },
@@ -87,6 +88,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <UpdateNoticeModal />
       {/* Nav */}
       <nav className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
