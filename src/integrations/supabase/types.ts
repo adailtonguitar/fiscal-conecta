@@ -1191,6 +1191,7 @@ export type Database = {
           cst_cofins: string | null
           cst_icms: string | null
           cst_pis: string | null
+          fiscal_category_id: string | null
           gtin_tributavel: string | null
           id: string
           is_active: boolean
@@ -1219,6 +1220,7 @@ export type Database = {
           cst_cofins?: string | null
           cst_icms?: string | null
           cst_pis?: string | null
+          fiscal_category_id?: string | null
           gtin_tributavel?: string | null
           id?: string
           is_active?: boolean
@@ -1247,6 +1249,7 @@ export type Database = {
           cst_cofins?: string | null
           cst_icms?: string | null
           cst_pis?: string | null
+          fiscal_category_id?: string | null
           gtin_tributavel?: string | null
           id?: string
           is_active?: boolean
@@ -1266,6 +1269,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_fiscal_category_id_fkey"
+            columns: ["fiscal_category_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_categories"
             referencedColumns: ["id"]
           },
         ]
