@@ -459,10 +459,9 @@ export default function PDV() {
           <button
             key={key}
             onClick={action}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/20 active:bg-white/30 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded bg-white/90 hover:bg-white active:bg-white/80 transition-all cursor-pointer shadow-sm border border-white/20"
           >
-            <kbd className="px-2.5 py-1 rounded-md bg-white text-primary text-xs font-mono font-extrabold shadow-sm border border-primary/20">{key}</kbd>
-            <span className="text-xs font-semibold text-white">{label}</span>
+            <span className="text-xs font-bold text-[hsl(218,50%,18%)] uppercase tracking-wide">{label} [{key}]</span>
           </button>
         ))}
       </div>
