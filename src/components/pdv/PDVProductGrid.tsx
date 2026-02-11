@@ -90,16 +90,16 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
   }, [highlightIdx]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-pos-border bg-[hsl(220,30%,18%)]">
-        <h2 className="text-xs font-bold text-pos-text uppercase tracking-wider">Lista de Produtos</h2>
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-sidebar-background">
+        <h2 className="text-xs font-bold text-sidebar-foreground uppercase tracking-wider">Lista de Produtos</h2>
       </div>
 
       {/* Search */}
-      <div className="p-2 border-b border-pos-border">
+      <div className="p-2 border-b border-border">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-pos-text-muted" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <input
             ref={inputRef}
             type="text"
@@ -112,12 +112,12 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
             onFocus={() => { if (search.length >= 1) setShowSuggestions(true); }}
             onKeyDown={handleKeyDown}
             data-pdv-search
-            className="w-full pl-8 pr-8 py-2 rounded-md bg-pos-surface border border-pos-border text-pos-text placeholder:text-pos-text-muted text-xs focus:outline-none focus:ring-1 focus:ring-pos-accent/40 focus:border-pos-accent transition-all"
+            className="w-full pl-8 pr-8 py-2 rounded-md bg-card border border-border text-foreground placeholder:text-muted-foreground text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary transition-all"
           />
           {search && (
             <button
               onClick={() => { setSearch(""); setShowSuggestions(false); inputRef.current?.focus(); }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-pos-text-muted hover:text-pos-text transition-colors"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -156,15 +156,15 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
       </div>
 
       {/* Category tabs */}
-      <div className="flex gap-1 px-2 py-1.5 overflow-x-auto border-b border-pos-border">
+      <div className="flex gap-1 px-2 py-1.5 overflow-x-auto border-b border-border">
         {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}
             className={`px-2.5 py-1 rounded text-[10px] font-medium whitespace-nowrap transition-all ${
               selectedCategory === cat
-                ? "bg-pos-accent text-primary-foreground"
-                : "bg-pos-surface text-pos-text-muted hover:bg-pos-surface-hover hover:text-pos-text"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             }`}
           >
             {cat}
@@ -176,16 +176,16 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="w-5 h-5 border-2 border-pos-accent border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-xs text-pos-text-muted">Nenhum produto encontrado</p>
+            <p className="text-xs text-muted-foreground">Nenhum produto encontrado</p>
           </div>
         ) : (
           <table className="w-full text-xs">
-            <thead className="sticky top-0 bg-[hsl(220,30%,15%)]">
-              <tr className="text-pos-text-muted text-left">
+            <thead className="sticky top-0 bg-sidebar-background">
+              <tr className="text-sidebar-foreground text-left">
                 <th className="px-2 py-1.5 font-medium">Código</th>
                 <th className="px-2 py-1.5 font-medium">NCM</th>
                 <th className="px-2 py-1.5 font-medium">Descrição</th>
@@ -198,15 +198,15 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
                 <tr
                   key={product.id}
                   onClick={() => onAddToCart(product)}
-                  className={`cursor-pointer transition-colors hover:bg-pos-surface-hover active:bg-pos-accent/10 ${
-                    i % 2 === 0 ? "bg-pos-surface/30" : ""
+                  className={`cursor-pointer transition-colors hover:bg-accent active:bg-primary/10 ${
+                    i % 2 === 0 ? "bg-muted/30" : ""
                   }`}
                 >
-                  <td className="px-2 py-1.5 font-mono text-pos-text-muted">{product.sku}</td>
-                  <td className="px-2 py-1.5 font-mono text-pos-text-muted">{product.ncm || "—"}</td>
-                  <td className="px-2 py-1.5 text-pos-text">{product.name}</td>
-                  <td className="px-2 py-1.5 text-right pos-price">{formatCurrency(product.price)}</td>
-                  <td className="px-2 py-1.5 text-right text-pos-text-muted">{product.stock_quantity} {product.unit}</td>
+                  <td className="px-2 py-1.5 font-mono text-muted-foreground">{product.sku}</td>
+                  <td className="px-2 py-1.5 font-mono text-muted-foreground">{product.ncm || "—"}</td>
+                  <td className="px-2 py-1.5 text-foreground">{product.name}</td>
+                  <td className="px-2 py-1.5 text-right font-mono font-semibold text-primary">{formatCurrency(product.price)}</td>
+                  <td className="px-2 py-1.5 text-right text-muted-foreground">{product.stock_quantity} {product.unit}</td>
                 </tr>
               ))}
             </tbody>
