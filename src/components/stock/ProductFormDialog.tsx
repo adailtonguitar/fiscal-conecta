@@ -178,6 +178,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                     <FormControl>
                       <Input
                         placeholder="Digite código ou descrição para buscar..."
+                        autoComplete="off"
                         {...field}
                         onChange={(e) => handleNcmInputChange(e.target.value, field.onChange)}
                       />
