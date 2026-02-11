@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,17 @@ export function PDVQuickProductDialog({ open, onOpenChange, initialBarcode = "",
     category: "",
     ncm: "",
   });
+
+  // Sync initialBarcode when dialog opens with a new barcode
+  useEffect(() => {
+    if (open && initialBarcode) {
+      setForm((p) => ({ ...p, barcode: initialBarcode }));
+    }
+    if (open) {
+      // Reset form when dialog opens
+      setForm({ name: "", sku: "", barcode: initialBarcode || "", price: "", cost_price: "", stock_quantity: "1", unit: "UN", category: "", ncm: "" });
+    }
+  }, [open, initialBarcode]);
 
   const update = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
 
