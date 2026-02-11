@@ -445,21 +445,25 @@ export default function PDV() {
 
 
       {/* Fixed shortcuts bar at bottom */}
-      <div className="flex items-center justify-center gap-3 px-4 py-2.5 bg-sidebar-background border-t border-border flex-shrink-0 flex-wrap">
+      <div className="flex items-center justify-center gap-2 px-4 py-2.5 bg-sidebar-background border-t border-border flex-shrink-0 flex-wrap">
         {[
-          { key: "F1", label: "Atalhos" },
-          { key: "F2", label: "Pagamento" },
-          { key: "F3", label: "Buscar" },
-          { key: "F4", label: "Caixa" },
-          { key: "F6", label: "Limpar" },
-          { key: "F9", label: "Sincronizar" },
-          { key: "Del", label: "Remover" },
-          { key: "ESC", label: "Fechar" },
-        ].map(({ key, label }) => (
-          <div key={key} className="flex items-center gap-1.5 px-2">
-            <kbd className="px-2 py-1 rounded bg-muted border border-border text-xs font-mono font-bold text-primary">{key}</kbd>
-            <span className="text-xs text-muted-foreground">{label}</span>
-          </div>
+          { key: "F1", label: "Atalhos", action: () => setShowShortcuts((p) => !p) },
+          { key: "F2", label: "Pagamento", action: handleCheckout },
+          { key: "F3", label: "Buscar", action: () => setShowProductList((p) => !p) },
+          { key: "F4", label: "Caixa", action: () => setShowCashRegister(true) },
+          { key: "F6", label: "Limpar", action: () => { if (pdv.cartItems.length > 0) { pdv.clearCart(); toast.info("Carrinho limpo"); } } },
+          { key: "F9", label: "Sincronizar", action: () => { if (pdv.pendingCount > 0 && pdv.isOnline) pdv.syncAll(); } },
+          { key: "Del", label: "Remover", action: () => { if (pdv.cartItems.length > 0) { const last = pdv.cartItems[pdv.cartItems.length - 1]; pdv.removeItem(last.id); toast.info(`${last.name} removido`); } } },
+          { key: "ESC", label: "Fechar", action: () => setShowShortcuts(false) },
+        ].map(({ key, label, action }) => (
+          <button
+            key={key}
+            onClick={action}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/20 active:bg-white/30 transition-all cursor-pointer"
+          >
+            <kbd className="px-2.5 py-1 rounded-md bg-white text-primary text-xs font-mono font-extrabold shadow-sm border border-primary/20">{key}</kbd>
+            <span className="text-xs font-semibold text-white">{label}</span>
+          </button>
         ))}
       </div>
     </div>

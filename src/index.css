@@ -94,7 +94,7 @@
 
 /* PDV Terminal Theme */
 .pdv-theme {
-  --background: 210 20% 98%;
+  --background: 192 40% 90%;
   --foreground: 221 39% 11%;
   --card: 0 0% 100%;
   --card-foreground: 221 39% 11%;
@@ -102,11 +102,11 @@
   --popover-foreground: 221 39% 11%;
   --primary: 221 83% 53%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 210 20% 96%;
+  --secondary: 192 30% 95%;
   --secondary-foreground: 221 39% 11%;
-  --muted: 210 20% 96%;
-  --muted-foreground: 215 16% 47%;
-  --accent: 221 60% 95%;
+  --muted: 192 25% 85%;
+  --muted-foreground: 215 20% 40%;
+  --accent: 192 35% 82%;
   --accent-foreground: 221 83% 43%;
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
@@ -114,10 +114,10 @@
   --success-foreground: 0 0% 100%;
   --warning: 38 92% 50%;
   --warning-foreground: 0 0% 100%;
-  --border: 214 16% 85%;
-  --input: 214 16% 85%;
+  --border: 192 25% 78%;
+  --input: 192 25% 82%;
   --ring: 221 83% 53%;
-  --sidebar-background: 221 83% 53%;
+  --sidebar-background: 210 50% 30%;
   --sidebar-foreground: 0 0% 100%;
 }
 
