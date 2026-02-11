@@ -25,7 +25,8 @@ export default function PDV() {
     payments: TEFResult[];
     nfceNumber: string;
   } | null>(null);
-  const [showShortcuts, setShowShortcuts] = useState(false); // kept for F1 toggle compat
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showProductList, setShowProductList] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
   const [zeroStockProduct, setZeroStockProduct] = useState<PDVProduct | null>(null);
   const [stockMovementProduct, setStockMovementProduct] = useState<PDVProduct | null>(null);
@@ -115,7 +116,7 @@ export default function PDV() {
         case "F2": e.preventDefault(); handleCheckout(); break;
         case "F3":
           e.preventDefault();
-          document.querySelector<HTMLInputElement>('[data-pdv-search]')?.focus();
+          setShowProductList((p) => !p);
           break;
         case "F4": e.preventDefault(); setShowCashRegister(true); break;
         case "F6":
@@ -244,37 +245,43 @@ export default function PDV() {
         </div>
       </div>
 
-      {/* ===== MAIN CONTENT ===== */}
-      <div className="flex flex-1 min-h-0">
-        {/* LEFT PANEL: Barcode + Cart Items */}
-        <div className="flex flex-col flex-1 min-w-0">
-          {/* Barcode input */}
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-pos-border bg-[hsl(220,30%,14%)]">
-            <ScanBarcode className="w-4 h-4 text-pos-accent flex-shrink-0" />
-            <span className="text-xs text-pos-text-muted font-medium whitespace-nowrap">CÓDIGO DE BARRAS:</span>
-            <input
-              type="text"
-              value={barcodeInput}
-              onChange={(e) => setBarcodeInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleBarcodeSubmit();
-                }
-              }}
-              placeholder="Leia ou digite o código..."
-              className="flex-1 px-3 py-1.5 rounded bg-pos-surface border border-pos-border text-pos-text text-xs font-mono focus:outline-none focus:ring-1 focus:ring-pos-accent/40 focus:border-pos-accent transition-all"
-            />
-            <button
-              onClick={handleBarcodeSubmit}
-              className="px-3 py-1.5 rounded bg-pos-accent text-primary-foreground text-xs font-bold hover:opacity-90 transition-all"
-            >
-              OK
-            </button>
-          </div>
+      {/* ===== BARCODE INPUT ===== */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-pos-border bg-[hsl(220,30%,14%)] flex-shrink-0">
+        <ScanBarcode className="w-4 h-4 text-pos-accent flex-shrink-0" />
+        <span className="text-xs text-pos-text-muted font-medium whitespace-nowrap">CÓDIGO DE BARRAS:</span>
+        <input
+          type="text"
+          value={barcodeInput}
+          onChange={(e) => setBarcodeInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              e.stopPropagation();
+              handleBarcodeSubmit();
+            }
+          }}
+          placeholder="Leia ou digite o código..."
+          className="flex-1 px-3 py-1.5 rounded bg-pos-surface border border-pos-border text-pos-text text-xs font-mono focus:outline-none focus:ring-1 focus:ring-pos-accent/40 focus:border-pos-accent transition-all"
+        />
+        <button
+          onClick={handleBarcodeSubmit}
+          className="px-3 py-1.5 rounded bg-pos-accent text-primary-foreground text-xs font-bold hover:opacity-90 transition-all"
+        >
+          OK
+        </button>
+        <div className="h-4 w-px bg-pos-border mx-1" />
+        <button
+          onClick={() => setShowProductList((p) => !p)}
+          className="px-3 py-1.5 rounded bg-pos-surface border border-pos-border text-pos-text-muted hover:text-pos-text text-xs font-medium hover:bg-pos-surface-hover transition-all"
+        >
+          {showProductList ? "Ocultar Produtos" : "Mostrar Produtos (F3)"}
+        </button>
+      </div>
 
-          {/* Cart items table */}
+      {/* ===== MAIN CONTENT ===== */}
+      <div className="flex flex-1 min-h-0 relative">
+        {/* FULL WIDTH: Cart with customer-facing layout */}
+        <div className="flex flex-col flex-1 min-w-0">
           <PDVCart
             items={pdv.cartItems}
             onUpdateQuantity={pdv.updateQuantity}
@@ -284,14 +291,24 @@ export default function PDV() {
           />
         </div>
 
-        {/* RIGHT PANEL: Product list */}
-        <div className="w-[340px] flex-shrink-0 border-l border-pos-border">
-          <PDVProductGrid
-            products={pdv.products}
-            loading={pdv.loadingProducts}
-            onAddToCart={handleAddToCart}
-          />
-        </div>
+        {/* PRODUCT LIST: slide-over panel */}
+        <AnimatePresence>
+          {showProductList && (
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="absolute inset-y-0 right-0 w-[380px] z-30 border-l border-pos-border shadow-2xl"
+            >
+              <PDVProductGrid
+                products={pdv.products}
+                loading={pdv.loadingProducts}
+                onAddToCart={handleAddToCart}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* ===== OVERLAYS ===== */}
