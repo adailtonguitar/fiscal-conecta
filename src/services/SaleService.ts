@@ -102,6 +102,30 @@ export class SaleService {
       });
     }
 
+    // 4.5 Fiscal validation — block NF-e emission if required fields are missing
+    const fiscalErrors: string[] = [];
+    for (const item of items) {
+      if (!item.ncm) {
+        fiscalErrors.push(`Produto "${item.name}" sem NCM`);
+      }
+    }
+
+    // If there are fiscal validation errors, log them but don't block the sale
+    // The fiscal document stays as "pendente" and can be fixed later
+    if (fiscalErrors.length > 0) {
+      console.warn("[Fiscal] Validação falhou:", fiscalErrors);
+      // Update document status to indicate validation issue
+      await supabase
+        .from("fiscal_documents")
+        .update({ rejection_reason: `Validação: ${fiscalErrors.join("; ")}`, status: "rejeitado" as any })
+        .eq("id", doc.id);
+
+      return {
+        fiscalDocId: doc.id,
+        nfceNumber: String(doc.number || doc.id.slice(0, 6)).padStart(6, "0"),
+      };
+    }
+
     // 5. Trigger NFC-e emission
     // If A3 config is provided, use the interactive A3 signing flow
     // Otherwise, use the standard fire-and-forget A1 flow
