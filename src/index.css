@@ -94,31 +94,31 @@
 
 /* PDV Terminal Theme */
 .pdv-theme {
-  --background: 192 40% 90%;
-  --foreground: 221 39% 11%;
-  --card: 192 35% 87%;
-  --card-foreground: 221 39% 11%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 221 39% 11%;
-  --primary: 221 83% 53%;
+  --background: 220 40% 13%;
+  --foreground: 210 20% 92%;
+  --card: 220 38% 17%;
+  --card-foreground: 210 20% 92%;
+  --popover: 220 38% 17%;
+  --popover-foreground: 210 20% 92%;
+  --primary: 213 90% 55%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 192 30% 95%;
-  --secondary-foreground: 221 39% 11%;
-  --muted: 192 25% 85%;
-  --muted-foreground: 215 20% 40%;
-  --accent: 192 35% 82%;
-  --accent-foreground: 221 83% 43%;
+  --secondary: 220 35% 20%;
+  --secondary-foreground: 210 20% 90%;
+  --muted: 220 35% 20%;
+  --muted-foreground: 210 15% 58%;
+  --accent: 220 35% 22%;
+  --accent-foreground: 213 90% 65%;
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
-  --success: 142 72% 29%;
+  --success: 142 72% 40%;
   --success-foreground: 0 0% 100%;
   --warning: 38 92% 50%;
   --warning-foreground: 0 0% 100%;
-  --border: 192 25% 78%;
-  --input: 192 25% 82%;
-  --ring: 221 83% 53%;
-  --sidebar-background: 210 50% 30%;
-  --sidebar-foreground: 0 0% 100%;
+  --border: 220 30% 24%;
+  --input: 220 30% 24%;
+  --ring: 213 90% 55%;
+  --sidebar-background: 220 45% 9%;
+  --sidebar-foreground: 210 15% 82%;
 }
 
 @layer base {
