@@ -8,4 +8,5 @@ export { CashSessionService } from "./CashSessionService";
 export { FinancialService } from "./FinancialService";
 export { AuditService } from "./AuditService";
 export { FiscalEmissionService } from "./FiscalEmissionService";
+export { FiscalEngine } from "./FiscalEngine";
 export type * from "./types";

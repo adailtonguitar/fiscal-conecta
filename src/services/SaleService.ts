@@ -20,6 +20,8 @@ export class SaleService {
     paymentResults?: PaymentResult[];
     customerCpf?: string;
     customerName?: string;
+    clientUf?: string;
+    clientType?: "pf" | "pj";
     a3Config?: {
       thumbprint: string;
       signerService: {
@@ -102,28 +104,90 @@ export class SaleService {
       });
     }
 
-    // 4.5 Fiscal validation — block NF-e emission if required fields are missing
-    const fiscalErrors: string[] = [];
-    for (const item of items) {
-      if (!item.ncm) {
-        fiscalErrors.push(`Produto "${item.name}" sem NCM`);
+    // 4.5 FiscalEngine validation
+    try {
+      const { FiscalEngine } = await import("./FiscalEngine");
+
+      // Fetch company data for regime and UF
+      const { data: company } = await supabase
+        .from("companies")
+        .select("tax_regime, address_state, modo_seguro_fiscal")
+        .eq("id", companyId)
+        .single();
+
+      // Fetch fiscal categories for validation
+      const { data: fiscalCats } = await supabase
+        .from("fiscal_categories")
+        .select("id, regime, operation_type, product_type, cfop, csosn, cst_icms, cest, mva")
+        .eq("company_id", companyId);
+
+      // Fetch full product data for fiscal fields
+      const productIds = items.map(i => i.product_id);
+      const { data: products } = await supabase
+        .from("products")
+        .select("id, ncm, cest, cfop, csosn, cst_icms, fiscal_category_id")
+        .in("id", productIds);
+
+      const productMap = new Map((products || []).map(p => [p.id, p]));
+
+      const validationItems = items.map(item => {
+        const prod = productMap.get(item.product_id);
+        return {
+          product_id: item.product_id,
+          name: item.name,
+          sku: item.sku,
+          ncm: item.ncm || prod?.ncm || undefined,
+          cest: prod?.cest || undefined,
+          cfop: prod?.cfop || undefined,
+          csosn: prod?.csosn || undefined,
+          cst_icms: prod?.cst_icms || undefined,
+          fiscal_category_id: prod?.fiscal_category_id || undefined,
+        };
+      });
+
+      const result = FiscalEngine.validate({
+        companyId,
+        userId,
+        companyRegime: company?.tax_regime || "simples_nacional",
+        companyUf: company?.address_state || "SP",
+        clientUf: params.clientUf,
+        clientType: params.clientType,
+        modoSeguro: (company as any)?.modo_seguro_fiscal ?? true,
+        items: validationItems,
+        fiscalCategories: (fiscalCats || []) as any,
+      });
+
+      // Log validation result
+      await FiscalEngine.logValidation({
+        companyId,
+        userId,
+        documentId: doc.id,
+        docType: "nfce",
+        result,
+        items: validationItems,
+      });
+
+      // If validation blocked, reject the document but don't block the sale
+      if (!result.approved) {
+        const errorMessages = result.errors.map(e => e.message).join("; ");
+        console.warn("[FiscalEngine] Validação bloqueou emissão:", errorMessages);
+
+        await supabase
+          .from("fiscal_documents")
+          .update({ rejection_reason: `Validação fiscal: ${errorMessages}`, status: "rejeitado" as any })
+          .eq("id", doc.id);
+
+        return {
+          fiscalDocId: doc.id,
+          nfceNumber: String(doc.number || doc.id.slice(0, 6)).padStart(6, "0"),
+        };
       }
-    }
 
-    // If there are fiscal validation errors, log them but don't block the sale
-    // The fiscal document stays as "pendente" and can be fixed later
-    if (fiscalErrors.length > 0) {
-      console.warn("[Fiscal] Validação falhou:", fiscalErrors);
-      // Update document status to indicate validation issue
-      await supabase
-        .from("fiscal_documents")
-        .update({ rejection_reason: `Validação: ${fiscalErrors.join("; ")}`, status: "rejeitado" as any })
-        .eq("id", doc.id);
-
-      return {
-        fiscalDocId: doc.id,
-        nfceNumber: String(doc.number || doc.id.slice(0, 6)).padStart(6, "0"),
-      };
+      if (result.warnings.length > 0) {
+        console.info("[FiscalEngine] Avisos:", result.warnings.map(w => w.message));
+      }
+    } catch (err: any) {
+      console.warn("[FiscalEngine] Erro na validação, continuando emissão:", err.message);
     }
 
     // 5. Trigger NFC-e emission
