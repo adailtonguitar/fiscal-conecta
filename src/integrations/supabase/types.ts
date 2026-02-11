@@ -428,6 +428,7 @@ export type Database = {
           id: string
           ie: string | null
           im: string | null
+          modo_seguro_fiscal: boolean
           name: string
           phone: string | null
           tax_regime: string | null
@@ -449,6 +450,7 @@ export type Database = {
           id?: string
           ie?: string | null
           im?: string | null
+          modo_seguro_fiscal?: boolean
           name: string
           phone?: string | null
           tax_regime?: string | null
@@ -470,6 +472,7 @@ export type Database = {
           id?: string
           ie?: string | null
           im?: string | null
+          modo_seguro_fiscal?: boolean
           name?: string
           phone?: string | null
           tax_regime?: string | null
