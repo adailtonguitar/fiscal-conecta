@@ -14,6 +14,8 @@ interface PDVCartProps {
   onCheckout: () => void;
   selectedItemId?: string | null;
   onSelectItem?: (id: string | null) => void;
+  companyName?: string | null;
+  logoUrl?: string | null;
 }
 
 function LiveClock() {
@@ -29,7 +31,7 @@ function LiveClock() {
   );
 }
 
-export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, onCheckout, selectedItemId, onSelectItem }: PDVCartProps) {
+export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, onCheckout, selectedItemId, onSelectItem, companyName, logoUrl }: PDVCartProps) {
   const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
   const totalQuantity = items.reduce((acc, item) => acc + item.quantity, 0);
@@ -90,13 +92,12 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
         <div className="w-[280px] flex-shrink-0 border-r border-border bg-card p-4 flex flex-col gap-4">
           {selectedItem ? (
             <>
-              {/* Product image placeholder */}
-              <div className="w-full aspect-square rounded-lg bg-muted border border-border flex items-center justify-center overflow-hidden">
-                <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                  <ShoppingCart className="w-12 h-12" />
-                  <span className="text-xs font-medium">Sem imagem</span>
+              {/* Company logo small */}
+              {logoUrl && (
+                <div className="flex items-center justify-center">
+                  <img src={logoUrl} alt={companyName || "Logo"} className="max-h-12 max-w-full object-contain" />
                 </div>
-              </div>
+              )}
 
               {/* Product info fields */}
               <div className="space-y-2">
@@ -122,9 +123,15 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center">
-              <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                <ShoppingCart className="w-16 h-16" />
-                <span className="text-sm font-medium">Nenhum produto</span>
+              <div className="flex flex-col items-center gap-4 text-muted-foreground">
+                {logoUrl ? (
+                  <img src={logoUrl} alt={companyName || "Logo"} className="max-h-32 max-w-full object-contain opacity-90" />
+                ) : (
+                  <ShoppingCart className="w-16 h-16" />
+                )}
+                <span className="text-sm font-semibold text-center">
+                  {companyName || "Aguardando produto..."}
+                </span>
               </div>
             </div>
           )}
