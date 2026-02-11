@@ -14,7 +14,7 @@ const plans = [
     desc: "Para pequenos comércios",
     features: ["1 terminal PDV", "100 produtos", "NFC-e ilimitada", "Suporte por e-mail"],
     highlighted: false,
-    priceId: PLANS.essencial.price_id,
+    planKey: "essencial",
   },
   {
     name: "Profissional",
@@ -22,13 +22,13 @@ const plans = [
     desc: "Para negócios em crescimento",
     features: ["3 terminais PDV", "Produtos ilimitados", "NF-e + NFC-e", "Relatórios avançados", "Suporte prioritário"],
     highlighted: true,
-    priceId: PLANS.profissional.price_id,
+    planKey: "profissional",
   },
 ];
 
 export default function TrialExpirado() {
   const { user, signOut } = useAuth();
-  const { createCheckout, trialDaysLeft } = useSubscription();
+  const { createCheckout } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
   const handlePlanClick = async (plan: typeof plans[0]) => {
@@ -38,7 +38,7 @@ export default function TrialExpirado() {
     }
     try {
       setLoadingPlan(plan.name);
-      await createCheckout(plan.priceId);
+      await createCheckout(plan.planKey);
     } catch (err: any) {
       console.error("Checkout error:", err);
       toast.error(err?.message || "Erro ao iniciar checkout. Tente novamente.");
@@ -110,7 +110,11 @@ export default function TrialExpirado() {
         ))}
       </div>
 
-      <div className="mt-8 text-center">
+      <p className="mt-6 text-sm text-muted-foreground text-center">
+        Pagamento seguro via Mercado Pago • PIX, cartão de crédito ou boleto
+      </p>
+
+      <div className="mt-4 text-center">
         <button
           onClick={signOut}
           className="text-sm text-muted-foreground hover:text-foreground transition-colors underline"

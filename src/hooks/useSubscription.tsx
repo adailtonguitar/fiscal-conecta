@@ -4,17 +4,15 @@ import { useAuth } from "@/hooks/useAuth";
 
 const TRIAL_DAYS = 8;
 
-// Stripe product/price mapping
+// Mercado Pago plan mapping
 export const PLANS = {
   essencial: {
-    product_id: "prod_TxH3ZeNDCtALce",
-    price_id: "price_1SzMVh5ZkhRjWpdwabX6OoEF",
+    key: "essencial",
     name: "Essencial",
     price: 150,
   },
   profissional: {
-    product_id: "prod_TxH3SQG86jZyc7",
-    price_id: "price_1SzMVs5ZkhRjWpdwAPrV29FW",
+    key: "profissional",
     name: "Profissional",
     price: 200,
   },
@@ -22,10 +20,9 @@ export const PLANS = {
 
 interface SubscriptionState {
   subscribed: boolean;
-  productId: string | null;
+  planKey: string | null;
   subscriptionEnd: string | null;
   loading: boolean;
-  planKey: string | null;
   trialActive: boolean;
   trialDaysLeft: number | null;
   trialExpired: boolean;
@@ -33,16 +30,15 @@ interface SubscriptionState {
 
 interface SubscriptionContextType extends SubscriptionState {
   checkSubscription: () => Promise<void>;
-  createCheckout: (priceId: string) => Promise<void>;
+  createCheckout: (planKey: string) => Promise<void>;
   openCustomerPortal: () => Promise<void>;
 }
 
 const defaultState: SubscriptionState = {
   subscribed: false,
-  productId: null,
+  planKey: null,
   subscriptionEnd: null,
   loading: true,
-  planKey: null,
   trialActive: false,
   trialDaysLeft: null,
   trialExpired: false,
@@ -54,14 +50,6 @@ const SubscriptionContext = createContext<SubscriptionContextType>({
   createCheckout: async () => {},
   openCustomerPortal: async () => {},
 });
-
-function getPlanKey(productId: string | null): string | null {
-  if (!productId) return null;
-  for (const [key, plan] of Object.entries(PLANS)) {
-    if (plan.product_id === productId) return key;
-  }
-  return null;
-}
 
 function calcTrial(createdAt: string) {
   const start = new Date(createdAt).getTime();
@@ -83,7 +71,6 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       return;
     }
     try {
-      // Fetch subscription status and user creation date in parallel
       const [subResult, profileResult] = await Promise.all([
         supabase.functions.invoke("check-subscription"),
         supabase.from("company_users").select("created_at").eq("user_id", user.id).eq("is_active", true).limit(1).single(),
@@ -91,10 +78,9 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
       if (subResult.error) throw subResult.error;
 
-      const productId = subResult.data?.product_id ?? null;
       const isSubscribed = subResult.data?.subscribed ?? false;
+      const planKey = subResult.data?.plan_key ?? null;
 
-      // Calculate trial based on company_users.created_at
       const createdAt = profileResult.data?.created_at ?? user.created_at;
       const trial = isSubscribed
         ? { trialActive: false, trialDaysLeft: null, trialExpired: false }
@@ -102,10 +88,9 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
       setState({
         subscribed: isSubscribed,
-        productId,
+        planKey,
         subscriptionEnd: subResult.data?.subscription_end ?? null,
         loading: false,
-        planKey: getPlanKey(productId),
         ...trial,
       });
     } catch {
@@ -119,12 +104,12 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     return () => clearInterval(interval);
   }, [checkSubscription]);
 
-  const createCheckout = useCallback(async (priceId: string) => {
-    // Open window immediately to avoid popup blocker (must be in user click handler)
+  const createCheckout = useCallback(async (planKey: string) => {
+    // Open window immediately to avoid popup blocker
     const newWindow = window.open("", "_blank");
     try {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { priceId },
+        body: { planKey },
       });
       if (error) throw error;
       if (data?.url && newWindow) {

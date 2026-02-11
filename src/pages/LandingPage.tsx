@@ -38,7 +38,7 @@ const plans = [
     desc: "Para pequenos comércios",
     features: ["1 terminal PDV", "100 produtos", "NFC-e ilimitada", "Suporte por e-mail"],
     highlighted: false,
-    priceId: PLANS.essencial.price_id,
+    planKey: PLANS.essencial.key,
   },
   {
     name: "Profissional",
@@ -46,7 +46,7 @@ const plans = [
     desc: "Para negócios em crescimento",
     features: ["3 terminais PDV", "Produtos ilimitados", "NF-e + NFC-e", "Relatórios avançados", "Suporte prioritário"],
     highlighted: true,
-    priceId: PLANS.profissional.price_id,
+    planKey: PLANS.profissional.key,
   },
   {
     name: "Enterprise",
@@ -54,7 +54,7 @@ const plans = [
     desc: "Para redes e franquias",
     features: ["Terminais ilimitados", "Multi-empresa", "API dedicada", "White label", "Gerente de conta"],
     highlighted: false,
-    priceId: null,
+    planKey: null,
   },
 ];
 
@@ -70,14 +70,14 @@ export default function LandingPage() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
   const handlePlanClick = async (plan: typeof plans[0]) => {
-    if (!plan.priceId) return; // Enterprise = contact sales
+    if (!plan.planKey) return; // Enterprise = contact sales
     if (!user) {
       navigate("/auth");
       return;
     }
     try {
       setLoadingPlan(plan.name);
-      await createCheckout(plan.priceId);
+      await createCheckout(plan.planKey);
     } catch {
       toast.error("Erro ao iniciar checkout. Tente novamente.");
     } finally {
