@@ -9,6 +9,7 @@ import { useSync } from "@/hooks/useSync";
 import { SaleService, CashSessionService } from "@/services";
 import { cacheEntities, getCachedEntities } from "@/lib/sync-queue";
 import { supabase } from "@/integrations/supabase/client";
+import { isScaleBarcode, parseScaleBarcode } from "@/lib/scale-barcode";
 import type { SaleItem, PaymentResult } from "@/services/types";
 import { toast } from "sonner";
 
@@ -192,7 +193,67 @@ export function usePDV() {
   }, [companyId, user, cartItems, total, currentSession, sync]);
 
   // Barcode scan handler
+  // Scale barcode: find product by internal code and add with weight/price
+  const handleScaleBarcode = useCallback((barcode: string): boolean => {
+    const parsed = parseScaleBarcode(barcode);
+    if (!parsed) return false;
+
+    // Match product by last digits of SKU or barcode containing the product code
+    const product = products.find(
+      (p) =>
+        p.sku === parsed.productCode ||
+        p.sku.endsWith(parsed.productCode) ||
+        p.barcode === parsed.productCode ||
+        (p.barcode && p.barcode.endsWith(parsed.productCode))
+    );
+
+    if (!product) {
+      toast.error(`Produto da balança não encontrado (código: ${parsed.productCode})`);
+      return true; // consumed the barcode even if not found
+    }
+
+    if (parsed.isWeight && parsed.weightKg) {
+      // Add with weight as quantity (kg)
+      setCartItems((prev) => {
+        const existing = prev.find((item) => item.id === product.id);
+        const newQty = parsed.weightKg!;
+        if (existing) {
+          return prev.map((item) =>
+            item.id === product.id
+              ? { ...item, quantity: Math.round((item.quantity + newQty) * 1000) / 1000 }
+              : item
+          );
+        }
+        return [...prev, { ...product, quantity: Math.round(newQty * 1000) / 1000 }];
+      });
+      toast.success(`${product.name} — ${parsed.weightKg.toFixed(3)} kg`);
+    } else if (!parsed.isWeight && parsed.priceValue) {
+      // Price-encoded: calculate quantity from price ÷ unit price
+      const qty = product.price > 0 ? Math.round((parsed.priceValue / product.price) * 1000) / 1000 : 1;
+      setCartItems((prev) => {
+        const existing = prev.find((item) => item.id === product.id);
+        if (existing) {
+          return prev.map((item) =>
+            item.id === product.id
+              ? { ...item, quantity: Math.round((item.quantity + qty) * 1000) / 1000 }
+              : item
+          );
+        }
+        return [...prev, { ...product, quantity: Math.round(qty * 1000) / 1000 }];
+      });
+      toast.success(`${product.name} — R$ ${parsed.priceValue.toFixed(2)}`);
+    }
+
+    return true;
+  }, [products]);
+
   const handleBarcodeScan = useCallback((barcode: string) => {
+    // Check if it's a scale barcode first
+    if (isScaleBarcode(barcode)) {
+      handleScaleBarcode(barcode);
+      return;
+    }
+
     const product = products.find(
       (p) => p.sku === barcode || p.barcode === barcode || p.id === barcode
     );
@@ -201,11 +262,10 @@ export function usePDV() {
       if (added) {
         toast.success(`${product.name} adicionado`);
       }
-      // if not added, addToCart already handles the reason (zero stock or insufficient)
     } else {
       toast.error(`Produto não encontrado: ${barcode}`);
     }
-  }, [products, addToCart]);
+  }, [products, addToCart, handleScaleBarcode]);
 
   return {
     // Products
