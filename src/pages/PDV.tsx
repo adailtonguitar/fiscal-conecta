@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { isScaleBarcode } from "@/lib/scale-barcode";
 import { PDVProductGrid } from "@/components/pdv/PDVProductGrid";
 import { PDVCart } from "@/components/pdv/PDVCart";
@@ -32,7 +32,16 @@ export default function PDV() {
   const [zeroStockProduct, setZeroStockProduct] = useState<PDVProduct | null>(null);
   const [stockMovementProduct, setStockMovementProduct] = useState<PDVProduct | null>(null);
 
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
+
   useBarcodeScanner(pdv.handleBarcodeScan);
+
+  // Auto-focus barcode input on mount and after closing receipt
+  useEffect(() => {
+    if (!showTEF && !receipt && !showCashRegister && !showProductList) {
+      setTimeout(() => barcodeInputRef.current?.focus(), 100);
+    }
+  }, [showTEF, receipt, showCashRegister, showProductList]);
 
   const handleCheckout = useCallback(() => {
     if (pdv.cartItems.length > 0) setShowTEF(true);
@@ -251,6 +260,7 @@ export default function PDV() {
         <ScanBarcode className="w-4 h-4 text-pos-accent flex-shrink-0" />
         <span className="text-xs text-pos-text-muted font-medium whitespace-nowrap">CÓDIGO DE BARRAS:</span>
         <input
+          ref={barcodeInputRef}
           type="text"
           value={barcodeInput}
           onChange={(e) => setBarcodeInput(e.target.value)}
