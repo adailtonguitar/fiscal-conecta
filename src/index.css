@@ -92,29 +92,33 @@
   }
 }
 
-/* PDV Terminal Theme - azul escuro suave, fora do @layer para prioridade */
+/* PDV Terminal Theme */
 .pdv-theme {
-  --background: 220 22% 22%;
-  --foreground: 210 20% 92%;
-  --card: 220 24% 26%;
-  --card-foreground: 210 20% 92%;
-  --popover: 220 24% 26%;
-  --popover-foreground: 210 20% 92%;
-  --primary: 213 75% 52%;
+  --background: 210 20% 98%;
+  --foreground: 221 39% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 221 39% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 221 39% 11%;
+  --primary: 221 83% 53%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 220 22% 28%;
-  --secondary-foreground: 210 20% 90%;
-  --muted: 220 22% 28%;
-  --muted-foreground: 210 12% 58%;
-  --accent: 213 40% 30%;
-  --accent-foreground: 213 75% 72%;
-  --destructive: 0 65% 50%;
+  --secondary: 210 20% 96%;
+  --secondary-foreground: 221 39% 11%;
+  --muted: 210 20% 96%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 221 60% 95%;
+  --accent-foreground: 221 83% 43%;
+  --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
-  --border: 220 20% 32%;
-  --input: 220 20% 32%;
-  --ring: 213 75% 52%;
-  --sidebar-background: 220 25% 16%;
-  --sidebar-foreground: 210 15% 78%;
+  --success: 142 72% 29%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 100%;
+  --border: 214 16% 85%;
+  --input: 214 16% 85%;
+  --ring: 221 83% 53%;
+  --sidebar-background: 221 83% 53%;
+  --sidebar-foreground: 0 0% 100%;
 }
 
 @layer base {
