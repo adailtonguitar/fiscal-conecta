@@ -92,29 +92,29 @@
   }
 
 
-  /* PDV Terminal Theme - optimized for customer visibility */
+  /* PDV Terminal Theme - azul escuro suave */
   .pdv-theme {
-    --background: 220 20% 96%;
-    --foreground: 220 30% 10%;
-    --card: 0 0% 100%;
-    --card-foreground: 220 30% 10%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 30% 10%;
-    --primary: 213 80% 45%;
+    --background: 220 30% 12%;
+    --foreground: 210 20% 92%;
+    --card: 220 28% 16%;
+    --card-foreground: 210 20% 92%;
+    --popover: 220 28% 16%;
+    --popover-foreground: 210 20% 92%;
+    --primary: 213 75% 52%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 16% 92%;
-    --secondary-foreground: 220 30% 10%;
-    --muted: 220 16% 92%;
-    --muted-foreground: 220 12% 42%;
-    --accent: 213 40% 92%;
-    --accent-foreground: 213 80% 35%;
-    --destructive: 0 72% 51%;
+    --secondary: 220 25% 20%;
+    --secondary-foreground: 210 20% 90%;
+    --muted: 220 25% 20%;
+    --muted-foreground: 210 12% 58%;
+    --accent: 213 40% 22%;
+    --accent-foreground: 213 75% 72%;
+    --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 16% 86%;
-    --input: 220 16% 86%;
-    --ring: 213 80% 45%;
-    --sidebar-background: 213 60% 38%;
-    --sidebar-foreground: 0 0% 100%;
+    --border: 220 22% 22%;
+    --input: 220 22% 22%;
+    --ring: 213 75% 52%;
+    --sidebar-background: 220 32% 9%;
+    --sidebar-foreground: 210 15% 78%;
   }
 }
 
