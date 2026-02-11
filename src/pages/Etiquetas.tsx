@@ -147,6 +147,7 @@ export default function Etiquetas() {
                       <Checkbox
                         checked={selected.has(label.id)}
                         onCheckedChange={() => toggle(label.id)}
+                        onClick={(e) => e.stopPropagation()}
                       />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate text-foreground">{p.name}</p>
