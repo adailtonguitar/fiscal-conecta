@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,9 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateProduct, useUpdateProduct, type Product } from "@/hooks/useProducts";
 import { useFiscalCategories } from "@/hooks/useFiscalCategories";
-import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Loader2, Check, Search } from "lucide-react";
-import { toast } from "sonner";
+import { Check, Search } from "lucide-react";
+import { NCM_TABLE } from "@/lib/ncm-table";
 
 interface NCMSuggestion {
   ncm: string;
@@ -62,70 +61,27 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
     ? ((product.price - product.cost_price) / product.cost_price) * 100
     : null;
   const [marginStr, setMarginStr] = useState<string>(initialMargin !== null ? initialMargin.toFixed(1) : "");
-  const [ncmSuggestions, setNcmSuggestions] = useState<NCMSuggestion[]>([]);
-  const [ncmLoading, setNcmLoading] = useState(false);
-  const [showNcmSuggestions, setShowNcmSuggestions] = useState(false);
   const [ncmSearchText, setNcmSearchText] = useState("");
-  const ncmDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showNcmSuggestions, setShowNcmSuggestions] = useState(false);
 
-  const searchNCM = useCallback(async (query: string) => {
-    if (!query || query.trim().length < 2) {
-      setNcmSuggestions([]);
-      setShowNcmSuggestions(false);
-      return;
-    }
-    setNcmLoading(true);
-    setNcmSuggestions([]);
-    try {
-      const { data, error } = await supabase.functions.invoke("ncm-lookup", {
-        body: { productName: query.trim() },
-      });
-      if (error) throw error;
-      if (data?.suggestions && data.suggestions.length > 0) {
-        setNcmSuggestions(data.suggestions);
-        setShowNcmSuggestions(true);
-      } else {
-        setShowNcmSuggestions(false);
-      }
-    } catch (err: any) {
-      console.error("NCM lookup error:", err);
-    } finally {
-      setNcmLoading(false);
-    }
-  }, []);
+  const ncmFiltered = useMemo(() => {
+    const q = ncmSearchText.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return NCM_TABLE.filter(
+      (item) => item.ncm.includes(q) || item.description.toLowerCase().includes(q)
+    ).slice(0, 10);
+  }, [ncmSearchText]);
 
-  const handleNcmInputChange = useCallback((value: string, fieldOnChange: (v: string) => void) => {
+  const handleNcmInputChange = (value: string, fieldOnChange: (v: string) => void) => {
     fieldOnChange(value);
-    // If it looks like a NCM code (mostly digits), don't search
-    if (/^\d{2,}$/.test(value.trim())) {
-      setShowNcmSuggestions(false);
-      setNcmSearchText("");
-      return;
-    }
     setNcmSearchText(value);
-    // Debounce the AI search
-    if (ncmDebounceRef.current) clearTimeout(ncmDebounceRef.current);
-    if (value.trim().length >= 2) {
-      ncmDebounceRef.current = setTimeout(() => searchNCM(value), 800);
-    } else {
-      setNcmSuggestions([]);
-      setShowNcmSuggestions(false);
-    }
-  }, [searchNCM]);
+    setShowNcmSuggestions(value.trim().length >= 2);
+  };
 
   const selectNCM = (ncm: string) => {
     form.setValue("ncm", ncm);
     setShowNcmSuggestions(false);
     setNcmSearchText("");
-  };
-
-  const lookupNCM = async () => {
-    const productName = form.getValues("name");
-    if (!productName || productName.trim().length < 2) {
-      toast.error("Digite o nome do produto primeiro");
-      return;
-    }
-    searchNCM(productName.trim());
   };
 
   const form = useForm<FormData>({
@@ -218,46 +174,23 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                 <FormField control={form.control} name="ncm" render={({ field }) => (
                   <FormItem className="relative md:col-span-2">
-                    <FormLabel className="flex items-center gap-2">
-                      NCM
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 px-1.5 text-[10px] gap-1 text-primary hover:text-primary"
-                        onClick={lookupNCM}
-                        disabled={ncmLoading}
-                      >
-                        {ncmLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                        Buscar pelo nome
-                      </Button>
-                    </FormLabel>
-                    <div className="relative">
-                      <FormControl>
-                        <Input
-                          placeholder="Digite o código NCM ou nome do produto para buscar..."
-                          {...field}
-                          onChange={(e) => handleNcmInputChange(e.target.value, field.onChange)}
-                        />
-                      </FormControl>
-                      {ncmLoading && (
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                    {!ncmLoading && ncmSearchText.length >= 2 && !showNcmSuggestions && ncmSuggestions.length === 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">Buscando NCM para "{ncmSearchText}"...</p>
-                    )}
-                    {showNcmSuggestions && ncmSuggestions.length > 0 && (
-                      <div className="absolute z-50 left-0 right-0 mt-1 border border-border rounded-lg overflow-hidden bg-popover shadow-lg">
+                    <FormLabel>NCM</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Digite código ou descrição para buscar..."
+                        {...field}
+                        onChange={(e) => handleNcmInputChange(e.target.value, field.onChange)}
+                      />
+                    </FormControl>
+                    {showNcmSuggestions && ncmFiltered.length > 0 && (
+                      <div className="absolute z-50 left-0 right-0 mt-1 border border-border rounded-lg overflow-hidden bg-popover shadow-lg max-h-60 overflow-y-auto">
                         <div className="px-3 py-1.5 bg-muted/50 border-b border-border">
                           <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                             <Search className="w-3 h-3" />
-                            Sugestões de NCM
+                            {ncmFiltered.length} resultado(s)
                           </span>
                         </div>
-                        {ncmSuggestions.map((s, idx) => (
+                        {ncmFiltered.map((s, idx) => (
                           <button
                             key={idx}
                             type="button"
