@@ -1,4 +1,4 @@
-import { Trash2, ShoppingCart, Clock } from "lucide-react";
+import { Trash2, ShoppingCart } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { PDVCartItem } from "@/hooks/usePDV";
 import { useState, useEffect } from "react";
