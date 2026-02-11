@@ -28,6 +28,17 @@ const schema = z.object({
   stock_quantity: z.coerce.number().min(0),
   min_stock: z.coerce.number().min(0).optional(),
   barcode: z.string().trim().max(50).optional(),
+  origem: z.coerce.number().min(0).max(8).optional(),
+  cfop: z.string().trim().max(10).optional(),
+  cest: z.string().trim().max(10).optional(),
+  csosn: z.string().trim().max(10).optional(),
+  cst_icms: z.string().trim().max(10).optional(),
+  aliq_icms: z.coerce.number().min(0).optional(),
+  cst_pis: z.string().trim().max(10).optional(),
+  aliq_pis: z.coerce.number().min(0).optional(),
+  cst_cofins: z.string().trim().max(10).optional(),
+  aliq_cofins: z.coerce.number().min(0).optional(),
+  gtin_tributavel: z.string().trim().max(20).optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -98,14 +109,25 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
       stock_quantity: product?.stock_quantity ?? 0,
       min_stock: product?.min_stock ?? 0,
       barcode: product?.barcode ?? "",
+      origem: (product as any)?.origem ?? 0,
+      cfop: (product as any)?.cfop ?? "5102",
+      cest: (product as any)?.cest ?? "",
+      csosn: (product as any)?.csosn ?? "102",
+      cst_icms: (product as any)?.cst_icms ?? "00",
+      aliq_icms: (product as any)?.aliq_icms ?? 0,
+      cst_pis: (product as any)?.cst_pis ?? "01",
+      aliq_pis: (product as any)?.aliq_pis ?? 1.65,
+      cst_cofins: (product as any)?.cst_cofins ?? "01",
+      aliq_cofins: (product as any)?.aliq_cofins ?? 7.60,
+      gtin_tributavel: (product as any)?.gtin_tributavel ?? "",
     },
   });
 
   const onSubmit = async (data: FormData) => {
     if (isEditing && product) {
-      await updateProduct.mutateAsync({ id: product.id, ...data });
+      await updateProduct.mutateAsync({ id: product.id, ...data } as any);
     } else {
-      await createProduct.mutateAsync({ name: data.name, sku: data.sku, ...data });
+      await createProduct.mutateAsync({ name: data.name, sku: data.sku, ...data } as any);
     }
     onOpenChange(false);
     form.reset();
@@ -296,6 +318,178 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                   <FormMessage />
                 </FormItem>
               )} />
+            </div>
+
+            {/* Dados Fiscais */}
+            <div className="border-t pt-4 mt-4">
+              <h3 className="text-sm font-semibold text-foreground mb-3">Dados Fiscais (NF-e)</h3>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <FormField control={form.control} name="origem" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Origem</FormLabel>
+                    <Select onValueChange={(v) => field.onChange(Number(v))} defaultValue={String(field.value ?? 0)}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="0">0 - Nacional</SelectItem>
+                        <SelectItem value="1">1 - Estrangeira (importação direta)</SelectItem>
+                        <SelectItem value="2">2 - Estrangeira (mercado interno)</SelectItem>
+                        <SelectItem value="3">3 - Nacional (import. 40-70%)</SelectItem>
+                        <SelectItem value="5">5 - Nacional (import. &lt;40%)</SelectItem>
+                        <SelectItem value="6">6 - Estrangeira (sem similar)</SelectItem>
+                        <SelectItem value="7">7 - Estrangeira (com similar)</SelectItem>
+                        <SelectItem value="8">8 - Nacional (import. &gt;70%)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="cfop" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CFOP</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value || "5102"}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="5101">5101 - Venda prod. estab.</SelectItem>
+                        <SelectItem value="5102">5102 - Venda merc. adquirida</SelectItem>
+                        <SelectItem value="5103">5103 - Venda prod. c/ ST</SelectItem>
+                        <SelectItem value="5405">5405 - Venda merc. c/ ST</SelectItem>
+                        <SelectItem value="5403">5403 - Venda prod. ST</SelectItem>
+                        <SelectItem value="5949">5949 - Outra saída</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="cest" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CEST</FormLabel>
+                    <FormControl><Input placeholder="0300100" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 mt-3">
+                <FormField control={form.control} name="csosn" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CSOSN (Simples)</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value || "102"}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="101">101 - Tributada com permissão de crédito</SelectItem>
+                        <SelectItem value="102">102 - Tributada sem permissão de crédito</SelectItem>
+                        <SelectItem value="103">103 - Isenção de ICMS (faixa)</SelectItem>
+                        <SelectItem value="201">201 - Tributada c/ ST e crédito</SelectItem>
+                        <SelectItem value="202">202 - Tributada c/ ST sem crédito</SelectItem>
+                        <SelectItem value="300">300 - Imune</SelectItem>
+                        <SelectItem value="400">400 - Não tributada</SelectItem>
+                        <SelectItem value="500">500 - ICMS ST anterior</SelectItem>
+                        <SelectItem value="900">900 - Outros</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="cst_icms" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CST ICMS</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value || "00"}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="00">00 - Tributada integralmente</SelectItem>
+                        <SelectItem value="10">10 - Tributada com ST</SelectItem>
+                        <SelectItem value="20">20 - Com redução de BC</SelectItem>
+                        <SelectItem value="30">30 - Isenta c/ ST</SelectItem>
+                        <SelectItem value="40">40 - Isenta</SelectItem>
+                        <SelectItem value="41">41 - Não tributada</SelectItem>
+                        <SelectItem value="50">50 - Suspensão</SelectItem>
+                        <SelectItem value="51">51 - Diferimento</SelectItem>
+                        <SelectItem value="60">60 - ICMS ST anterior</SelectItem>
+                        <SelectItem value="70">70 - Redução BC c/ ST</SelectItem>
+                        <SelectItem value="90">90 - Outros</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="aliq_icms" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Alíq. ICMS %</FormLabel>
+                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+
+              <div className="grid grid-cols-4 gap-4 mt-3">
+                <FormField control={form.control} name="cst_pis" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CST PIS</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value || "01"}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="01">01 - Tributável (BC = Valor)</SelectItem>
+                        <SelectItem value="02">02 - Tributável (BC = Quant.)</SelectItem>
+                        <SelectItem value="04">04 - Monofásica (zero)</SelectItem>
+                        <SelectItem value="05">05 - ST (zero)</SelectItem>
+                        <SelectItem value="06">06 - Alíquota zero</SelectItem>
+                        <SelectItem value="07">07 - Isenta</SelectItem>
+                        <SelectItem value="08">08 - Sem incidência</SelectItem>
+                        <SelectItem value="09">09 - Suspensão</SelectItem>
+                        <SelectItem value="49">49 - Outras operações</SelectItem>
+                        <SelectItem value="99">99 - Outras operações</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="aliq_pis" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Alíq. PIS %</FormLabel>
+                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="cst_cofins" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CST COFINS</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value || "01"}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="01">01 - Tributável (BC = Valor)</SelectItem>
+                        <SelectItem value="02">02 - Tributável (BC = Quant.)</SelectItem>
+                        <SelectItem value="04">04 - Monofásica (zero)</SelectItem>
+                        <SelectItem value="05">05 - ST (zero)</SelectItem>
+                        <SelectItem value="06">06 - Alíquota zero</SelectItem>
+                        <SelectItem value="07">07 - Isenta</SelectItem>
+                        <SelectItem value="08">08 - Sem incidência</SelectItem>
+                        <SelectItem value="09">09 - Suspensão</SelectItem>
+                        <SelectItem value="49">49 - Outras operações</SelectItem>
+                        <SelectItem value="99">99 - Outras operações</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="aliq_cofins" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Alíq. COFINS %</FormLabel>
+                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+
+              <div className="mt-3">
+                <FormField control={form.control} name="gtin_tributavel" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>GTIN Tributável</FormLabel>
+                    <FormControl><Input placeholder="EAN tributável (se diferente do código de barras)" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-2">

@@ -394,6 +394,17 @@ export default function PDV() {
             barcode: stockMovementProduct.barcode,
             cost_price: null,
             min_stock: null,
+            origem: 0,
+            cfop: "5102",
+            cest: null,
+            csosn: "102",
+            cst_icms: "00",
+            aliq_icms: 0,
+            cst_pis: "01",
+            aliq_pis: 1.65,
+            cst_cofins: "01",
+            aliq_cofins: 7.60,
+            gtin_tributavel: null,
           }}
         />
       )}

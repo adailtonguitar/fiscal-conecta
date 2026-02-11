@@ -1177,16 +1177,27 @@ export type Database = {
       }
       products: {
         Row: {
+          aliq_cofins: number | null
+          aliq_icms: number | null
+          aliq_pis: number | null
           barcode: string | null
           category: string | null
+          cest: string | null
+          cfop: string | null
           company_id: string
           cost_price: number | null
           created_at: string
+          csosn: string | null
+          cst_cofins: string | null
+          cst_icms: string | null
+          cst_pis: string | null
+          gtin_tributavel: string | null
           id: string
           is_active: boolean
           min_stock: number | null
           name: string
           ncm: string | null
+          origem: number | null
           price: number
           sku: string
           stock_quantity: number
@@ -1194,16 +1205,27 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aliq_cofins?: number | null
+          aliq_icms?: number | null
+          aliq_pis?: number | null
           barcode?: string | null
           category?: string | null
+          cest?: string | null
+          cfop?: string | null
           company_id: string
           cost_price?: number | null
           created_at?: string
+          csosn?: string | null
+          cst_cofins?: string | null
+          cst_icms?: string | null
+          cst_pis?: string | null
+          gtin_tributavel?: string | null
           id?: string
           is_active?: boolean
           min_stock?: number | null
           name: string
           ncm?: string | null
+          origem?: number | null
           price?: number
           sku: string
           stock_quantity?: number
@@ -1211,16 +1233,27 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aliq_cofins?: number | null
+          aliq_icms?: number | null
+          aliq_pis?: number | null
           barcode?: string | null
           category?: string | null
+          cest?: string | null
+          cfop?: string | null
           company_id?: string
           cost_price?: number | null
           created_at?: string
+          csosn?: string | null
+          cst_cofins?: string | null
+          cst_icms?: string | null
+          cst_pis?: string | null
+          gtin_tributavel?: string | null
           id?: string
           is_active?: boolean
           min_stock?: number | null
           name?: string
           ncm?: string | null
+          origem?: number | null
           price?: number
           sku?: string
           stock_quantity?: number
