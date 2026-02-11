@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 export default function Auth() {
   const [email, setEmail] = useState(() => localStorage.getItem("remember-email") || "");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState(() => localStorage.getItem("remember-password") || "");
   const [rememberMe, setRememberMe] = useState(() => localStorage.getItem("remember-email") !== null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -132,8 +132,10 @@ export default function Auth() {
     try {
       if (rememberMe) {
         localStorage.setItem("remember-email", email);
+        localStorage.setItem("remember-password", password);
       } else {
         localStorage.removeItem("remember-email");
+        localStorage.removeItem("remember-password");
       }
       sessionStorage.removeItem("needs-password-setup");
       const { error } = await supabase.auth.signInWithPassword({ email, password });
