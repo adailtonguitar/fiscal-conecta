@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCreateProduct, useUpdateProduct, type Product } from "@/hooks/useProducts";
 import { useFiscalCategories } from "@/hooks/useFiscalCategories";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Loader2, Check } from "lucide-react";
+import { Sparkles, Loader2, Check, Search } from "lucide-react";
 import { toast } from "sonner";
 
 interface NCMSuggestion {
@@ -65,6 +65,59 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
   const [ncmSuggestions, setNcmSuggestions] = useState<NCMSuggestion[]>([]);
   const [ncmLoading, setNcmLoading] = useState(false);
   const [showNcmSuggestions, setShowNcmSuggestions] = useState(false);
+  const [ncmSearchText, setNcmSearchText] = useState("");
+  const ncmDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const searchNCM = useCallback(async (query: string) => {
+    if (!query || query.trim().length < 2) {
+      setNcmSuggestions([]);
+      setShowNcmSuggestions(false);
+      return;
+    }
+    setNcmLoading(true);
+    setNcmSuggestions([]);
+    try {
+      const { data, error } = await supabase.functions.invoke("ncm-lookup", {
+        body: { productName: query.trim() },
+      });
+      if (error) throw error;
+      if (data?.suggestions && data.suggestions.length > 0) {
+        setNcmSuggestions(data.suggestions);
+        setShowNcmSuggestions(true);
+      } else {
+        setShowNcmSuggestions(false);
+      }
+    } catch (err: any) {
+      console.error("NCM lookup error:", err);
+    } finally {
+      setNcmLoading(false);
+    }
+  }, []);
+
+  const handleNcmInputChange = useCallback((value: string, fieldOnChange: (v: string) => void) => {
+    fieldOnChange(value);
+    // If it looks like a NCM code (mostly digits), don't search
+    if (/^\d{2,}$/.test(value.trim())) {
+      setShowNcmSuggestions(false);
+      setNcmSearchText("");
+      return;
+    }
+    setNcmSearchText(value);
+    // Debounce the AI search
+    if (ncmDebounceRef.current) clearTimeout(ncmDebounceRef.current);
+    if (value.trim().length >= 2) {
+      ncmDebounceRef.current = setTimeout(() => searchNCM(value), 800);
+    } else {
+      setNcmSuggestions([]);
+      setShowNcmSuggestions(false);
+    }
+  }, [searchNCM]);
+
+  const selectNCM = (ncm: string) => {
+    form.setValue("ncm", ncm);
+    setShowNcmSuggestions(false);
+    setNcmSearchText("");
+  };
 
   const lookupNCM = async () => {
     const productName = form.getValues("name");
@@ -72,30 +125,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
       toast.error("Digite o nome do produto primeiro");
       return;
     }
-    setNcmLoading(true);
-    setNcmSuggestions([]);
-    setShowNcmSuggestions(false);
-    try {
-      const { data, error } = await supabase.functions.invoke("ncm-lookup", {
-        body: { productName: productName.trim() },
-      });
-      if (error) throw error;
-      if (data?.suggestions && data.suggestions.length > 0) {
-        setNcmSuggestions(data.suggestions);
-        setShowNcmSuggestions(true);
-      } else {
-        toast.info("Nenhuma sugestão de NCM encontrada");
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Erro ao buscar NCM");
-    } finally {
-      setNcmLoading(false);
-    }
-  };
-
-  const selectNCM = (ncm: string) => {
-    form.setValue("ncm", ncm);
-    setShowNcmSuggestions(false);
+    searchNCM(productName.trim());
   };
 
   const form = useForm<FormData>({
@@ -187,7 +217,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                 <FormField control={form.control} name="ncm" render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="relative md:col-span-2">
                     <FormLabel className="flex items-center gap-2">
                       NCM
                       <Button
@@ -199,21 +229,43 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                         disabled={ncmLoading}
                       >
                         {ncmLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                        Buscar por IA
+                        Buscar pelo nome
                       </Button>
                     </FormLabel>
-                    <FormControl><Input placeholder="22021000" {...field} /></FormControl>
+                    <div className="relative">
+                      <FormControl>
+                        <Input
+                          placeholder="Digite o código NCM ou nome do produto para buscar..."
+                          {...field}
+                          onChange={(e) => handleNcmInputChange(e.target.value, field.onChange)}
+                        />
+                      </FormControl>
+                      {ncmLoading && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    {!ncmLoading && ncmSearchText.length >= 2 && !showNcmSuggestions && ncmSuggestions.length === 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">Buscando NCM para "{ncmSearchText}"...</p>
+                    )}
                     {showNcmSuggestions && ncmSuggestions.length > 0 && (
-                      <div className="mt-1 border border-border rounded-lg overflow-hidden bg-popover shadow-lg">
+                      <div className="absolute z-50 left-0 right-0 mt-1 border border-border rounded-lg overflow-hidden bg-popover shadow-lg">
+                        <div className="px-3 py-1.5 bg-muted/50 border-b border-border">
+                          <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                            <Search className="w-3 h-3" />
+                            Sugestões de NCM
+                          </span>
+                        </div>
                         {ncmSuggestions.map((s, idx) => (
                           <button
                             key={idx}
                             type="button"
                             onClick={() => selectNCM(s.ncm)}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent transition-colors border-b border-border last:border-0"
+                            className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent transition-colors border-b border-border last:border-0"
                           >
                             <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                            <span className="font-mono font-medium text-foreground">{s.ncm}</span>
+                            <span className="font-mono font-semibold text-foreground">{s.ncm}</span>
                             <span className="text-muted-foreground text-xs truncate">— {s.description}</span>
                           </button>
                         ))}
