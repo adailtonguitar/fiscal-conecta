@@ -28,6 +28,7 @@ export default function PDV() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showProductList, setShowProductList] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
+  const [selectedCartItemId, setSelectedCartItemId] = useState<string | null>(null);
   const [zeroStockProduct, setZeroStockProduct] = useState<PDVProduct | null>(null);
   const [stockMovementProduct, setStockMovementProduct] = useState<PDVProduct | null>(null);
 
@@ -288,6 +289,8 @@ export default function PDV() {
             onRemoveItem={pdv.removeItem}
             onClearCart={pdv.clearCart}
             onCheckout={handleCheckout}
+            selectedItemId={selectedCartItemId}
+            onSelectItem={setSelectedCartItemId}
           />
         </div>
 
