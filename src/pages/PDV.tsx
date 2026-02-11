@@ -186,20 +186,20 @@ export default function PDV() {
   };
 
   return (
-    <div className="flex flex-col h-screen pos-screen relative overflow-hidden">
+    <div className="flex flex-col h-screen bg-background text-foreground relative overflow-hidden">
       {/* ===== TOP HEADER BAR ===== */}
-      <div className="flex items-center justify-between px-4 h-11 bg-[hsl(220,35%,22%)] border-b border-pos-border flex-shrink-0">
+      <div className="flex items-center justify-between px-4 h-11 bg-sidebar-background border-b border-border flex-shrink-0">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-1.5 px-2 py-1 rounded text-pos-text-muted hover:text-pos-text hover:bg-pos-surface-hover transition-all text-xs font-medium"
+            className="flex items-center gap-1.5 px-2 py-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-all text-xs font-medium"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             Sair
           </button>
-          <div className="h-4 w-px bg-pos-border" />
-          <span className="text-sm font-bold text-pos-text tracking-wide">PDV</span>
-          <div className="h-4 w-px bg-pos-border" />
+          <div className="h-4 w-px bg-border" />
+          <span className="text-sm font-bold text-sidebar-foreground tracking-wide">PDV</span>
+          <div className="h-4 w-px bg-border" />
           {/* Status: Caixa Aberto */}
           <div className="flex items-center gap-1.5 px-3 py-1 rounded bg-success/20 border border-success/30">
             <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
@@ -212,7 +212,7 @@ export default function PDV() {
             <button
               onClick={pdv.syncAll}
               disabled={pdv.syncing || !pdv.isOnline}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-pos-surface border border-pos-border text-warning hover:bg-pos-surface-hover transition-all text-xs font-medium"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-muted border border-border text-warning hover:bg-accent transition-all text-xs font-medium"
             >
               <RefreshCw className={`w-3 h-3 ${pdv.syncing ? "animate-spin" : ""}`} />
               {pdv.pendingCount}
@@ -224,7 +224,7 @@ export default function PDV() {
               {pdv.stats.failed}
             </div>
           )}
-          <div className="flex items-center gap-1 px-2.5 py-1 rounded bg-pos-surface border border-pos-border text-xs font-medium">
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded bg-muted border border-border text-xs font-medium">
             {pdv.isOnline ? (
               <><Wifi className="w-3 h-3 text-success" /><span className="text-success">Online</span></>
             ) : (
@@ -233,21 +233,21 @@ export default function PDV() {
           </div>
           <button
             onClick={() => setShowCashRegister(true)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded bg-pos-surface border border-pos-border text-pos-text-muted hover:text-pos-text hover:bg-pos-surface-hover transition-all text-xs font-medium"
+            className="flex items-center gap-1 px-2.5 py-1 rounded bg-muted border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all text-xs font-medium"
           >
             <DollarSign className="w-3 h-3" />
             Caixa
           </button>
           <button
             onClick={() => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()}
-            className="p-1.5 rounded bg-pos-surface border border-pos-border text-pos-text-muted hover:text-pos-text hover:bg-pos-surface-hover transition-all"
+            className="p-1.5 rounded bg-muted border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
             title="Tela cheia"
           >
             <Maximize className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => setShowShortcuts((p) => !p)}
-            className="p-1.5 rounded bg-pos-surface border border-pos-border text-pos-text-muted hover:text-pos-text hover:bg-pos-surface-hover transition-all"
+            className="p-1.5 rounded bg-muted border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
             title="Atalhos (F1)"
           >
             <Keyboard className="w-3.5 h-3.5" />
@@ -256,9 +256,9 @@ export default function PDV() {
       </div>
 
       {/* ===== BARCODE INPUT ===== */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-pos-border bg-[hsl(220,30%,14%)] flex-shrink-0">
-        <ScanBarcode className="w-4 h-4 text-pos-accent flex-shrink-0" />
-        <span className="text-xs text-pos-text-muted font-medium whitespace-nowrap">CÓDIGO DE BARRAS:</span>
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-sidebar-background flex-shrink-0">
+        <ScanBarcode className="w-4 h-4 text-primary flex-shrink-0" />
+        <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">CÓDIGO DE BARRAS:</span>
         <input
           ref={barcodeInputRef}
           type="text"
@@ -272,18 +272,18 @@ export default function PDV() {
             }
           }}
           placeholder="Leia ou digite o código..."
-          className="flex-1 px-3 py-1.5 rounded bg-pos-surface border border-pos-border text-pos-text text-xs font-mono focus:outline-none focus:ring-1 focus:ring-pos-accent/40 focus:border-pos-accent transition-all"
+          className="flex-1 px-3 py-1.5 rounded bg-card border border-border text-foreground text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary transition-all"
         />
         <button
           onClick={handleBarcodeSubmit}
-          className="px-3 py-1.5 rounded bg-pos-accent text-primary-foreground text-xs font-bold hover:opacity-90 transition-all"
+          className="px-3 py-1.5 rounded bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all"
         >
           OK
         </button>
-        <div className="h-4 w-px bg-pos-border mx-1" />
+        <div className="h-4 w-px bg-border mx-1" />
         <button
           onClick={() => setShowProductList((p) => !p)}
-          className="px-3 py-1.5 rounded bg-pos-surface border border-pos-border text-pos-text-muted hover:text-pos-text text-xs font-medium hover:bg-pos-surface-hover transition-all"
+          className="px-3 py-1.5 rounded bg-muted border border-border text-muted-foreground hover:text-foreground text-xs font-medium hover:bg-accent transition-all"
         >
           {showProductList ? "Ocultar Produtos" : "Mostrar Produtos (F3)"}
         </button>
@@ -312,7 +312,7 @@ export default function PDV() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="absolute inset-0 z-30 bg-pos-bg"
+              className="absolute inset-0 z-30 bg-background"
             >
               <PDVProductGrid
                 products={pdv.products}
@@ -445,7 +445,7 @@ export default function PDV() {
 
 
       {/* Fixed shortcuts bar at bottom */}
-      <div className="flex items-center justify-center gap-3 px-4 py-2.5 bg-[hsl(220,35%,18%)] border-t border-pos-border flex-shrink-0 flex-wrap">
+      <div className="flex items-center justify-center gap-3 px-4 py-2.5 bg-sidebar-background border-t border-border flex-shrink-0 flex-wrap">
         {[
           { key: "F1", label: "Atalhos" },
           { key: "F2", label: "Pagamento" },
@@ -457,8 +457,8 @@ export default function PDV() {
           { key: "ESC", label: "Fechar" },
         ].map(({ key, label }) => (
           <div key={key} className="flex items-center gap-1.5 px-2">
-            <kbd className="px-2 py-1 rounded bg-pos-surface border border-pos-border text-xs font-mono font-bold text-pos-accent">{key}</kbd>
-            <span className="text-xs text-pos-text-muted">{label}</span>
+            <kbd className="px-2 py-1 rounded bg-muted border border-border text-xs font-mono font-bold text-primary">{key}</kbd>
+            <span className="text-xs text-muted-foreground">{label}</span>
           </div>
         ))}
       </div>

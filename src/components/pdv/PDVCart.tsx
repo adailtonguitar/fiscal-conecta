@@ -23,7 +23,7 @@ function LiveClock() {
     return () => clearInterval(interval);
   }, []);
   return (
-    <span className="text-3xl font-bold font-mono text-pos-text tracking-wider">
+    <span className="text-3xl font-bold font-mono text-primary-foreground tracking-wider">
       {time.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
     </span>
   );
@@ -38,19 +38,19 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
   return (
     <div className="flex flex-col h-full">
       {/* Top info bar: date + clock */}
-      <div className="flex items-center justify-between px-4 py-2 bg-[hsl(210,60%,45%)] border-b border-[hsl(210,60%,35%)]">
+      <div className="flex items-center justify-between px-4 py-2 bg-primary border-b border-primary/80">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-white/80 uppercase">Itens:</span>
-            <span className="text-sm font-bold text-white font-mono">{items.length}</span>
+            <span className="text-xs font-bold text-primary-foreground/80 uppercase">Itens:</span>
+            <span className="text-sm font-bold text-primary-foreground font-mono">{items.length}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-white/80 uppercase">Qtd Total:</span>
-            <span className="text-sm font-bold text-white font-mono">{totalQuantity}</span>
+            <span className="text-xs font-bold text-primary-foreground/80 uppercase">Qtd Total:</span>
+            <span className="text-sm font-bold text-primary-foreground font-mono">{totalQuantity}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-white/80 uppercase">Data:</span>
-            <span className="text-sm font-bold text-white font-mono">
+            <span className="text-xs font-bold text-primary-foreground/80 uppercase">Data:</span>
+            <span className="text-sm font-bold text-primary-foreground font-mono">
               {new Date().toLocaleDateString("pt-BR")}
             </span>
           </div>
@@ -59,7 +59,7 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
       </div>
 
       {/* Selected product name - big display */}
-      <div className="px-4 py-3 bg-white border-b border-gray-200 min-h-[56px] flex items-center">
+      <div className="px-4 py-3 bg-card border-b border-border min-h-[56px] flex items-center">
         <AnimatePresence mode="wait">
           {selectedItem ? (
             <motion.h2
@@ -67,7 +67,7 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="text-2xl font-black text-gray-900 uppercase tracking-wide truncate"
+              className="text-2xl font-black text-card-foreground uppercase tracking-wide truncate"
             >
               {selectedItem.name}
             </motion.h2>
@@ -76,7 +76,7 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
               key="empty"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-2xl font-bold text-gray-300 uppercase"
+              className="text-2xl font-bold text-muted-foreground uppercase"
             >
               Aguardando produto...
             </motion.h2>
@@ -85,14 +85,14 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
       </div>
 
       {/* Main content: left product detail + right items table */}
-      <div className="flex flex-1 min-h-0 bg-[hsl(210,20%,95%)]">
+      <div className="flex flex-1 min-h-0 bg-muted">
         {/* LEFT: Selected product detail */}
-        <div className="w-[280px] flex-shrink-0 border-r border-gray-300 bg-white p-4 flex flex-col gap-4">
+        <div className="w-[280px] flex-shrink-0 border-r border-border bg-card p-4 flex flex-col gap-4">
           {selectedItem ? (
             <>
               {/* Product image placeholder */}
-              <div className="w-full aspect-square rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden">
-                <div className="flex flex-col items-center gap-2 text-gray-400">
+              <div className="w-full aspect-square rounded-lg bg-muted border border-border flex items-center justify-center overflow-hidden">
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
                   <ShoppingCart className="w-12 h-12" />
                   <span className="text-xs font-medium">Sem imagem</span>
                 </div>
@@ -100,21 +100,21 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
 
               {/* Product info fields */}
               <div className="space-y-2">
-                <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                  <span className="text-xs font-bold text-gray-500 uppercase">Código:</span>
-                  <span className="text-sm font-mono font-bold text-gray-800">{selectedItem.sku}</span>
+                <div className="flex justify-between items-center py-1.5 border-b border-border/50">
+                  <span className="text-xs font-bold text-muted-foreground uppercase">Código:</span>
+                  <span className="text-sm font-mono font-bold text-card-foreground">{selectedItem.sku}</span>
                 </div>
-                <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                  <span className="text-xs font-bold text-gray-500 uppercase">Preço:</span>
-                  <span className="text-lg font-bold text-blue-700">{formatCurrency(selectedItem.price)}</span>
+                <div className="flex justify-between items-center py-1.5 border-b border-border/50">
+                  <span className="text-xs font-bold text-muted-foreground uppercase">Preço:</span>
+                  <span className="text-lg font-bold text-primary">{formatCurrency(selectedItem.price)}</span>
                 </div>
-                <div className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                  <span className="text-xs font-bold text-gray-500 uppercase">Quantidade:</span>
-                  <span className="text-lg font-bold text-gray-800 font-mono">{selectedItem.quantity}</span>
+                <div className="flex justify-between items-center py-1.5 border-b border-border/50">
+                  <span className="text-xs font-bold text-muted-foreground uppercase">Quantidade:</span>
+                  <span className="text-lg font-bold text-card-foreground font-mono">{selectedItem.quantity}</span>
                 </div>
                 <div className="flex justify-between items-center py-1.5">
-                  <span className="text-xs font-bold text-gray-500 uppercase">Subtotal:</span>
-                  <span className="text-lg font-bold text-blue-700">
+                  <span className="text-xs font-bold text-muted-foreground uppercase">Subtotal:</span>
+                  <span className="text-lg font-bold text-primary">
                     {formatCurrency(selectedItem.price * selectedItem.quantity)}
                   </span>
                 </div>
@@ -122,7 +122,7 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center">
-              <div className="flex flex-col items-center gap-3 text-gray-400">
+              <div className="flex flex-col items-center gap-3 text-muted-foreground">
                 <ShoppingCart className="w-16 h-16" />
                 <span className="text-sm font-medium">Nenhum produto</span>
               </div>
@@ -134,8 +134,8 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
         <div className="flex-1 flex flex-col min-w-0">
           <div className="flex-1 overflow-y-auto">
             <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-[hsl(210,60%,45%)] z-10">
-                <tr className="text-white text-left">
+              <thead className="sticky top-0 bg-primary z-10">
+                <tr className="text-primary-foreground text-left">
                   <th className="px-3 py-2 font-bold w-12">Item</th>
                   <th className="px-3 py-2 font-bold">Código</th>
                   <th className="px-3 py-2 font-bold">Descrição</th>
@@ -149,7 +149,7 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
                 <AnimatePresence>
                   {items.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-center py-16 text-gray-400 text-sm">
+                      <td colSpan={7} className="text-center py-16 text-muted-foreground text-sm">
                         Nenhum item adicionado
                       </td>
                     </tr>
@@ -161,44 +161,44 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         onClick={() => onSelectItem?.(item.id)}
-                        className={`cursor-pointer transition-colors border-b border-gray-200 ${
+                        className={`cursor-pointer transition-colors border-b border-border ${
                           selectedItemId === item.id
-                            ? "bg-blue-100 ring-1 ring-blue-400"
-                            : idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                        } hover:bg-blue-50`}
+                            ? "bg-accent ring-1 ring-primary/40"
+                            : idx % 2 === 0 ? "bg-card" : "bg-muted/50"
+                        } hover:bg-accent/50`}
                       >
-                        <td className="px-3 py-2 font-bold text-gray-500">{idx + 1}</td>
-                        <td className="px-3 py-2 font-mono text-gray-600">{item.sku}</td>
-                        <td className="px-3 py-2 text-gray-900 font-medium">{item.name}</td>
+                        <td className="px-3 py-2 font-bold text-muted-foreground">{idx + 1}</td>
+                        <td className="px-3 py-2 font-mono text-muted-foreground">{item.sku}</td>
+                        <td className="px-3 py-2 text-foreground font-medium">{item.name}</td>
                         <td className="px-3 py-2 text-center">
                           <div className="flex items-center justify-center gap-1">
                             {Number.isInteger(item.quantity) ? (
                               <>
                                 <button
                                   onClick={() => onUpdateQuantity(item.id, -1)}
-                                  className="w-5 h-5 rounded bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 text-[10px] font-bold transition-colors"
+                                  className="w-5 h-5 rounded bg-muted flex items-center justify-center text-muted-foreground hover:bg-border text-[10px] font-bold transition-colors"
                                 >
                                   −
                                 </button>
-                                <span className="w-8 text-center font-mono font-bold text-gray-800">{item.quantity}</span>
+                                <span className="w-8 text-center font-mono font-bold text-foreground">{item.quantity}</span>
                                 <button
                                   onClick={() => onUpdateQuantity(item.id, 1)}
-                                  className="w-5 h-5 rounded bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 text-[10px] font-bold transition-colors"
+                                  className="w-5 h-5 rounded bg-muted flex items-center justify-center text-muted-foreground hover:bg-border text-[10px] font-bold transition-colors"
                                 >
                                   +
                                 </button>
                               </>
                             ) : (
-                              <span className="font-mono font-bold text-gray-800">{item.quantity.toFixed(3)}</span>
+                              <span className="font-mono font-bold text-foreground">{item.quantity.toFixed(3)}</span>
                             )}
                           </div>
                         </td>
-                        <td className="px-3 py-2 text-right font-mono text-gray-700">{formatCurrency(item.price)}</td>
-                        <td className="px-3 py-2 text-right font-mono font-bold text-blue-700">{formatCurrency(item.price * item.quantity)}</td>
+                        <td className="px-3 py-2 text-right font-mono text-muted-foreground">{formatCurrency(item.price)}</td>
+                        <td className="px-3 py-2 text-right font-mono font-bold text-primary">{formatCurrency(item.price * item.quantity)}</td>
                         <td className="px-3 py-2">
                           <button
                             onClick={() => onRemoveItem(item.id)}
-                            className="text-gray-400 hover:text-red-500 transition-colors"
+                            className="text-muted-foreground hover:text-destructive transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -212,24 +212,24 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
           </div>
 
           {/* Total bar at bottom of table */}
-          <div className="border-t-2 border-[hsl(210,60%,45%)] bg-white px-4 py-3 flex items-center justify-between">
+          <div className="border-t-2 border-primary bg-card px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-gray-500 uppercase">Itens:</span>
-                <span className="text-sm font-bold text-gray-800 font-mono">{items.length}</span>
+                <span className="text-xs font-bold text-muted-foreground uppercase">Itens:</span>
+                <span className="text-sm font-bold text-foreground font-mono">{items.length}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-gray-500 uppercase">Soma Qtd:</span>
-                <span className="text-sm font-bold text-gray-800 font-mono">{totalQuantity}</span>
+                <span className="text-xs font-bold text-muted-foreground uppercase">Soma Qtd:</span>
+                <span className="text-sm font-bold text-foreground font-mono">{totalQuantity}</span>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm font-bold text-gray-500 uppercase">Total da Compra:</span>
+              <span className="text-sm font-bold text-muted-foreground uppercase">Total da Compra:</span>
               <motion.span
                 key={subtotal}
                 initial={{ scale: 1.1 }}
                 animate={{ scale: 1 }}
-                className="text-4xl font-black text-blue-700 font-mono"
+                className="text-4xl font-black text-primary font-mono"
               >
                 {formatCurrency(subtotal)}
               </motion.span>
@@ -239,7 +239,7 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
       </div>
 
       {/* Action bar */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-[hsl(220,35%,18%)] border-t border-pos-border">
+      <div className="flex items-center gap-2 px-3 py-2 bg-sidebar-background border-t border-border">
         <div className="flex-1" />
         <div className="flex items-center gap-2">
           {items.length > 0 && (
@@ -253,7 +253,7 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
           <button
             onClick={onCheckout}
             disabled={items.length === 0}
-            className="px-6 py-2 rounded-lg bg-pos-accent text-primary-foreground text-xs font-bold hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider"
+            className="px-6 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider"
           >
             Pagamento (F2)
           </button>
