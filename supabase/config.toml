@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.nuvem-fiscal]
 verify_jwt = false
+
+[functions.mp-webhook]
+verify_jwt = false

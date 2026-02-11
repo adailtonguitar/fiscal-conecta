@@ -16,7 +16,7 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
+  const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     { auth: { persistSession: false } }
@@ -25,12 +25,9 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const mpToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
-    if (!mpToken) throw new Error("MERCADO_PAGO_ACCESS_TOKEN não configurado");
-
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      logStep("No authorization header - returning unsubscribed");
+      logStep("No authorization header");
       return new Response(JSON.stringify({ subscribed: false }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -38,99 +35,56 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !userData.user?.email) {
-      logStep("Auth failed - returning unsubscribed", { error: userError?.message });
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !userData.user) {
+      logStep("Auth failed", { error: userError?.message });
       return new Response(JSON.stringify({ subscribed: false }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
-    const user = userData.user;
-    logStep("User authenticated", { email: user.email });
 
-    // Search for active preapprovals (subscriptions) by payer email
-    const searchUrl = new URL("https://api.mercadopago.com/preapproval/search");
-    searchUrl.searchParams.set("payer_email", user.email);
-    searchUrl.searchParams.set("status", "authorized");
-    searchUrl.searchParams.set("limit", "1");
+    const userId = userData.user.id;
+    logStep("User authenticated", { id: userId });
 
-    const response = await fetch(searchUrl.toString(), {
-      headers: { "Authorization": `Bearer ${mpToken}` },
-    });
+    // Check local subscriptions table for active subscription
+    const { data: sub, error: subError } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .gte("current_period_end", new Date().toISOString())
+      .order("current_period_end", { ascending: false })
+      .limit(1)
+      .single();
 
-    const result = await response.json();
-
-    if (!response.ok) {
-      logStep("MP search error", result);
-      throw new Error("Erro ao consultar assinaturas no Mercado Pago");
-    }
-
-    const results = result.results || [];
-    const hasActiveSub = results.length > 0;
-    let planKey: string | null = null;
-    let subscriptionEnd: string | null = null;
-
-    if (hasActiveSub) {
-      const sub = results[0];
-      subscriptionEnd = sub.next_payment_date || null;
-
-      // Extract planKey from external_reference (format: "userId|planKey")
-      const extRef = sub.external_reference || "";
-      const parts = extRef.split("|");
-      if (parts.length >= 2) {
-        planKey = parts[1];
-      }
-
-      // Fallback: detect plan by amount
-      if (!planKey && sub.auto_recurring?.transaction_amount) {
-        const amount = sub.auto_recurring.transaction_amount;
-        if (amount === 150) planKey = "essencial";
-        else if (amount === 200) planKey = "profissional";
-      }
-
-      logStep("Active subscription found", { id: sub.id, planKey, subscriptionEnd });
-    } else {
-      // Also check "pending" status (user approved but first payment not yet processed)
-      const pendingUrl = new URL("https://api.mercadopago.com/preapproval/search");
-      pendingUrl.searchParams.set("payer_email", user.email);
-      pendingUrl.searchParams.set("status", "pending");
-      pendingUrl.searchParams.set("limit", "1");
-
-      const pendingRes = await fetch(pendingUrl.toString(), {
-        headers: { "Authorization": `Bearer ${mpToken}` },
-      });
-      const pendingResult = await pendingRes.json();
-      const pendingResults = pendingResult.results || [];
-
-      if (pendingResults.length > 0) {
-        const sub = pendingResults[0];
-        const extRef = sub.external_reference || "";
-        const parts = extRef.split("|");
-        if (parts.length >= 2) planKey = parts[1];
-        if (!planKey && sub.auto_recurring?.transaction_amount) {
-          const amount = sub.auto_recurring.transaction_amount;
-          if (amount === 150) planKey = "essencial";
-          else if (amount === 200) planKey = "profissional";
-        }
-        logStep("Pending subscription found (treating as active)", { id: sub.id, planKey });
-        return new Response(JSON.stringify({
-          subscribed: true,
-          plan_key: planKey,
-          subscription_end: sub.next_payment_date || null,
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        });
-      }
+    if (subError || !sub) {
+      // Check if there's an expired subscription that needs updating
+      await supabase
+        .from("subscriptions")
+        .update({ status: "expired" })
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .lt("current_period_end", new Date().toISOString());
 
       logStep("No active subscription found");
+      return new Response(JSON.stringify({ subscribed: false }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
 
+    logStep("Active subscription found", {
+      id: sub.id,
+      plan_key: sub.plan_key,
+      period_end: sub.current_period_end,
+    });
+
     return new Response(JSON.stringify({
-      subscribed: hasActiveSub,
-      plan_key: planKey,
-      subscription_end: subscriptionEnd,
+      subscribed: true,
+      plan_key: sub.plan_key,
+      subscription_end: sub.current_period_end,
+      payment_method: sub.payment_method,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

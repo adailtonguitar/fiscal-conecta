@@ -6,9 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PLANS: Record<string, { reason: string; amount: number }> = {
-  essencial: { reason: "Plano Essencial", amount: 150 },
-  profissional: { reason: "Plano Profissional", amount: 200 },
+const PLANS: Record<string, { title: string; amount: number }> = {
+  essencial: { title: "Plano Essencial - Mensal", amount: 150 },
+  profissional: { title: "Plano Profissional - Mensal", amount: 200 },
 };
 
 serve(async (req) => {
@@ -37,24 +37,38 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
 
-    // Create a preapproval (subscription) via Mercado Pago API
-    const response = await fetch("https://api.mercadopago.com/preapproval", {
+    // Use Checkout Pro (preference) instead of preapproval
+    // This supports PIX, boleto, credit card, and MP balance
+    const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${mpToken}`,
       },
       body: JSON.stringify({
-        reason: plan.reason,
-        auto_recurring: {
-          frequency: 1,
-          frequency_type: "months",
-          transaction_amount: plan.amount,
-          currency_id: "BRL",
+        items: [
+          {
+            title: plan.title,
+            quantity: 1,
+            unit_price: plan.amount,
+            currency_id: "BRL",
+          },
+        ],
+        payer: {
+          email: user.email,
         },
-        payer_email: user.email,
-        back_url: `${origin}/dashboard?checkout=success`,
+        back_urls: {
+          success: `${origin}/dashboard?checkout=success`,
+          failure: `${origin}/trial-expirado?checkout=failure`,
+          pending: `${origin}/dashboard?checkout=pending`,
+        },
+        auto_return: "approved",
         external_reference: `${user.id}|${planKey}`,
+        notification_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/mp-webhook`,
+        payment_methods: {
+          excluded_payment_types: [],
+          installments: 1,
+        },
       }),
     });
 
@@ -62,10 +76,10 @@ serve(async (req) => {
 
     if (!response.ok) {
       console.error("[CREATE-CHECKOUT] MP error:", JSON.stringify(result));
-      throw new Error(result.message || "Erro ao criar assinatura no Mercado Pago");
+      throw new Error(result.message || "Erro ao criar preferência no Mercado Pago");
     }
 
-    console.log("[CREATE-CHECKOUT] Preapproval created:", result.id);
+    console.log("[CREATE-CHECKOUT] Preference created:", result.id);
 
     return new Response(JSON.stringify({ url: result.init_point }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
