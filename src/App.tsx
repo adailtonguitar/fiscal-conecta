@@ -30,6 +30,7 @@ import Fornecedores from "./pages/Fornecedores";
 import Funcionarios from "./pages/Funcionarios";
 import Transportadoras from "./pages/Transportadoras";
 import Categorias from "./pages/Categorias";
+import Etiquetas from "./pages/Etiquetas";
 import Auth from "./pages/Auth";
 import PDV from "./pages/PDV";
 import NotFound from "./pages/NotFound";
@@ -144,6 +145,7 @@ function AppRoutes() {
                 <Route path="/cadastro/funcionarios" element={<Funcionarios />} />
                 <Route path="/cadastro/transportadoras" element={<Transportadoras />} />
                 <Route path="/cadastro/categorias" element={<Categorias />} />
+                <Route path="/etiquetas" element={<Etiquetas />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AppLayout>
