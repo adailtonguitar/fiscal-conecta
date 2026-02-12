@@ -323,7 +323,11 @@ export default function PDV() {
             if (e.key === "Enter") {
               e.preventDefault();
               e.stopPropagation();
-              handleBarcodeSubmit();
+              if (!barcodeInput.trim()) {
+                setShowProductList((p) => !p);
+              } else {
+                handleBarcodeSubmit();
+              }
             }
           }}
           placeholder="Leia ou digite o código..."
