@@ -68,7 +68,6 @@ export default function Clientes() {
   const onValidate = useCallback((data: Record<string, any>): string | null => {
     const isPJ = data.tipo_pessoa === "pj";
     const doc = cleanDoc(data.cpf_cnpj);
-    if (!doc) return null; // allow empty
     if (isPJ && doc.length !== 14) {
       return "CNPJ deve ter 14 dígitos";
     }
