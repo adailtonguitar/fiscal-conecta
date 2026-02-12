@@ -9,7 +9,7 @@ const methodLabels: Record<string, string> = {
   debito: "Cartão Débito",
   credito: "Cartão Crédito",
   pix: "PIX",
-  voucher: "Voucher",
+  voucher: "Vale Alimentação",
   outros: "Outros",
 };
 
