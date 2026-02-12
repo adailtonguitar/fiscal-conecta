@@ -6,7 +6,7 @@ import {
   Store, Receipt, Shield, ScrollText, LogOut, DollarSign, Landmark,
   Users, Building2, ClipboardList, UserCheck, Factory, Truck, Tags, BarChart3, ArrowUpDown,
   Download, Tag, TrendingUp, AlertTriangle as AlertTriangleIcon, FileSpreadsheet, GitGraph,
-  Percent, ArrowRightLeft, TrendingDown,
+  Percent, ArrowRightLeft, TrendingDown, Gift,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -71,6 +71,7 @@ const navItems: NavEntry[] = [
       { icon: Users, label: "Usuários", path: "/usuarios" },
     ],
   },
+  { icon: Gift, label: "Fidelidade", path: "/fidelidade" },
   { icon: Tag, label: "Etiquetas", path: "/etiquetas" },
   { icon: Receipt, label: "Fiscal", path: "/fiscal" },
   { icon: Shield, label: "Config. Fiscal", path: "/fiscal/config" },

@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { isScaleBarcode } from "@/lib/scale-barcode";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useLoyalty } from "@/hooks/useLoyalty";
 import { PDVProductGrid } from "@/components/pdv/PDVProductGrid";
 import { PDVCart } from "@/components/pdv/PDVCart";
 import { PDVQuickProductDialog } from "@/components/pdv/PDVQuickProductDialog";
@@ -25,6 +26,7 @@ export default function PDV() {
   const navigate = useNavigate();
   const { companyName, logoUrl, slogan, pixKey, pixKeyType, pixCity } = useCompany();
   const { maxDiscountPercent } = usePermissions();
+  const { earnPoints, isActive: loyaltyActive } = useLoyalty();
   const [showTEF, setShowTEF] = useState(false);
   const [showCashRegister, setShowCashRegister] = useState(false);
   const [receipt, setReceipt] = useState<{
@@ -239,6 +241,11 @@ export default function PDV() {
         nfceNumber: result.nfceNumber,
       });
       toast.success(`Venda a prazo registrada para ${client.name}`);
+      // Award loyalty points
+      if (loyaltyActive && client.id) {
+        const pts = await earnPoints(client.id, savedTotal, result.fiscalDocId);
+        if (pts > 0) toast.info(`🎁 ${client.name} ganhou ${pts} pontos de fidelidade!`);
+      }
     } catch (err: any) {
       toast.error(`Erro ao finalizar venda a prazo: ${err.message}`);
     }
