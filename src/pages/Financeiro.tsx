@@ -15,6 +15,7 @@ import { formatCurrency } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -45,6 +46,8 @@ export default function Financeiro() {
   const [defaultType, setDefaultType] = useState<"pagar" | "receber">("pagar");
   const [deleteTarget, setDeleteTarget] = useState<FinancialEntry | null>(null);
   const [showClosing, setShowClosing] = useState(false);
+  const [payTarget, setPayTarget] = useState<FinancialEntry | null>(null);
+  const [payMethod, setPayMethod] = useState("dinheiro");
 
   const typeFilter = tab === "pagar" ? "pagar" : tab === "receber" ? "receber" : undefined;
   const { data: entries = [], isLoading } = useFinancialEntries({
@@ -238,7 +241,7 @@ export default function Financeiro() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               {entry.status === "pendente" && (
-                                <DropdownMenuItem onClick={() => markAsPaid.mutate({ id: entry.id, paid_amount: entry.amount })}>
+                                <DropdownMenuItem onClick={() => { setPayTarget(entry); setPayMethod("dinheiro"); }}>
                                   <CreditCard className="w-4 h-4 mr-2" />Marcar como pago
                                 </DropdownMenuItem>
                               )}
@@ -287,6 +290,59 @@ export default function Financeiro() {
               onClick={() => { if (deleteTarget) deleteEntry.mutate(deleteTarget.id); setDeleteTarget(null); }}
             >
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Pay confirmation dialog */}
+      <AlertDialog open={!!payTarget} onOpenChange={(v) => !v && setPayTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar recebimento</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Confirmar pagamento de <strong>{formatCurrency(payTarget?.amount || 0)}</strong> referente a <strong>{payTarget?.description}</strong>?
+                </p>
+                {payTarget?.type === "receber" && (
+                  <p className="text-xs text-muted-foreground">
+                    O valor será registrado automaticamente no caixa aberto.
+                  </p>
+                )}
+                <div>
+                  <label className="text-xs font-medium text-foreground mb-1 block">Forma de pagamento</label>
+                  <Select value={payMethod} onValueChange={setPayMethod}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                      <SelectItem value="pix">PIX</SelectItem>
+                      <SelectItem value="debito">Débito</SelectItem>
+                      <SelectItem value="credito">Crédito</SelectItem>
+                      <SelectItem value="outros">Outros</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (payTarget) {
+                  markAsPaid.mutate({
+                    id: payTarget.id,
+                    paid_amount: payTarget.amount,
+                    payment_method: payMethod,
+                  });
+                }
+                setPayTarget(null);
+              }}
+            >
+              Confirmar Pagamento
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
