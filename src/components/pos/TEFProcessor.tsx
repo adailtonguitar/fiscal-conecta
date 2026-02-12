@@ -31,6 +31,7 @@ interface TEFProcessorProps {
   onPrazoRequested?: () => void;
   pixConfig?: {
     pixKey: string;
+    pixKeyType?: string;
     merchantName: string;
     merchantCity: string;
   } | null;
@@ -107,6 +108,7 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, pi
     if (amt <= 0) return null;
     return generatePixPayload({
       pixKey: pixConfig.pixKey,
+      pixKeyType: pixConfig.pixKeyType,
       merchantName: pixConfig.merchantName,
       merchantCity: pixConfig.merchantCity,
       amount: amt,
