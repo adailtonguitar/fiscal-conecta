@@ -148,6 +148,31 @@ export default function Configuracoes() {
     return urlData.publicUrl + "?t=" + Date.now();
   };
 
+  /** Sync logo to Nuvem Fiscal so it appears on DANFE (NFC-e / NF-e) */
+  const syncLogoToNuvemFiscal = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nuvem-fiscal?action=upload-logo`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({}),
+        }
+      );
+      if (response.ok) {
+        toast.success("Logotipo sincronizado com o sistema fiscal (aparecerá nos DANFEs)");
+      }
+    } catch {
+      // Non-blocking — don't show error for fiscal logo sync
+    }
+  };
+
   const handleSave = async () => {
     if (!companyData.name || !companyData.cnpj) {
       toast.error("Razão Social e CNPJ são obrigatórios");
@@ -168,6 +193,8 @@ export default function Configuracoes() {
         const { error } = await supabase.from("companies").update(updateData).eq("id", editingId);
         if (error) throw error;
         toast.success("Empresa atualizada com sucesso!");
+        // Sync logo to fiscal system (non-blocking)
+        if (logoFile) syncLogoToNuvemFiscal();
       } else {
         const { data: created, error: createError } = await supabase
           .from("companies")
@@ -182,6 +209,8 @@ export default function Configuracoes() {
           }
         }
         toast.success("Empresa criada com sucesso!");
+        // Sync logo to fiscal system (non-blocking)
+        if (logoFile) syncLogoToNuvemFiscal();
       }
       handleBackToList();
     } catch (err: any) {
