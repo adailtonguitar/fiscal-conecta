@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { isScaleBarcode } from "@/lib/scale-barcode";
+import { usePermissions } from "@/hooks/usePermissions";
 import { PDVProductGrid } from "@/components/pdv/PDVProductGrid";
 import { PDVCart } from "@/components/pdv/PDVCart";
 import { PDVQuickProductDialog } from "@/components/pdv/PDVQuickProductDialog";
@@ -22,6 +23,7 @@ export default function PDV() {
   const pdv = usePDV();
   const navigate = useNavigate();
   const { companyName, logoUrl, slogan } = useCompany();
+  const { maxDiscountPercent } = usePermissions();
   const [showTEF, setShowTEF] = useState(false);
   const [showCashRegister, setShowCashRegister] = useState(false);
   const [receipt, setReceipt] = useState<{
@@ -369,6 +371,13 @@ export default function PDV() {
             onSelectItem={setSelectedCartItemId}
             companyName={companyName}
             logoUrl={logoUrl}
+            maxDiscountPercent={maxDiscountPercent}
+            itemDiscounts={pdv.itemDiscounts}
+            onSetItemDiscount={pdv.setItemDiscount}
+            globalDiscountPercent={pdv.globalDiscountPercent}
+            onSetGlobalDiscount={pdv.setGlobalDiscountPercent}
+            subtotal={pdv.subtotal}
+            globalDiscountValue={pdv.globalDiscountValue}
           />
         </div>
 

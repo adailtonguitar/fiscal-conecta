@@ -40,7 +40,19 @@ export function usePDV() {
   const [currentSession, setCurrentSession] = useState<any>(null);
   const [loadingSession, setLoadingSession] = useState(true);
 
-  const total = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  // Discount state: per-item discounts stored as { [productId]: percentValue }
+  const [itemDiscounts, setItemDiscounts] = useState<Record<string, number>>({});
+  // Global discount on the subtotal
+  const [globalDiscountPercent, setGlobalDiscountPercent] = useState(0);
+
+  const subtotal = cartItems.reduce((acc, item) => {
+    const itemDiscount = itemDiscounts[item.id] || 0;
+    const discountedPrice = item.price * (1 - itemDiscount / 100);
+    return acc + discountedPrice * item.quantity;
+  }, 0);
+
+  const globalDiscountValue = subtotal * (globalDiscountPercent / 100);
+  const total = Math.max(0, subtotal - globalDiscountValue);
 
   // Load products from DB or cache
   const loadProducts = useCallback(async () => {
@@ -130,7 +142,11 @@ export function usePDV() {
     setCartItems((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
-  const clearCart = useCallback(() => setCartItems([]), []);
+  const clearCart = useCallback(() => {
+    setCartItems([]);
+    setItemDiscounts({});
+    setGlobalDiscountPercent(0);
+  }, []);
 
   // Finalize sale
   const finalizeSale = useCallback(async (paymentResults: PaymentResult[]) => {
@@ -279,10 +295,20 @@ export function usePDV() {
     // Cart
     cartItems,
     total,
+    subtotal,
     addToCart,
     updateQuantity,
     removeItem,
     clearCart,
+
+    // Discounts
+    itemDiscounts,
+    setItemDiscount: (productId: string, percent: number) => {
+      setItemDiscounts((prev) => ({ ...prev, [productId]: percent }));
+    },
+    globalDiscountPercent,
+    setGlobalDiscountPercent,
+    globalDiscountValue,
 
     // Sale
     finalizeSale,

@@ -640,6 +640,30 @@ export type Database = {
           },
         ]
       }
+      discount_limits: {
+        Row: {
+          created_at: string
+          id: string
+          max_discount_percent: number
+          role: Database["public"]["Enums"]["company_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_discount_percent?: number
+          role: Database["public"]["Enums"]["company_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_discount_percent?: number
+          role?: Database["public"]["Enums"]["company_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       employees: {
         Row: {
           address_city: string | null
