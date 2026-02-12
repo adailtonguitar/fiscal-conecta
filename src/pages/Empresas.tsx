@@ -152,7 +152,11 @@ export default function Configuracoes() {
   const syncLogoToNuvemFiscal = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        toast.error("Sessão expirada. Faça login novamente.");
+        return;
+      }
+      toast.info("Sincronizando logotipo com o sistema fiscal...");
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nuvem-fiscal?action=upload-logo`,
         {
@@ -165,11 +169,16 @@ export default function Configuracoes() {
           body: JSON.stringify({}),
         }
       );
+      const result = await response.json();
       if (response.ok) {
         toast.success("Logotipo sincronizado com o sistema fiscal (aparecerá nos DANFEs)");
+      } else {
+        console.error("Erro ao sincronizar logo fiscal:", result);
+        toast.error(result?.error || "Erro ao sincronizar logotipo com fiscal");
       }
-    } catch {
-      // Non-blocking — don't show error for fiscal logo sync
+    } catch (err) {
+      console.error("Erro ao sincronizar logo fiscal:", err);
+      toast.error("Erro de conexão ao sincronizar logotipo com fiscal");
     }
   };
 
