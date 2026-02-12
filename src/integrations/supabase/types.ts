@@ -507,6 +507,9 @@ export type Database = {
           modo_seguro_fiscal: boolean
           name: string
           phone: string | null
+          pix_city: string | null
+          pix_key: string | null
+          pix_key_type: string | null
           slogan: string | null
           tax_regime: string | null
           trade_name: string | null
@@ -531,6 +534,9 @@ export type Database = {
           modo_seguro_fiscal?: boolean
           name: string
           phone?: string | null
+          pix_city?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
           slogan?: string | null
           tax_regime?: string | null
           trade_name?: string | null
@@ -555,6 +561,9 @@ export type Database = {
           modo_seguro_fiscal?: boolean
           name?: string
           phone?: string | null
+          pix_city?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
           slogan?: string | null
           tax_regime?: string | null
           trade_name?: string | null

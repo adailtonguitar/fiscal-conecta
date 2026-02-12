@@ -7,6 +7,9 @@ interface CompanyData {
   companyName: string | null;
   logoUrl: string | null;
   slogan: string | null;
+  pixKey: string | null;
+  pixKeyType: string | null;
+  pixCity: string | null;
   loading: boolean;
 }
 
@@ -16,6 +19,9 @@ export function useCompany(): CompanyData {
   const [companyName, setCompanyName] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [slogan, setSlogan] = useState<string | null>(null);
+  const [pixKey, setPixKey] = useState<string | null>(null);
+  const [pixKeyType, setPixKeyType] = useState<string | null>(null);
+  const [pixCity, setPixCity] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,6 +30,9 @@ export function useCompany(): CompanyData {
       setCompanyName(null);
       setLogoUrl(null);
       setSlogan(null);
+      setPixKey(null);
+      setPixKeyType(null);
+      setPixCity(null);
       setLoading(false);
       return;
     }
@@ -41,12 +50,15 @@ export function useCompany(): CompanyData {
         setCompanyId(cuData.company_id);
         const { data: company } = await supabase
           .from("companies")
-          .select("name, logo_url, slogan")
+          .select("name, logo_url, slogan, pix_key, pix_key_type, pix_city, address_city")
           .eq("id", cuData.company_id)
           .single();
         setCompanyName(company?.name ?? null);
         setLogoUrl(company?.logo_url ?? null);
         setSlogan((company as any)?.slogan ?? null);
+        setPixKey((company as any)?.pix_key ?? null);
+        setPixKeyType((company as any)?.pix_key_type ?? null);
+        setPixCity((company as any)?.pix_city || (company as any)?.address_city || null);
       } else {
         setCompanyId(null);
       }
@@ -56,5 +68,5 @@ export function useCompany(): CompanyData {
     fetchCompany();
   }, [user]);
 
-  return { companyId, companyName, logoUrl, slogan, loading };
+  return { companyId, companyName, logoUrl, slogan, pixKey, pixKeyType, pixCity, loading };
 }
