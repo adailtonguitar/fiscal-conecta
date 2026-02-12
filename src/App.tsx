@@ -45,6 +45,10 @@ import FluxoCaixaProjetado from "./pages/FluxoCaixaProjetado";
 import CentroCusto from "./pages/CentroCusto";
 import Comissoes from "./pages/Comissoes";
 import ConciliacaoBancaria from "./pages/ConciliacaoBancaria";
+import Inventario from "./pages/Inventario";
+import CurvaABC from "./pages/CurvaABC";
+import Lotes from "./pages/Lotes";
+import Movimentacoes from "./pages/Movimentacoes";
 
 const queryClient = new QueryClient();
 
@@ -160,6 +164,10 @@ function AppRoutes() {
                 <Route path="/cadastro/funcionarios" element={<Funcionarios />} />
                 <Route path="/cadastro/transportadoras" element={<Transportadoras />} />
                 <Route path="/cadastro/categorias" element={<Categorias />} />
+                <Route path="/estoque/movimentacoes" element={<Movimentacoes />} />
+                <Route path="/estoque/inventario" element={<Inventario />} />
+                <Route path="/estoque/curva-abc" element={<CurvaABC />} />
+                <Route path="/estoque/lotes" element={<Lotes />} />
                 <Route path="/etiquetas" element={<Etiquetas />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

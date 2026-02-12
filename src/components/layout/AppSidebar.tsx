@@ -4,7 +4,7 @@ import {
   ShoppingCart, LayoutDashboard, Package, FileText, Settings,
   Wifi, WifiOff, RefreshCw, ChevronLeft, ChevronRight, ChevronDown,
   Store, Receipt, Shield, ScrollText, LogOut, DollarSign, Landmark,
-  Users, Building2, ClipboardList, UserCheck, Factory, Truck, Tags, BarChart3,
+  Users, Building2, ClipboardList, UserCheck, Factory, Truck, Tags, BarChart3, ArrowUpDown,
   Download, Tag, TrendingUp, AlertTriangle as AlertTriangleIcon, FileSpreadsheet, GitGraph,
   Percent, ArrowRightLeft,
 } from "lucide-react";
@@ -35,7 +35,17 @@ function isGroup(entry: NavEntry): entry is NavGroup {
 const navItems: NavEntry[] = [
   { icon: ShoppingCart, label: "PDV", path: "/pdv" },
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: Package, label: "Produtos", path: "/produtos" },
+  {
+    icon: Package,
+    label: "Estoque",
+    children: [
+      { icon: Package, label: "Produtos", path: "/produtos" },
+      { icon: ArrowUpDown, label: "Movimentações", path: "/estoque/movimentacoes" },
+      { icon: ClipboardList, label: "Inventário", path: "/estoque/inventario" },
+      { icon: BarChart3, label: "Curva ABC", path: "/estoque/curva-abc" },
+      { icon: Tags, label: "Lotes & Validade", path: "/estoque/lotes" },
+    ],
+  },
   { icon: FileText, label: "Vendas", path: "/vendas" },
   { icon: BarChart3, label: "Relatório Vendas", path: "/relatorio-vendas" },
   { icon: DollarSign, label: "Caixa", path: "/caixa" },

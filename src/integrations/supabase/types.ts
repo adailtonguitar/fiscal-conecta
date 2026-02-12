@@ -1193,6 +1193,114 @@ export type Database = {
           },
         ]
       }
+      inventory_count_items: {
+        Row: {
+          company_id: string
+          counted_at: string | null
+          counted_quantity: number | null
+          created_at: string
+          difference: number | null
+          id: string
+          inventory_id: string
+          notes: string | null
+          product_id: string
+          system_quantity: number
+        }
+        Insert: {
+          company_id: string
+          counted_at?: string | null
+          counted_quantity?: number | null
+          created_at?: string
+          difference?: number | null
+          id?: string
+          inventory_id: string
+          notes?: string | null
+          product_id: string
+          system_quantity?: number
+        }
+        Update: {
+          company_id?: string
+          counted_at?: string | null
+          counted_quantity?: number | null
+          created_at?: string
+          difference?: number | null
+          id?: string
+          inventory_id?: string
+          notes?: string | null
+          product_id?: string
+          system_quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_count_items_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_count_items_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_counts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_count_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_counts: {
+        Row: {
+          company_id: string
+          created_at: string
+          finished_at: string | null
+          id: string
+          name: string
+          notes: string | null
+          performed_by: string
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          performed_by: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          performed_by?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_counts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_history: {
         Row: {
           amount: number
@@ -1364,6 +1472,69 @@ export type Database = {
             foreignKeyName: "product_labels_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_lots: {
+        Row: {
+          company_id: string
+          created_at: string
+          expiry_date: string | null
+          id: string
+          is_active: boolean
+          lot_number: string
+          manufacture_date: string | null
+          notes: string | null
+          product_id: string
+          quantity: number
+          supplier: string | null
+          unit_cost: number | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean
+          lot_number: string
+          manufacture_date?: string | null
+          notes?: string | null
+          product_id: string
+          quantity?: number
+          supplier?: string | null
+          unit_cost?: number | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean
+          lot_number?: string
+          manufacture_date?: string | null
+          notes?: string | null
+          product_id?: string
+          quantity?: number
+          supplier?: string | null
+          unit_cost?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_lots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lots_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
