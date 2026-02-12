@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Search, Plus, Edit, Package, ArrowUpDown, Upload, Trash2, History, FileText } from "lucide-react";
-import { BatchMovementMode } from "@/components/stock/BatchMovementMode";
+import { Search, Plus, Edit, Package, Upload, Trash2, History, FileText, ArrowUpDown } from "lucide-react";
 import { formatCurrency } from "@/lib/mock-data";
 import { motion } from "framer-motion";
 import { useProducts, useDeleteProduct, type Product } from "@/hooks/useProducts";
@@ -35,7 +34,7 @@ export default function Produtos() {
   const [showImport, setShowImport] = useState(false);
   const [showNFeImport, setShowNFeImport] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
-  const [batchMode, setBatchMode] = useState(false);
+  
 
   const filtered = products.filter(
     (p) =>
@@ -54,13 +53,6 @@ export default function Produtos() {
     if (!open) setEditingProduct(null);
   };
 
-  if (batchMode) {
-    return (
-      <div className="p-6 max-w-7xl mx-auto">
-        <BatchMovementMode products={products} onClose={() => setBatchMode(false)} />
-      </div>
-    );
-  }
 
   if (showForm) {
     return (
@@ -85,10 +77,6 @@ export default function Produtos() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setBatchMode(true)}>
-            <ArrowUpDown className="w-4 h-4 mr-2" />
-            Movimentações
-          </Button>
           <Button variant="outline" size="sm" onClick={() => setShowNFeImport(true)}>
             <FileText className="w-4 h-4 mr-2" />
             Importar NF-e
