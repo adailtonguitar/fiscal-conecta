@@ -102,6 +102,72 @@ export type Database = {
           },
         ]
       }
+      bank_transactions: {
+        Row: {
+          account_number: string | null
+          amount: number
+          bank_name: string | null
+          company_id: string
+          created_at: string
+          description: string
+          financial_entry_id: string | null
+          id: string
+          imported_at: string
+          imported_by: string
+          notes: string | null
+          reconciled: boolean
+          transaction_date: string
+          type: string
+        }
+        Insert: {
+          account_number?: string | null
+          amount?: number
+          bank_name?: string | null
+          company_id: string
+          created_at?: string
+          description: string
+          financial_entry_id?: string | null
+          id?: string
+          imported_at?: string
+          imported_by: string
+          notes?: string | null
+          reconciled?: boolean
+          transaction_date: string
+          type?: string
+        }
+        Update: {
+          account_number?: string | null
+          amount?: number
+          bank_name?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string
+          financial_entry_id?: string | null
+          id?: string
+          imported_at?: string
+          imported_by?: string
+          notes?: string | null
+          reconciled?: boolean
+          transaction_date?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_transactions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_transactions_financial_entry_id_fkey"
+            columns: ["financial_entry_id"]
+            isOneToOne: false
+            referencedRelation: "financial_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       carriers: {
         Row: {
           address_city: string | null

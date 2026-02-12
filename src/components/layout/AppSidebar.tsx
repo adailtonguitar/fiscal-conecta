@@ -6,7 +6,7 @@ import {
   Store, Receipt, Shield, ScrollText, LogOut, DollarSign, Landmark,
   Users, Building2, ClipboardList, UserCheck, Factory, Truck, Tags, BarChart3,
   Download, Tag, TrendingUp, AlertTriangle as AlertTriangleIcon, FileSpreadsheet, GitGraph,
-  Percent,
+  Percent, ArrowRightLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -44,6 +44,7 @@ const navItems: NavEntry[] = [
   { icon: GitGraph, label: "Fluxo Projetado", path: "/fluxo-caixa" },
   { icon: Building2, label: "Centro de Custo", path: "/centro-custo" },
   { icon: Percent, label: "Comissões", path: "/comissoes" },
+  { icon: ArrowRightLeft, label: "Conciliação Bancária", path: "/conciliacao" },
   { icon: TrendingUp, label: "Painel de Lucro", path: "/painel-lucro" },
   { icon: AlertTriangleIcon, label: "Alertas Financeiros", path: "/alertas" },
   {
