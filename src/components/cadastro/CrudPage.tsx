@@ -57,10 +57,14 @@ interface CrudPageProps<T extends { id: string }> {
   searchKeys?: (keyof T)[];
   nameKey?: keyof T;
   cnpjFieldMap?: Record<string, string>;
+  /** Optional validation before save. Return error message or null. */
+  onValidate?: (data: Record<string, any>) => string | null;
+  /** Dynamic field config based on current form data */
+  getFields?: (formData: Record<string, any>) => FieldConfig[];
 }
 
 export function CrudPage<T extends { id: string }>({
-  title, subtitle, icon, data, isLoading, fields, onCreate, onUpdate, onDelete, searchKeys = ["name" as keyof T], nameKey = "name" as keyof T, cnpjFieldMap,
+  title, subtitle, icon, data, isLoading, fields, onCreate, onUpdate, onDelete, searchKeys = ["name" as keyof T], nameKey = "name" as keyof T, cnpjFieldMap, onValidate, getFields,
 }: CrudPageProps<T>) {
   const { lookup: cnpjLookup, loading: cnpjLoading } = useCnpjLookup();
   const [search, setSearch] = useState("");
@@ -70,6 +74,7 @@ export function CrudPage<T extends { id: string }>({
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<Record<string, any>>({});
 
+  const activeFields = getFields ? getFields(formData) : fields;
   const tableFields = fields.filter((f) => f.showInTable !== false);
 
   const filtered = data.filter((item) =>
@@ -111,6 +116,14 @@ export function CrudPage<T extends { id: string }>({
   };
 
   const handleSave = async () => {
+    if (onValidate) {
+      const err = onValidate(formData);
+      if (err) {
+        const { toast: toastFn } = await import("sonner");
+        toastFn.error(err);
+        return;
+      }
+    }
     setSaving(true);
     try {
       if (editing) {
@@ -211,7 +224,7 @@ export function CrudPage<T extends { id: string }>({
             <DialogTitle>{editing ? "Editar" : "Novo"} {title.replace(/s$/, "")}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-            {fields.map((f) => (
+            {activeFields.map((f) => (
                <div key={f.key} className={f.colSpan === 2 ? "md:col-span-2" : ""}>
                 <Label className="text-xs">{f.label}{f.required && " *"}</Label>
                 {f.type === "select" && f.options ? (

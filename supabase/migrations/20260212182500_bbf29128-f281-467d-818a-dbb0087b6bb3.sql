@@ -1,0 +1,1 @@
+ALTER TABLE public.clients ADD COLUMN tipo_pessoa text NOT NULL DEFAULT 'pf';
