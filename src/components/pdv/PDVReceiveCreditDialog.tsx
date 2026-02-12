@@ -3,9 +3,15 @@ import { motion } from "framer-motion";
 import { Search, X, User, CreditCard, Check, DollarSign } from "lucide-react";
 import { useClients } from "@/hooks/useClients";
 import { useFinancialEntries, useMarkAsPaid } from "@/hooks/useFinancialEntries";
+import { useCompany } from "@/hooks/useCompany";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { CashSessionService } from "@/services/CashSessionService";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { formatCurrency } from "@/lib/mock-data";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface PDVReceiveCreditDialogProps {
   open: boolean;
@@ -24,19 +30,18 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [selectedMethod, setSelectedMethod] = useState("dinheiro");
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [customAmount, setCustomAmount] = useState(0); // in cents
+  const [isProcessingDirect, setIsProcessingDirect] = useState(false);
 
   const { data: clients = [] } = useClients();
   const { data: entries = [] } = useFinancialEntries({ type: "receber", status: "pendente" });
   const markAsPaid = useMarkAsPaid();
+  const { companyId } = useCompany();
+  const { user } = useAuth();
+  const qc = useQueryClient();
 
-  // Clients with pending credit entries
+  // Clients with pending credit (entries OR credit_balance > 0)
   const clientsWithDebt = useMemo(() => {
-    const debtMap = new Map<string, number>();
-    entries.forEach((e) => {
-      if (e.counterpart) {
-        debtMap.set(e.counterpart, (debtMap.get(e.counterpart) || 0) + Number(e.amount));
-      }
-    });
     return clients
       .filter((c) => {
         const balance = Number(c.credit_balance || 0);
@@ -58,8 +63,9 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
   }, [entries, selectedClientId, clients]);
 
   const selectedClient = clients.find((c) => c.id === selectedClientId);
+  const clientBalance = Number(selectedClient?.credit_balance || 0);
 
-  const handleReceive = async (entryId: string, amount: number) => {
+  const handleReceiveEntry = async (entryId: string, amount: number) => {
     setProcessingId(entryId);
     try {
       await markAsPaid.mutateAsync({
@@ -67,6 +73,12 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
         paid_amount: amount,
         payment_method: selectedMethod,
       });
+      // Update client credit balance
+      if (selectedClient) {
+        const newBalance = Math.max(0, clientBalance - amount);
+        await supabase.from("clients").update({ credit_balance: newBalance }).eq("id", selectedClient.id);
+        qc.invalidateQueries({ queryKey: ["clients"] });
+      }
       toast.success("Recebimento registrado no caixa!");
     } catch {
       // error handled by hook
@@ -75,9 +87,163 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
     }
   };
 
+  // Direct payment (no financial entry exists)
+  const handleDirectReceive = async () => {
+    const amount = customAmount / 100; // convert cents to decimal
+    if (!amount || amount <= 0) {
+      toast.error("Informe um valor válido");
+      return;
+    }
+    if (amount > clientBalance) {
+      toast.error("Valor maior que o saldo devedor");
+      return;
+    }
+    if (!companyId || !user || !selectedClient) return;
+
+    setIsProcessingDirect(true);
+    try {
+      // 1. Register cash movement in open session
+      const session = await CashSessionService.getCurrentSession(companyId);
+      if (!session) {
+        toast.error("Nenhum caixa aberto. Abra o caixa antes de receber.");
+        return;
+      }
+
+      await supabase.from("cash_movements").insert({
+        company_id: companyId,
+        session_id: session.id,
+        type: "suprimento" as any,
+        amount,
+        performed_by: user.id,
+        payment_method: selectedMethod as any,
+        description: `Recebimento fiado: ${selectedClient.name}`,
+      });
+
+      // 2. Update session totals
+      const paymentField = selectedMethod === "dinheiro" ? "total_dinheiro"
+        : selectedMethod === "pix" ? "total_pix"
+        : selectedMethod === "debito" ? "total_debito"
+        : selectedMethod === "credito" ? "total_credito"
+        : "total_outros";
+
+      const { data: sessionData } = await supabase
+        .from("cash_sessions")
+        .select(`${paymentField}, total_suprimento`)
+        .eq("id", session.id)
+        .single();
+
+      if (sessionData) {
+        await supabase
+          .from("cash_sessions")
+          .update({
+            [paymentField]: Number((sessionData as any)[paymentField] || 0) + amount,
+            total_suprimento: Number(sessionData.total_suprimento || 0) + amount,
+          })
+          .eq("id", session.id);
+      }
+
+      // 3. Update client credit balance
+      const newBalance = Math.max(0, clientBalance - amount);
+      await supabase.from("clients").update({ credit_balance: newBalance }).eq("id", selectedClient.id);
+
+      // 4. Audit log
+      await supabase.from("action_logs").insert({
+        company_id: companyId,
+        user_id: user.id,
+        action: "recebimento_fiado",
+        module: "pdv",
+        details: `Recebido ${formatCurrency(amount)} de ${selectedClient.name} via ${selectedMethod}`,
+      });
+
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["cash_sessions"] });
+      qc.invalidateQueries({ queryKey: ["cash_movements"] });
+
+      toast.success(`Recebimento de ${formatCurrency(amount)} registrado!`);
+      setCustomAmount(0);
+    } catch (err: any) {
+      toast.error(`Erro: ${err.message}`);
+    } finally {
+      setIsProcessingDirect(false);
+    }
+  };
+
   const handleReceiveAll = async () => {
     for (const entry of clientEntries) {
-      await handleReceive(entry.id, entry.amount);
+      await handleReceiveEntry(entry.id, entry.amount);
+    }
+  };
+
+  // Receive full balance directly
+  const handleReceiveFullBalance = async () => {
+    if (clientBalance <= 0) return;
+    setCustomAmount(Math.round(clientBalance * 100));
+    // Set and immediately process
+    if (!companyId || !user || !selectedClient) return;
+    setIsProcessingDirect(true);
+    try {
+      const session = await CashSessionService.getCurrentSession(companyId);
+      if (!session) {
+        toast.error("Nenhum caixa aberto. Abra o caixa antes de receber.");
+        return;
+      }
+
+      await supabase.from("cash_movements").insert({
+        company_id: companyId,
+        session_id: session.id,
+        type: "suprimento" as any,
+        amount: clientBalance,
+        performed_by: user.id,
+        payment_method: selectedMethod as any,
+        description: `Recebimento fiado total: ${selectedClient.name}`,
+      });
+
+      const paymentField = selectedMethod === "dinheiro" ? "total_dinheiro"
+        : selectedMethod === "pix" ? "total_pix"
+        : selectedMethod === "debito" ? "total_debito"
+        : selectedMethod === "credito" ? "total_credito"
+        : "total_outros";
+
+      const { data: sessionData } = await supabase
+        .from("cash_sessions")
+        .select(`${paymentField}, total_suprimento`)
+        .eq("id", session.id)
+        .single();
+
+      if (sessionData) {
+        await supabase
+          .from("cash_sessions")
+          .update({
+            [paymentField]: Number((sessionData as any)[paymentField] || 0) + clientBalance,
+            total_suprimento: Number(sessionData.total_suprimento || 0) + clientBalance,
+          })
+          .eq("id", session.id);
+      }
+
+      await supabase.from("clients").update({ credit_balance: 0 }).eq("id", selectedClient.id);
+
+      await supabase.from("action_logs").insert({
+        company_id: companyId,
+        user_id: user.id,
+        action: "recebimento_fiado",
+        module: "pdv",
+        details: `Recebido total ${formatCurrency(clientBalance)} de ${selectedClient.name} via ${selectedMethod}`,
+      });
+
+      // Also mark all entries as paid if any
+      for (const entry of clientEntries) {
+        await markAsPaid.mutateAsync({ id: entry.id, paid_amount: entry.amount, payment_method: selectedMethod });
+      }
+
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["cash_sessions"] });
+      qc.invalidateQueries({ queryKey: ["cash_movements"] });
+
+      toast.success(`Recebimento total de ${formatCurrency(clientBalance)} registrado!`);
+    } catch (err: any) {
+      toast.error(`Erro: ${err.message}`);
+    } finally {
+      setIsProcessingDirect(false);
     }
   };
 
@@ -140,7 +306,7 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
                 clientsWithDebt.map((client) => (
                   <button
                     key={client.id}
-                    onClick={() => setSelectedClientId(client.id)}
+                    onClick={() => { setSelectedClientId(client.id); setCustomAmount(0); }}
                     className="w-full flex items-center justify-between p-3.5 rounded-xl hover:bg-muted border border-transparent hover:border-border transition-all text-left"
                   >
                     <div className="flex items-center gap-3">
@@ -164,7 +330,7 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
             </div>
           </div>
         ) : (
-          /* Client detail with entries */
+          /* Client detail */
           <div className="flex-1 overflow-hidden flex flex-col">
             {/* Client header */}
             <div className="px-5 py-3 border-b border-border flex items-center justify-between">
@@ -178,17 +344,17 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
                 <div>
                   <p className="text-sm font-bold text-foreground">{selectedClient?.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    Saldo devedor: <span className="font-mono text-destructive font-semibold">{formatCurrency(Number(selectedClient?.credit_balance || 0))}</span>
+                    Saldo devedor: <span className="font-mono text-destructive font-semibold">{formatCurrency(clientBalance)}</span>
                   </p>
                 </div>
               </div>
-              {clientEntries.length > 1 && (
+              {clientBalance > 0 && (
                 <button
-                  onClick={handleReceiveAll}
-                  disabled={markAsPaid.isPending}
-                  className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all"
+                  onClick={handleReceiveFullBalance}
+                  disabled={isProcessingDirect}
+                  className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all disabled:opacity-50"
                 >
-                  Receber Tudo
+                  {isProcessingDirect ? "Processando..." : "Receber Tudo"}
                 </button>
               )}
             </div>
@@ -213,46 +379,88 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
               </div>
             </div>
 
-            {/* Entries list */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {clientEntries.length === 0 ? (
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Financial entries if any */}
+              {clientEntries.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Parcelas pendentes</p>
+                  {clientEntries.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="flex items-center justify-between p-3.5 rounded-xl bg-muted/50 border border-border"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{entry.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Vencimento: {format(parseISO(entry.due_date), "dd/MM/yyyy")}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <p className="text-sm font-bold font-mono text-foreground">
+                          {formatCurrency(entry.amount)}
+                        </p>
+                        <button
+                          onClick={() => handleReceiveEntry(entry.id, entry.amount)}
+                          disabled={processingId === entry.id || markAsPaid.isPending}
+                          className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                          {processingId === entry.id ? (
+                            <span className="animate-pulse">...</span>
+                          ) : (
+                            <>
+                              <CreditCard className="w-3 h-3" />
+                              Receber
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Direct payment input (always show when client has balance) */}
+              {clientBalance > 0 && (
+                <div className="space-y-3 p-4 rounded-xl bg-muted/30 border border-border">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    {clientEntries.length > 0 ? "Ou receber valor avulso" : "Receber pagamento"}
+                  </p>
+                  <div className="flex items-end gap-3">
+                    <div className="flex-1">
+                      <label className="text-xs text-muted-foreground mb-1 block">Valor a receber</label>
+                      <CurrencyInput
+                        value={customAmount}
+                        onChange={setCustomAmount}
+                        placeholder="0,00"
+                        className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-foreground text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                      />
+                    </div>
+                    <button
+                      onClick={handleDirectReceive}
+                      disabled={isProcessingDirect || !customAmount}
+                      className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold hover:opacity-90 transition-all disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {isProcessingDirect ? (
+                        <span className="animate-pulse">Processando...</span>
+                      ) : (
+                        <>
+                          <DollarSign className="w-4 h-4" />
+                          Receber
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Máximo: {formatCurrency(clientBalance)}
+                  </p>
+                </div>
+              )}
+
+              {clientBalance <= 0 && clientEntries.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <Check className="w-10 h-10 mb-3 opacity-40" />
-                  <p className="text-sm font-medium">Nenhuma parcela pendente</p>
+                  <p className="text-sm font-medium">Cliente sem débitos pendentes</p>
                 </div>
-              ) : (
-                clientEntries.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="flex items-center justify-between p-3.5 rounded-xl bg-muted/50 border border-border"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{entry.description}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Vencimento: {format(parseISO(entry.due_date), "dd/MM/yyyy")}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <p className="text-sm font-bold font-mono text-foreground">
-                        {formatCurrency(entry.amount)}
-                      </p>
-                      <button
-                        onClick={() => handleReceive(entry.id, entry.amount)}
-                        disabled={processingId === entry.id || markAsPaid.isPending}
-                        className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all disabled:opacity-50 flex items-center gap-1.5"
-                      >
-                        {processingId === entry.id ? (
-                          <span className="animate-pulse">...</span>
-                        ) : (
-                          <>
-                            <CreditCard className="w-3 h-3" />
-                            Receber
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                ))
               )}
             </div>
           </div>
