@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -97,11 +98,11 @@ export function PDVQuickProductDialog({ open, onOpenChange, initialBarcode = "",
           <div className="grid grid-cols-3 gap-3">
             <div>
               <Label className="text-xs">Preço Venda *</Label>
-              <Input type="number" step="0.01" value={form.price} onChange={(e) => update("price", e.target.value)} placeholder="0.00" />
+              <CurrencyInput value={parseFloat(form.price) || 0} onChange={(v) => update("price", String(v))} />
             </div>
             <div>
               <Label className="text-xs">Preço Custo</Label>
-              <Input type="number" step="0.01" value={form.cost_price} onChange={(e) => update("cost_price", e.target.value)} placeholder="0.00" />
+              <CurrencyInput value={parseFloat(form.cost_price) || 0} onChange={(v) => update("cost_price", String(v))} />
             </div>
             <div>
               <Label className="text-xs">Estoque</Label>

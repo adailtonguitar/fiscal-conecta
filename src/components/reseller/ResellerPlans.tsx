@@ -2,6 +2,7 @@ import { useState } from "react";
 import { CreditCard, Plus, Edit2, Trash2, Users, ShoppingCart, FileText, Receipt } from "lucide-react";
 import { motion } from "framer-motion";
 import type { ResellerPlan } from "@/hooks/useReseller";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 interface Props {
   plans: ResellerPlan[];
@@ -132,11 +133,11 @@ export function ResellerPlans({ plans, markupPercentage, onCreatePlan, onUpdateP
             <LimitSelect label="Limite de NFCe/mês" value={form.max_nfce} onChange={(v) => setForm({ ...form, max_nfce: v })} />
             <div>
               <label className="text-sm font-medium text-foreground mb-1 block">Preço Base (custo)</label>
-              <input type="number" step="0.01" value={form.base_price} onChange={(e) => setForm({ ...form, base_price: +e.target.value })} className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm font-mono" />
+              <CurrencyInput value={form.base_price} onChange={(v) => setForm({ ...form, base_price: v })} />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1 block">Preço de Revenda</label>
-              <input type="number" step="0.01" value={form.reseller_price} onChange={(e) => setForm({ ...form, reseller_price: +e.target.value })} className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm font-mono" />
+              <CurrencyInput value={form.reseller_price} onChange={(v) => setForm({ ...form, reseller_price: v })} />
             </div>
           </div>
           <div className="flex gap-2">
