@@ -45,7 +45,7 @@ const navItems: NavEntry[] = [
     icon: ClipboardList,
     label: "Cadastro",
     children: [
-      { icon: Building2, label: "Empresa", path: "/configuracoes" },
+      { icon: Building2, label: "Empresa", path: "/cadastro/empresas" },
       { icon: Users, label: "Clientes", path: "/cadastro/clientes" },
       { icon: Factory, label: "Fornecedores", path: "/cadastro/fornecedores" },
       { icon: UserCheck, label: "Funcionários", path: "/cadastro/funcionarios" },
