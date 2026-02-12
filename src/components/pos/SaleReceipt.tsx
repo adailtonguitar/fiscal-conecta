@@ -69,13 +69,15 @@ export function SaleReceipt({ items, total, payments, nfceNumber, onClose }: Sal
           <pre>${paymentLines}</pre>
           <div class="separator"></div>
           ${hasCreditPayment ? `
-          <div style="margin-top:16px; font-size:11px;">
+          <div style="margin-top:12px; font-size:10px;">
             <div class="center line">Declaro ter recebido os produtos acima e me comprometo ao pagamento conforme acordado.</div>
-            <div style="margin-top:40px; border-top:1px dashed #000; width:80%; margin-left:auto; margin-right:auto;"></div>
+            <div style="margin-top:20px; border-top:1px dashed #000; width:85%; margin-left:auto; margin-right:auto;"></div>
+            <div class="center line">Nome</div>
+            <div style="margin-top:16px; border-top:1px dashed #000; width:85%; margin-left:auto; margin-right:auto;"></div>
+            <div class="center line">CPF</div>
+            <div style="margin-top:24px; border-top:1px dashed #000; width:85%; margin-left:auto; margin-right:auto;"></div>
             <div class="center line">Assinatura do Responsável</div>
-            <div style="margin-top:24px; border-top:1px dashed #000; width:80%; margin-left:auto; margin-right:auto;"></div>
-            <div class="center line">Nome Completo / CPF</div>
-            <div class="center line" style="margin-top:8px;">Data: ${new Date().toLocaleDateString('pt-BR')}</div>
+            <div class="center line" style="margin-top:6px;">Data: ${new Date().toLocaleDateString('pt-BR')}</div>
           </div>
           <div class="separator"></div>
           ` : ''}
@@ -198,20 +200,26 @@ export function SaleReceipt({ items, total, payments, nfceNumber, onClose }: Sal
 
         {/* Signature area for credit sales (prazo/fiado) */}
         {hasCreditPayment && (
-          <div className="px-6 py-4 border-t border-pos-border space-y-4">
+          <div className="px-6 py-4 border-t border-pos-border space-y-3">
             <p className="text-xs text-pos-text-muted text-center">
               Declaro ter recebido os produtos acima descritos e me comprometo ao pagamento conforme acordado.
             </p>
-            <div className="pt-8 mx-4">
+            <div className="pt-6 mx-2">
               <div className="border-t border-pos-text-muted/40 border-dashed" />
-              <p className="text-xs text-pos-text-muted text-center mt-1">
-                Assinatura do Responsável
+              <p className="text-[10px] text-pos-text-muted text-center mt-0.5">
+                Nome
               </p>
             </div>
-            <div className="pt-6 mx-4">
+            <div className="pt-4 mx-2">
               <div className="border-t border-pos-text-muted/40 border-dashed" />
-              <p className="text-xs text-pos-text-muted text-center mt-1">
-                Nome Completo / CPF
+              <p className="text-[10px] text-pos-text-muted text-center mt-0.5">
+                CPF
+              </p>
+            </div>
+            <div className="pt-6 mx-2">
+              <div className="border-t border-pos-text-muted/40 border-dashed" />
+              <p className="text-[10px] text-pos-text-muted text-center mt-0.5">
+                Assinatura do Responsável
               </p>
             </div>
             <p className="text-[10px] text-pos-text-muted text-center">
