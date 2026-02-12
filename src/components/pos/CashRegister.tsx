@@ -17,6 +17,7 @@ import { CashSessionService } from "@/services";
 import { useAuth } from "@/hooks/useAuth";
 import { useCompany } from "@/hooks/useCompany";
 import { toast } from "sonner";
+import { openCashDrawer } from "@/lib/escpos";
 import type { Tables } from "@/integrations/supabase/types";
 
 type CashView = "status" | "open" | "close" | "movement";
@@ -140,7 +141,9 @@ export function CashRegister({ onClose }: CashRegisterProps) {
       });
       setMovementAmount("");
       setMovementDesc("");
-      toast.success(`${movementType === "sangria" ? "Sangria" : "Suprimento"} registrado`);
+      // Open cash drawer on sangria/suprimento
+      openCashDrawer();
+      toast.success(`${movementType === "sangria" ? "Sangria" : "Suprimento"} registrado — gaveta aberta`);
       await loadSession();
       setView("status");
     } catch (err: any) {

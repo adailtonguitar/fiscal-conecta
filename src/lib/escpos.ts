@@ -143,10 +143,39 @@ export function buildReceipt(data: ReceiptData): Uint8Array {
 
 /**
  * Open cash drawer via ESC/POS command.
- * Sends pulse to pin 2 (standard cash drawer connector).
+ * Supports configurable pin and pulse duration for different drawer models.
+ * 
+ * @param pin - Drawer kick-out connector pin (0 = pin 2, 1 = pin 5). Default: 0
+ * @param onTime - Pulse ON time (units of 2ms). Default: 25 (50ms)
+ * @param offTime - Pulse OFF time (units of 2ms). Default: 250 (500ms)
  */
-export function buildOpenDrawerCommand(): Uint8Array {
-  return new Uint8Array([ESC, 0x70, 0, 25, 250]);
+export function buildOpenDrawerCommand(pin = 0, onTime = 25, offTime = 250): Uint8Array {
+  return new Uint8Array([ESC, 0x70, pin, onTime, offTime]);
+}
+
+/** Preset drawer commands for common models */
+export const DRAWER_PRESETS: Record<string, { label: string; pin: number; onTime: number; offTime: number }> = {
+  padrao: { label: "Padrão (Pin 2)", pin: 0, onTime: 25, offTime: 250 },
+  pin5: { label: "Pin 5", pin: 1, onTime: 25, offTime: 250 },
+  bematech: { label: "Bematech", pin: 0, onTime: 50, offTime: 250 },
+  epson: { label: "Epson", pin: 0, onTime: 25, offTime: 250 },
+  elgin: { label: "Elgin", pin: 0, onTime: 40, offTime: 200 },
+  daruma: { label: "Daruma", pin: 1, onTime: 30, offTime: 250 },
+};
+
+/**
+ * Send open drawer command to printer.
+ * In a Capacitor native app, this would be sent via USB plugin.
+ * In web context, this logs and simulates the action.
+ */
+export function openCashDrawer(preset: keyof typeof DRAWER_PRESETS = "padrao"): void {
+  const config = DRAWER_PRESETS[preset] || DRAWER_PRESETS.padrao;
+  const command = buildOpenDrawerCommand(config.pin, config.onTime, config.offTime);
+  
+  // In a real Capacitor app, send via USB plugin:
+  // await USBPrinter.sendData({ data: Array.from(command) });
+  
+  console.log(`[ESC/POS] Gaveta aberta (${config.label}) - comando:`, Array.from(command));
 }
 
 export interface CreditReceiptInput {
