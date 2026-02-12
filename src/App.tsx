@@ -40,6 +40,7 @@ import Privacidade from "./pages/Privacidade";
 import PainelLucro from "./pages/PainelLucro";
 import AlertaFinanceiro from "./pages/AlertaFinanceiro";
 import Empresas from "./pages/Empresas";
+import DRE from "./pages/DRE";
 
 const queryClient = new QueryClient();
 
@@ -141,6 +142,7 @@ function AppRoutes() {
                 <Route path="/fiscal/assinador" element={<AssinadorDownload />} />
                 <Route path="/fiscal/auditoria" element={<AuditLogs />} />
                 <Route path="/financeiro" element={<Financeiro />} />
+                <Route path="/dre" element={<DRE />} />
                 <Route path="/configuracoes" element={<Configuracoes />} />
                 <Route path="/usuarios" element={<Usuarios />} />
                 <Route path="/revendas" element={<Revendas />} />
