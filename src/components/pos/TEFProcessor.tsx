@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   CreditCard,
   Banknote,
@@ -12,9 +12,14 @@ import {
   MoreHorizontal,
   Plus,
   Split,
+  Copy,
+  Check,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/mock-data";
 import { motion, AnimatePresence } from "framer-motion";
+import { generatePixPayload } from "@/lib/pix-brcode";
+import { QRCodeSVG } from "qrcode.react";
+import { toast } from "sonner";
 
 type PaymentStep = "select" | "amount" | "details" | "processing" | "result" | "summary";
 type PaymentMethodType = "dinheiro" | "debito" | "credito" | "pix" | "voucher" | "outros" | "prazo";
@@ -24,6 +29,11 @@ interface TEFProcessorProps {
   onComplete: (results: TEFResult[]) => void;
   onCancel: () => void;
   onPrazoRequested?: () => void;
+  pixConfig?: {
+    pixKey: string;
+    merchantName: string;
+    merchantCity: string;
+  } | null;
 }
 
 export interface TEFResult {
@@ -72,7 +82,7 @@ const generateAuthCode = () => String(Math.floor(Math.random() * 999999)).padSta
 const generatePixTxId = () => `E${String(Math.floor(Math.random() * 99999999999)).padStart(32, "0")}`;
 const generateQrPattern = () => Array.from({ length: 25 }, () => Math.random() > 0.4);
 
-export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested }: TEFProcessorProps) {
+export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, pixConfig }: TEFProcessorProps) {
   const [step, setStep] = useState<PaymentStep>("select");
   const [method, setMethod] = useState<PaymentMethodType | null>(null);
   const [isSplit, setIsSplit] = useState(false);
@@ -84,10 +94,25 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested }: 
   const [processingStep, setProcessingStep] = useState(0);
   const [currentResult, setCurrentResult] = useState<TEFResult | null>(null);
   const [qrPattern] = useState(() => generateQrPattern());
+  const [pixCopied, setPixCopied] = useState(false);
 
   const paidSoFar = completedPayments.reduce((s, p) => s + p.amount, 0);
   const remaining = Math.max(0, Number((total - paidSoFar).toFixed(2)));
   const paymentAmount = isSplit && currentAmount ? Number(currentAmount) : remaining;
+
+  // Generate PIX payload for the current amount
+  const pixPayloadStr = useMemo(() => {
+    if (!pixConfig?.pixKey) return null;
+    const amt = isSplit && currentAmount ? Number(currentAmount) : remaining;
+    if (amt <= 0) return null;
+    return generatePixPayload({
+      pixKey: pixConfig.pixKey,
+      merchantName: pixConfig.merchantName,
+      merchantCity: pixConfig.merchantCity,
+      amount: amt,
+      txId: generatePixTxId().substring(0, 25),
+    });
+  }, [pixConfig, remaining, currentAmount, isSplit]);
 
   const changeAmount = method === "dinheiro" && cashReceived ? Number(cashReceived) - paymentAmount : 0;
 
@@ -139,6 +164,9 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested }: 
     } else {
       if (m === "dinheiro" || m === "credito") {
         setStep("details");
+      } else if (m === "pix" && pixConfig?.pixKey) {
+        // Show real PIX QR code
+        setStep("details");
       } else if (m === "voucher" || m === "outros") {
         const tefResult: TEFResult = { method: m, approved: true, amount: remaining, nsu: generateNSU() };
         setCurrentResult(tefResult);
@@ -154,6 +182,8 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested }: 
     if (!amt || amt <= 0 || amt > remaining) return;
 
     if (method === "dinheiro" || method === "credito") {
+      setStep("details");
+    } else if (method === "pix" && pixConfig?.pixKey) {
       setStep("details");
     } else if (method === "voucher" || method === "outros") {
       const tefResult: TEFResult = { method: method!, approved: true, amount: amt, nsu: generateNSU() };
@@ -175,6 +205,17 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested }: 
         approved: true,
         amount: amt,
         changeAmount: received - amt,
+      };
+      setCurrentResult(tefResult);
+      setStep("result");
+    } else if (method === "pix" && pixConfig?.pixKey) {
+      // PIX confirmed manually by operator
+      const tefResult: TEFResult = {
+        method: "pix",
+        approved: true,
+        amount: amt,
+        pixTxId: generatePixTxId(),
+        nsu: generateNSU(),
       };
       setCurrentResult(tefResult);
       setStep("result");
@@ -450,12 +491,43 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested }: 
                 </>
               )}
 
+              {method === "pix" && pixConfig?.pixKey && (
+                <>
+                  <div className="text-center mb-2">
+                    <span className="text-sm text-pos-text-muted">Valor PIX:</span>
+                    <span className="pos-price text-lg ml-2">{formatCurrency(paymentAmount)}</span>
+                  </div>
+                  {pixPayloadStr && (
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="bg-white p-3 rounded-xl">
+                        <QRCodeSVG value={pixPayloadStr} size={200} level="M" />
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(pixPayloadStr);
+                          setPixCopied(true);
+                          toast.success("Código PIX copiado!");
+                          setTimeout(() => setPixCopied(false), 3000);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-pos-bg text-pos-text text-xs font-medium hover:bg-pos-surface-hover transition-all"
+                      >
+                        {pixCopied ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
+                        {pixCopied ? "Copiado!" : "Copiar Pix Copia e Cola"}
+                      </button>
+                      <p className="text-xs text-pos-text-muted text-center">
+                        Mostre o QR Code ao cliente ou copie o código
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+
               <button
                 onClick={handleConfirmDetails}
                 disabled={method === "dinheiro" && (!cashReceived || Number(cashReceived) < paymentAmount)}
                 className="w-full py-3 rounded-xl bg-pos-accent text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
               >
-                {method === "dinheiro" ? "Confirmar Pagamento" : "Processar TEF"}
+                {method === "dinheiro" ? "Confirmar Pagamento" : method === "pix" && pixConfig?.pixKey ? "✓ Confirmar Recebimento PIX" : "Processar TEF"}
               </button>
             </motion.div>
           )}

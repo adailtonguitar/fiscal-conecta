@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Store, Save, Globe, FileText, Download, Clock, HardDrive, Search, Loader2, Upload, X, Plus, ArrowLeft, Building2, Pencil } from "lucide-react";
+import { Store, Save, Globe, FileText, Download, Clock, HardDrive, Search, Loader2, Upload, X, Plus, ArrowLeft, Building2, Pencil, QrCode } from "lucide-react";
 import { useCnpjLookup } from "@/hooks/useCnpjLookup";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +47,9 @@ const emptyCompanyData = {
   address_state: "SP",
   address_zip: "",
   address_ibge_code: "",
+  pix_key_type: "",
+  pix_key: "",
+  pix_city: "",
 };
 
 export default function Configuracoes() {
@@ -72,7 +75,7 @@ export default function Configuracoes() {
     setLoadingList(true);
     const { data } = await supabase
       .from("companies")
-      .select("id, name, trade_name, cnpj, email, phone, address_city, address_state, logo_url, tax_regime, ie, im, address_street, address_number, address_complement, address_neighborhood, address_zip, address_ibge_code, slogan")
+      .select("id, name, trade_name, cnpj, email, phone, address_city, address_state, logo_url, tax_regime, ie, im, address_street, address_number, address_complement, address_neighborhood, address_zip, address_ibge_code, slogan, pix_key_type, pix_key, pix_city")
       .order("name");
     setCompanies(data || []);
     setLoadingList(false);
@@ -110,6 +113,9 @@ export default function Configuracoes() {
       address_state: company.address_state || "SP",
       address_zip: company.address_zip || "",
       address_ibge_code: company.address_ibge_code || "",
+      pix_key_type: (company as any).pix_key_type || "",
+      pix_key: (company as any).pix_key || "",
+      pix_city: (company as any).pix_city || "",
     });
     setLogoPreview(company.logo_url || null);
     setLogoFile(null);
@@ -530,6 +536,36 @@ export default function Configuracoes() {
           <div>
             <label className="text-sm font-medium text-foreground mb-1.5 block">Código IBGE</label>
             <input type="text" value={companyData.address_ibge_code} onChange={(e) => updateField("address_ibge_code", e.target.value)} className={inputClass} />
+          </div>
+        </div>
+      </motion.div>
+
+      {/* PIX */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+          <QrCode className="w-4 h-4 text-primary" />
+          <h2 className="text-base font-semibold text-foreground">PIX (QR Code Automático)</h2>
+        </div>
+        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">Tipo da Chave PIX</label>
+            <select value={companyData.pix_key_type} onChange={(e) => updateField("pix_key_type", e.target.value)} className={inputClass}>
+              <option value="">Não configurado</option>
+              <option value="cpf">CPF</option>
+              <option value="cnpj">CNPJ</option>
+              <option value="email">E-mail</option>
+              <option value="phone">Telefone</option>
+              <option value="random">Chave Aleatória (EVP)</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">Chave PIX</label>
+            <input type="text" value={companyData.pix_key} onChange={(e) => updateField("pix_key", e.target.value)} placeholder="Digite a chave PIX" className={inputClass} />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">Cidade (para QR Code)</label>
+            <input type="text" value={companyData.pix_city} onChange={(e) => updateField("pix_city", e.target.value)} placeholder={companyData.address_city || "Cidade"} className={inputClass} />
+            <p className="text-xs text-muted-foreground mt-1">Usada no QR Code PIX. Se vazio, usa a cidade do endereço.</p>
           </div>
         </div>
       </motion.div>

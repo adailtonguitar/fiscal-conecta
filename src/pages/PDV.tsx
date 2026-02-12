@@ -23,7 +23,7 @@ import { openCashDrawer } from "@/lib/escpos";
 export default function PDV() {
   const pdv = usePDV();
   const navigate = useNavigate();
-  const { companyName, logoUrl, slogan } = useCompany();
+  const { companyName, logoUrl, slogan, pixKey, pixCity } = useCompany();
   const { maxDiscountPercent } = usePermissions();
   const [showTEF, setShowTEF] = useState(false);
   const [showCashRegister, setShowCashRegister] = useState(false);
@@ -409,7 +409,7 @@ export default function PDV() {
       {/* ===== OVERLAYS ===== */}
       <AnimatePresence>
         {showTEF && (
-          <TEFProcessor total={pdv.total} onComplete={handleTEFComplete} onCancel={() => setShowTEF(false)} onPrazoRequested={handlePrazoRequested} />
+          <TEFProcessor total={pdv.total} onComplete={handleTEFComplete} onCancel={() => setShowTEF(false)} onPrazoRequested={handlePrazoRequested} pixConfig={pixKey ? { pixKey, merchantName: companyName || "LOJA", merchantCity: pixCity || "SAO PAULO" } : null} />
         )}
       </AnimatePresence>
 
