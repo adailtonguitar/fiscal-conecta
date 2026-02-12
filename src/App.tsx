@@ -39,6 +39,7 @@ import Termos from "./pages/Termos";
 import Privacidade from "./pages/Privacidade";
 import PainelLucro from "./pages/PainelLucro";
 import AlertaFinanceiro from "./pages/AlertaFinanceiro";
+import Empresas from "./pages/Empresas";
 
 const queryClient = new QueryClient();
 
@@ -143,6 +144,7 @@ function AppRoutes() {
                 <Route path="/configuracoes" element={<Configuracoes />} />
                 <Route path="/usuarios" element={<Usuarios />} />
                 <Route path="/revendas" element={<Revendas />} />
+                <Route path="/cadastro/empresas" element={<Empresas />} />
                 <Route path="/cadastro/clientes" element={<Clientes />} />
                 <Route path="/cadastro/fornecedores" element={<Fornecedores />} />
                 <Route path="/cadastro/funcionarios" element={<Funcionarios />} />
