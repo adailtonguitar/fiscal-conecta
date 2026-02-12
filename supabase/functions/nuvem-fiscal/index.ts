@@ -673,6 +673,63 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // ─── UPLOAD LOGO to Nuvem Fiscal ─────────────────────────
+    if (req.method === "POST" && action === "upload-logo") {
+      const { data: company } = await supabase
+        .from("companies")
+        .select("cnpj, logo_url")
+        .eq("id", companyId)
+        .single();
+
+      if (!company) throw new Error("Empresa não encontrada");
+      if (!company.logo_url) {
+        return new Response(JSON.stringify({ error: "Nenhum logotipo cadastrado na empresa" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Download logo from URL
+      const logoResp = await fetch(company.logo_url);
+      if (!logoResp.ok) throw new Error("Não foi possível baixar o logotipo");
+
+      const logoBuffer = await logoResp.arrayBuffer();
+      const contentType = logoResp.headers.get("content-type") || "image/png";
+
+      const cnpj = (company.cnpj as string).replace(/\D/g, "");
+      const nfToken = await getAccessToken("empresa");
+
+      // PUT /empresas/{cpf_cnpj}/logotipo
+      const uploadResp = await fetch(`${NUVEM_FISCAL_API_URL}/empresas/${cnpj}/logotipo`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${nfToken}`,
+          "Content-Type": contentType,
+        },
+        body: logoBuffer,
+      });
+
+      if (uploadResp.ok) {
+        await supabase.from("action_logs").insert({
+          company_id: companyId,
+          user_id: user.id,
+          action: "logo_enviado_nuvem_fiscal",
+          module: "fiscal",
+          details: "Logotipo da empresa enviado para a Nuvem Fiscal (aparecerá nos DANFEs)",
+        });
+
+        return new Response(JSON.stringify({ success: true, message: "Logotipo enviado com sucesso para a Nuvem Fiscal" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } else {
+        const errText = await uploadResp.text();
+        return new Response(JSON.stringify({ error: "Erro ao enviar logotipo", details: errText }), {
+          status: uploadResp.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     return new Response(JSON.stringify({ error: "Ação não reconhecida" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
