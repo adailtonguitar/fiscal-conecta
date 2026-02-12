@@ -23,13 +23,32 @@ interface SaleReceiptProps {
 }
 
 export function SaleReceipt({ items, total, payments, nfceNumber, slogan, onClose }: SaleReceiptProps) {
-  const isSplit = payments.length > 1;
   const hasCreditPayment = payments.some(p => p.method === "prazo");
+
+  // Consolidate payments by method (group identical methods, sum amounts)
+  const consolidatedPayments = (() => {
+    const map = new Map<string, TEFResult>();
+    for (const p of payments) {
+      const existing = map.get(p.method);
+      if (existing) {
+        map.set(p.method, {
+          ...existing,
+          amount: existing.amount + p.amount,
+          changeAmount: (existing.changeAmount || 0) + (p.changeAmount || 0),
+        });
+      } else {
+        map.set(p.method, { ...p });
+      }
+    }
+    return Array.from(map.values());
+  })();
+
+  const isSplit = consolidatedPayments.length > 1;
 
   const handlePrint = () => {
     try {
       // Build a printable receipt window
-      const paymentLines = payments.map(p => {
+      const paymentLines = consolidatedPayments.map(p => {
         const label = methodLabels[p.method] || p.method;
         let line = `${label}: ${formatCurrency(p.amount)}`;
         if (p.nsu) line += ` | NSU: ${p.nsu}`;
@@ -154,7 +173,7 @@ export function SaleReceipt({ items, total, payments, nfceNumber, slogan, onClos
 
           {/* Each payment */}
           <div className="space-y-2">
-            {payments.map((p, i) => (
+            {consolidatedPayments.map((p, i) => (
               <div key={i} className="p-3 rounded-xl bg-pos-bg space-y-1.5">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-pos-text">
