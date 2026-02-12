@@ -672,6 +672,7 @@ export type Database = {
           address_street: string | null
           address_zip: string | null
           admission_date: string | null
+          commission_rate: number | null
           company_id: string
           cpf: string | null
           created_at: string
@@ -695,6 +696,7 @@ export type Database = {
           address_street?: string | null
           address_zip?: string | null
           admission_date?: string | null
+          commission_rate?: number | null
           company_id: string
           cpf?: string | null
           created_at?: string
@@ -718,6 +720,7 @@ export type Database = {
           address_street?: string | null
           address_zip?: string | null
           admission_date?: string | null
+          commission_rate?: number | null
           company_id?: string
           cpf?: string | null
           created_at?: string
