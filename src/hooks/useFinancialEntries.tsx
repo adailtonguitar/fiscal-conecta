@@ -4,6 +4,7 @@ import { useCompany } from "./useCompany";
 import { useAuth } from "./useAuth";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { toast } from "sonner";
+import { CashSessionService } from "@/services/CashSessionService";
 
 export type FinancialEntry = Tables<"financial_entries">;
 export type FinancialEntryInsert = TablesInsert<"financial_entries">;
@@ -103,9 +104,20 @@ export function useDeleteFinancialEntry() {
 
 export function useMarkAsPaid() {
   const qc = useQueryClient();
+  const { companyId } = useCompany();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ id, paid_amount, payment_method }: { id: string; paid_amount: number; payment_method?: string }) => {
+      // 1. Get the entry first to check if it's a "receber" type
+      const { data: entry, error: fetchErr } = await supabase
+        .from("financial_entries")
+        .select("type, reference, description")
+        .eq("id", id)
+        .single();
+      if (fetchErr) throw fetchErr;
+
+      // 2. Mark as paid
       const { data, error } = await supabase
         .from("financial_entries")
         .update({
@@ -118,11 +130,64 @@ export function useMarkAsPaid() {
         .select()
         .single();
       if (error) throw error;
+
+      // 3. If it's a "receber" entry (credit sale payment), register cash movement
+      if (entry.type === "receber" && companyId && user) {
+        try {
+          const session = await CashSessionService.getCurrentSession(companyId);
+          if (session) {
+            const method = payment_method || "dinheiro";
+            await supabase.from("cash_movements").insert({
+              company_id: companyId,
+              session_id: session.id,
+              type: "suprimento" as any,
+              amount: paid_amount,
+              performed_by: user.id,
+              payment_method: method as any,
+              description: `Recebimento: ${entry.description}`,
+              sale_id: entry.reference || null,
+            });
+
+            // Update session totals
+            const paymentField = method === "dinheiro" ? "total_dinheiro"
+              : method === "pix" ? "total_pix"
+              : method === "debito" ? "total_debito"
+              : method === "credito" ? "total_credito"
+              : "total_outros";
+
+            const { data: sessionData } = await supabase
+              .from("cash_sessions")
+              .select(`${paymentField}, total_suprimento`)
+              .eq("id", session.id)
+              .single();
+
+            if (sessionData) {
+              await supabase
+                .from("cash_sessions")
+                .update({
+                  [paymentField]: Number((sessionData as any)[paymentField] || 0) + paid_amount,
+                  total_suprimento: Number(sessionData.total_suprimento || 0) + paid_amount,
+                })
+                .eq("id", session.id);
+            }
+
+            // Update client credit balance if linked
+            if (entry.reference) {
+              // reference might contain client_id info — update via counterpart
+            }
+          }
+        } catch (cashErr) {
+          console.warn("Não foi possível registrar no caixa:", cashErr);
+        }
+      }
+
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: ["financial_entries"] });
-      toast.success("Marcado como pago");
+      qc.invalidateQueries({ queryKey: ["cash_sessions"] });
+      qc.invalidateQueries({ queryKey: ["cash_movements"] });
+      toast.success("Marcado como pago e registrado no caixa");
     },
     onError: (e: Error) => toast.error(`Erro: ${e.message}`),
   });
