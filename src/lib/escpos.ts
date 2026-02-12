@@ -20,6 +20,7 @@ export interface ReceiptData {
   storeName: string;
   cnpj: string;
   address: string;
+  slogan?: string;
   items: Array<{ name: string; qty: number; price: number }>;
   total: number;
   paymentMethod: string;
@@ -53,6 +54,12 @@ export function buildReceipt(data: ReceiptData): Uint8Array {
   lines.push(LF);
   lines.push(...cmd(GS, 0x21, 0x00)); // Normal size
   lines.push(...cmd(ESC, 0x45, 0)); // Bold off
+
+  // Slogan
+  if (data.slogan) {
+    lines.push(...textToBytes(data.slogan));
+    lines.push(LF);
+  }
 
   // CNPJ & address
   lines.push(...textToBytes(`CNPJ: ${data.cnpj}`));
@@ -151,6 +158,7 @@ export interface CreditReceiptInput {
   paymentMethod: string;
   storeName?: string;
   storeCnpj?: string;
+  storeSlogan?: string;
   date: Date;
 }
 
@@ -176,6 +184,10 @@ export function buildCreditReceipt(data: CreditReceiptInput): Uint8Array {
 
   if (data.storeName) {
     lines.push(...textToBytes(data.storeName));
+    lines.push(LF);
+  }
+  if (data.storeSlogan) {
+    lines.push(...textToBytes(data.storeSlogan));
     lines.push(LF);
   }
   if (data.storeCnpj) {

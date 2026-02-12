@@ -21,7 +21,7 @@ import type { PaymentResult } from "@/services/types";
 export default function PDV() {
   const pdv = usePDV();
   const navigate = useNavigate();
-  const { companyName, logoUrl } = useCompany();
+  const { companyName, logoUrl, slogan } = useCompany();
   const [showTEF, setShowTEF] = useState(false);
   const [showCashRegister, setShowCashRegister] = useState(false);
   const [receipt, setReceipt] = useState<{
@@ -427,6 +427,7 @@ export default function PDV() {
             total={receipt.total}
             payments={receipt.payments}
             nfceNumber={receipt.nfceNumber}
+            slogan={slogan || undefined}
             onClose={() => setReceipt(null)}
           />
         )}

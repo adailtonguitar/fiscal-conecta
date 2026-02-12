@@ -441,6 +441,7 @@ export type Database = {
           modo_seguro_fiscal: boolean
           name: string
           phone: string | null
+          slogan: string | null
           tax_regime: string | null
           trade_name: string | null
           updated_at: string
@@ -464,6 +465,7 @@ export type Database = {
           modo_seguro_fiscal?: boolean
           name: string
           phone?: string | null
+          slogan?: string | null
           tax_regime?: string | null
           trade_name?: string | null
           updated_at?: string
@@ -487,6 +489,7 @@ export type Database = {
           modo_seguro_fiscal?: boolean
           name?: string
           phone?: string | null
+          slogan?: string | null
           tax_regime?: string | null
           trade_name?: string | null
           updated_at?: string

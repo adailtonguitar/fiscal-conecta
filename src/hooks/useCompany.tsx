@@ -6,6 +6,7 @@ interface CompanyData {
   companyId: string | null;
   companyName: string | null;
   logoUrl: string | null;
+  slogan: string | null;
   loading: boolean;
 }
 
@@ -14,6 +15,7 @@ export function useCompany(): CompanyData {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [slogan, setSlogan] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,6 +23,7 @@ export function useCompany(): CompanyData {
       setCompanyId(null);
       setCompanyName(null);
       setLogoUrl(null);
+      setSlogan(null);
       setLoading(false);
       return;
     }
@@ -38,11 +41,12 @@ export function useCompany(): CompanyData {
         setCompanyId(cuData.company_id);
         const { data: company } = await supabase
           .from("companies")
-          .select("name, logo_url")
+          .select("name, logo_url, slogan")
           .eq("id", cuData.company_id)
           .single();
         setCompanyName(company?.name ?? null);
         setLogoUrl(company?.logo_url ?? null);
+        setSlogan((company as any)?.slogan ?? null);
       } else {
         setCompanyId(null);
       }
@@ -52,5 +56,5 @@ export function useCompany(): CompanyData {
     fetchCompany();
   }, [user]);
 
-  return { companyId, companyName, logoUrl, loading };
+  return { companyId, companyName, logoUrl, slogan, loading };
 }

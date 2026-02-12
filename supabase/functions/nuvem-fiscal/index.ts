@@ -228,7 +228,7 @@ function buildNfceBody(params: {
         detPag,
       },
       infAdic: {
-        infCpl: "Documento emitido por sistema ERP",
+        infCpl: [company.slogan, "Documento emitido por sistema ERP"].filter(Boolean).join(" | "),
       },
     },
   };

@@ -38,6 +38,7 @@ const emptyCompanyData = {
   email: "",
   phone: "",
   tax_regime: "simples_nacional",
+  slogan: "",
   address_street: "",
   address_number: "",
   address_complement: "",
@@ -71,7 +72,7 @@ export default function Configuracoes() {
     setLoadingList(true);
     const { data } = await supabase
       .from("companies")
-      .select("id, name, trade_name, cnpj, email, phone, address_city, address_state, logo_url, tax_regime, ie, im, address_street, address_number, address_complement, address_neighborhood, address_zip, address_ibge_code")
+      .select("id, name, trade_name, cnpj, email, phone, address_city, address_state, logo_url, tax_regime, ie, im, address_street, address_number, address_complement, address_neighborhood, address_zip, address_ibge_code, slogan")
       .order("name");
     setCompanies(data || []);
     setLoadingList(false);
@@ -100,6 +101,7 @@ export default function Configuracoes() {
       email: company.email || "",
       phone: company.phone || "",
       tax_regime: company.tax_regime || "simples_nacional",
+      slogan: (company as any).slogan || "",
       address_street: company.address_street || "",
       address_number: company.address_number || "",
       address_complement: company.address_complement || "",
@@ -406,6 +408,11 @@ export default function Configuracoes() {
               <option value="lucro_real">Lucro Real</option>
               <option value="mei">MEI</option>
             </select>
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-sm font-medium text-foreground mb-1.5 block">Slogan</label>
+            <input type="text" value={companyData.slogan} onChange={(e) => updateField("slogan", e.target.value)} placeholder="Ex: A melhor loja da cidade!" className={inputClass} />
+            <p className="text-xs text-muted-foreground mt-1">Aparece nos cupons e comprovantes de pagamento</p>
           </div>
         </div>
       </motion.div>
