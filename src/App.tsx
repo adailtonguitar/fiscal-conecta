@@ -44,6 +44,7 @@ import DRE from "./pages/DRE";
 import FluxoCaixaProjetado from "./pages/FluxoCaixaProjetado";
 import CentroCusto from "./pages/CentroCusto";
 import Comissoes from "./pages/Comissoes";
+import ConciliacaoBancaria from "./pages/ConciliacaoBancaria";
 
 const queryClient = new QueryClient();
 
@@ -149,6 +150,7 @@ function AppRoutes() {
                 <Route path="/fluxo-caixa" element={<FluxoCaixaProjetado />} />
                 <Route path="/centro-custo" element={<CentroCusto />} />
                 <Route path="/comissoes" element={<Comissoes />} />
+                <Route path="/conciliacao" element={<ConciliacaoBancaria />} />
                 <Route path="/configuracoes" element={<Configuracoes />} />
                 <Route path="/usuarios" element={<Usuarios />} />
                 <Route path="/revendas" element={<Revendas />} />
