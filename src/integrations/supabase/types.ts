@@ -749,6 +749,7 @@ export type Database = {
           amount: number
           category: Database["public"]["Enums"]["financial_category"]
           company_id: string
+          cost_center: string | null
           counterpart: string | null
           created_at: string
           created_by: string
@@ -769,6 +770,7 @@ export type Database = {
           amount?: number
           category?: Database["public"]["Enums"]["financial_category"]
           company_id: string
+          cost_center?: string | null
           counterpart?: string | null
           created_at?: string
           created_by: string
@@ -789,6 +791,7 @@ export type Database = {
           amount?: number
           category?: Database["public"]["Enums"]["financial_category"]
           company_id?: string
+          cost_center?: string | null
           counterpart?: string | null
           created_at?: string
           created_by?: string

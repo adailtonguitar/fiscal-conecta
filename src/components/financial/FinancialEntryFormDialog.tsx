@@ -20,7 +20,13 @@ const schema = z.object({
   reference: z.string().trim().max(100).optional(),
   notes: z.string().trim().max(500).optional(),
   payment_method: z.string().optional(),
+  cost_center: z.string().trim().max(100).optional(),
 });
+
+const COST_CENTER_OPTIONS = [
+  "Administrativo", "Comercial / Vendas", "Operacional", "Marketing",
+  "Logística", "TI / Tecnologia", "RH / Pessoal", "Financeiro",
+];
 
 type FormData = z.infer<typeof schema>;
 
@@ -67,6 +73,7 @@ export function FinancialEntryFormDialog({ open, onOpenChange, entry, defaultTyp
       reference: entry?.reference ?? "",
       notes: entry?.notes ?? "",
       payment_method: entry?.payment_method ?? "",
+      cost_center: (entry as any)?.cost_center ?? "",
     },
   });
 
@@ -186,6 +193,20 @@ export function FinancialEntryFormDialog({ open, onOpenChange, entry, defaultTyp
                 </FormItem>
               )} />
             </div>
+
+            <FormField control={form.control} name="cost_center" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Centro de Custo</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Selecione (opcional)" /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    <SelectItem value="">Nenhum</SelectItem>
+                    {COST_CENTER_OPTIONS.map(cc => <SelectItem key={cc} value={cc}>{cc}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
 
             <FormField control={form.control} name="notes" render={({ field }) => (
               <FormItem>

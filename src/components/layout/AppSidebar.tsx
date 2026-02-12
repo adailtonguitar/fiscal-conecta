@@ -41,6 +41,7 @@ const navItems: NavEntry[] = [
   { icon: Landmark, label: "Financeiro", path: "/financeiro" },
   { icon: FileSpreadsheet, label: "DRE", path: "/dre" },
   { icon: GitGraph, label: "Fluxo Projetado", path: "/fluxo-caixa" },
+  { icon: Building2, label: "Centro de Custo", path: "/centro-custo" },
   { icon: TrendingUp, label: "Painel de Lucro", path: "/painel-lucro" },
   { icon: AlertTriangleIcon, label: "Alertas Financeiros", path: "/alertas" },
   {
