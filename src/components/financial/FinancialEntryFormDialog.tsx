@@ -4,6 +4,7 @@ import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -132,7 +133,14 @@ export function FinancialEntryFormDialog({ open, onOpenChange, entry, defaultTyp
               <FormField control={form.control} name="amount" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Valor (R$)</FormLabel>
-                  <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                  <FormControl>
+                    <CurrencyInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />

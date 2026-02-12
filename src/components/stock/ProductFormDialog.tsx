@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateProduct, useUpdateProduct, type Product } from "@/hooks/useProducts";
 import { useFiscalCategories } from "@/hooks/useFiscalCategories";
@@ -284,18 +285,17 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                   <FormItem>
                     <FormLabel>Preço Custo</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        {...field}
-                        onChange={(e) => {
-                          field.onChange(e);
-                          const cost = parseFloat(e.target.value) || 0;
+                      <CurrencyInput
+                        value={field.value || 0}
+                        onChange={(val) => {
+                          field.onChange(val);
                           const price = form.getValues("price");
-                          if (cost > 0 && price > 0) {
-                            setMarginStr((((price - cost) / cost) * 100).toFixed(1));
+                          if (val > 0 && price > 0) {
+                            setMarginStr((((price - val) / val) * 100).toFixed(1));
                           }
                         }}
+                        onBlur={field.onBlur}
+                        name={field.name}
                       />
                     </FormControl>
                     <FormMessage />
@@ -305,18 +305,17 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                   <FormItem>
                     <FormLabel>Preço Venda</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        {...field}
-                        onChange={(e) => {
-                          field.onChange(e);
-                          const price = parseFloat(e.target.value) || 0;
+                      <CurrencyInput
+                        value={field.value || 0}
+                        onChange={(val) => {
+                          field.onChange(val);
                           const cost = form.getValues("cost_price") || 0;
-                          if (cost > 0 && price > 0) {
-                            setMarginStr((((price - cost) / cost) * 100).toFixed(1));
+                          if (cost > 0 && val > 0) {
+                            setMarginStr((((val - cost) / cost) * 100).toFixed(1));
                           }
                         }}
+                        onBlur={field.onBlur}
+                        name={field.name}
                       />
                     </FormControl>
                     <FormMessage />

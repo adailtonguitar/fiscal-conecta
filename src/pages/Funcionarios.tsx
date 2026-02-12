@@ -11,7 +11,7 @@ const fields: FieldConfig[] = [
   { key: "email", label: "E-mail", type: "email" },
   { key: "phone", label: "Telefone", type: "tel", showInTable: true },
   { key: "admission_date", label: "Data de Admissão", type: "date" },
-  { key: "salary", label: "Salário", type: "number" },
+  { key: "salary", label: "Salário (R$)", type: "currency" },
   { key: "address_street", label: "Rua" },
   { key: "address_number", label: "Número" },
   { key: "address_city", label: "Cidade" },

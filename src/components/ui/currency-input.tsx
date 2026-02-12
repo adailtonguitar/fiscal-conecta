@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { Input } from "@/components/ui/input";
 
 interface CurrencyInputProps {
@@ -6,9 +6,11 @@ interface CurrencyInputProps {
   onChange: (value: number) => void;
   placeholder?: string;
   className?: string;
+  name?: string;
+  onBlur?: () => void;
 }
 
-function formatBRL(cents: number): string {
+export function formatBRL(cents: number): string {
   const abs = Math.abs(cents);
   const intPart = Math.floor(abs / 100);
   const decPart = String(abs % 100).padStart(2, "0");
@@ -16,24 +18,34 @@ function formatBRL(cents: number): string {
   return `${cents < 0 ? "-" : ""}${formatted},${decPart}`;
 }
 
+/** Format a decimal number (e.g. 1234.56) as BRL display string */
+export function formatDecimalBRL(value: number): string {
+  return formatBRL(Math.round(value * 100));
+}
+
 function parseToCents(raw: string): number {
   const digits = raw.replace(/\D/g, "");
   return parseInt(digits || "0", 10);
 }
 
-export function CurrencyInput({ value, onChange, placeholder, className }: CurrencyInputProps) {
+export function CurrencyInput({ value, onChange, placeholder, className, name, onBlur }: CurrencyInputProps) {
   const numValue = typeof value === "string" ? Math.round(parseFloat(value || "0") * 100) : Math.round((value || 0) * 100);
+  const lastCents = useRef(numValue);
 
   const [display, setDisplay] = useState(() => formatBRL(numValue));
 
-  // Sync display when value changes externally
   React.useEffect(() => {
-    setDisplay(formatBRL(numValue));
-  }, [numValue]);
+    const newCents = typeof value === "string" ? Math.round(parseFloat(value || "0") * 100) : Math.round((value || 0) * 100);
+    if (newCents !== lastCents.current) {
+      lastCents.current = newCents;
+      setDisplay(formatBRL(newCents));
+    }
+  }, [value]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
     const cents = parseToCents(raw);
+    lastCents.current = cents;
     setDisplay(formatBRL(cents));
     onChange(cents / 100);
   }, [onChange]);
@@ -45,6 +57,8 @@ export function CurrencyInput({ value, onChange, placeholder, className }: Curre
       placeholder={placeholder || "0,00"}
       value={display}
       onChange={handleChange}
+      onBlur={onBlur}
+      name={name}
       className={className}
     />
   );
