@@ -6,7 +6,7 @@ import {
   Store, Receipt, Shield, ScrollText, LogOut, DollarSign, Landmark,
   Users, Building2, ClipboardList, UserCheck, Factory, Truck, Tags, BarChart3, ArrowUpDown,
   Download, Tag, TrendingUp, AlertTriangle as AlertTriangleIcon, FileSpreadsheet, GitGraph,
-  Percent, ArrowRightLeft,
+  Percent, ArrowRightLeft, TrendingDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -44,6 +44,7 @@ const navItems: NavEntry[] = [
       { icon: ClipboardList, label: "Inventário", path: "/estoque/inventario" },
       { icon: BarChart3, label: "Curva ABC", path: "/estoque/curva-abc" },
       { icon: Tags, label: "Lotes & Validade", path: "/estoque/lotes" },
+      { icon: TrendingDown, label: "Perdas", path: "/estoque/perdas" },
     ],
   },
   { icon: FileText, label: "Vendas", path: "/vendas" },

@@ -49,6 +49,7 @@ import Inventario from "./pages/Inventario";
 import CurvaABC from "./pages/CurvaABC";
 import Lotes from "./pages/Lotes";
 import Movimentacoes from "./pages/Movimentacoes";
+import Perdas from "./pages/Perdas";
 
 const queryClient = new QueryClient();
 
@@ -168,6 +169,7 @@ function AppRoutes() {
                 <Route path="/estoque/inventario" element={<Inventario />} />
                 <Route path="/estoque/curva-abc" element={<CurvaABC />} />
                 <Route path="/estoque/lotes" element={<Lotes />} />
+                <Route path="/estoque/perdas" element={<Perdas />} />
                 <Route path="/etiquetas" element={<Etiquetas />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
