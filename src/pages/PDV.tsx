@@ -432,6 +432,8 @@ export default function PDV() {
             payments={receipt.payments}
             nfceNumber={receipt.nfceNumber}
             slogan={slogan || undefined}
+            logoUrl={logoUrl || undefined}
+            companyName={companyName || undefined}
             onClose={() => setReceipt(null)}
           />
         )}

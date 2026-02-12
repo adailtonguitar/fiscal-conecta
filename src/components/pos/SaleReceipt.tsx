@@ -19,10 +19,12 @@ interface SaleReceiptProps {
   payments: TEFResult[];
   nfceNumber: string;
   slogan?: string;
+  logoUrl?: string;
+  companyName?: string;
   onClose: () => void;
 }
 
-export function SaleReceipt({ items, total, payments, nfceNumber, slogan, onClose }: SaleReceiptProps) {
+export function SaleReceipt({ items, total, payments, nfceNumber, slogan, logoUrl, companyName, onClose }: SaleReceiptProps) {
   const hasCreditPayment = payments.some(p => p.method === "prazo");
 
   // Consolidate payments by method (group identical methods, sum amounts)
@@ -75,6 +77,8 @@ export function SaleReceipt({ items, total, payments, nfceNumber, slogan, onClos
           </style>
         </head>
         <body>
+          ${logoUrl ? `<div class="center" style="margin-bottom:8px;"><img src="${logoUrl}" alt="Logo" style="max-height:48px;max-width:200px;object-fit:contain;" /></div>` : ""}
+          ${companyName ? `<div class="center bold" style="font-size:14px;">${companyName}</div>` : ""}
           <div class="center bold" style="font-size:16px;">CUPOM NÃO FISCAL</div>
           ${slogan ? `<div class="center line" style="font-style:italic;font-size:11px;">${slogan}</div>` : ""}
           <div class="separator"></div>
@@ -136,7 +140,16 @@ export function SaleReceipt({ items, total, payments, nfceNumber, slogan, onClos
       >
         {/* Success header */}
         <div className="flex flex-col items-center pt-8 pb-4 px-6">
-          <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mb-4">
+          {logoUrl && (
+            <img src={logoUrl} alt={companyName || "Logo"} className="h-12 mb-2 object-contain" />
+          )}
+          {companyName && (
+            <p className="text-sm font-semibold text-pos-text">{companyName}</p>
+          )}
+          {slogan && (
+            <p className="text-xs text-pos-text-muted italic">{slogan}</p>
+          )}
+          <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mb-4 mt-3">
             <Check className="w-8 h-8 text-success" />
           </div>
           <h3 className="text-lg font-bold text-pos-text">Venda Finalizada!</h3>
