@@ -8,6 +8,7 @@ import { SaleReceipt } from "@/components/pos/SaleReceipt";
 import { TEFProcessor, type TEFResult } from "@/components/pos/TEFProcessor";
 import { CashRegister } from "@/components/pos/CashRegister";
 import { StockMovementDialog } from "@/components/stock/StockMovementDialog";
+import { PDVReceiveCreditDialog } from "@/components/pdv/PDVReceiveCreditDialog";
 import { usePDV, type PDVProduct } from "@/hooks/usePDV";
 import { useCompany } from "@/hooks/useCompany";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
@@ -38,6 +39,7 @@ export default function PDV() {
   const [showQuickProduct, setShowQuickProduct] = useState(false);
   const [quickProductBarcode, setQuickProductBarcode] = useState("");
   const [showClientSelector, setShowClientSelector] = useState(false);
+  const [showReceiveCredit, setShowReceiveCredit] = useState(false);
 
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
@@ -149,6 +151,7 @@ export default function PDV() {
           e.preventDefault();
           if (pdv.cartItems.length > 0) { pdv.clearCart(); toast.info("Carrinho limpo"); }
           break;
+        case "F8": e.preventDefault(); setShowReceiveCredit(true); break;
         case "F9":
           e.preventDefault();
           if (pdv.pendingCount > 0 && pdv.isOnline) pdv.syncAll();
@@ -407,6 +410,13 @@ export default function PDV() {
         )}
       </AnimatePresence>
 
+      {/* Receive credit dialog */}
+      <AnimatePresence>
+        {showReceiveCredit && (
+          <PDVReceiveCreditDialog open={showReceiveCredit} onClose={() => setShowReceiveCredit(false)} />
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {receipt && (
           <SaleReceipt
@@ -533,6 +543,7 @@ export default function PDV() {
           { key: "F4", label: "Caixa", action: () => setShowCashRegister(true) },
           { key: "F5", label: "Cadastrar", action: () => { setQuickProductBarcode(""); setShowQuickProduct(true); } },
           { key: "F6", label: "Limpar", action: () => { if (pdv.cartItems.length > 0) { pdv.clearCart(); toast.info("Carrinho limpo"); } } },
+          { key: "F8", label: "Receber Fiado", action: () => setShowReceiveCredit(true) },
           { key: "F9", label: "Sincronizar", action: () => { if (pdv.pendingCount > 0 && pdv.isOnline) pdv.syncAll(); } },
           { key: "Del", label: "Remover", action: () => { if (pdv.cartItems.length > 0) { const last = pdv.cartItems[pdv.cartItems.length - 1]; pdv.removeItem(last.id); toast.info(`${last.name} removido`); } } },
           { key: "ESC", label: "Fechar", action: () => setShowShortcuts(false) },
