@@ -584,23 +584,23 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested }: 
                 </div>
               )}
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 mt-2">
                 {!currentResult.approved && (
                   <button
                     onClick={handleRetry}
-                    className="flex-1 py-3 rounded-xl bg-pos-bg text-pos-text text-sm font-medium hover:bg-pos-surface-hover transition-all"
+                    className="flex-1 py-4 rounded-xl bg-pos-bg text-pos-text text-base font-medium hover:bg-pos-surface-hover transition-all min-h-[56px]"
                   >
                     Tentar novamente
                   </button>
                 )}
                 <button
                   onClick={currentResult.approved ? handlePaymentApproved : onCancel}
-                  className="flex-1 py-3 rounded-xl bg-pos-accent text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all"
+                  className="flex-1 py-4 rounded-xl bg-pos-accent text-primary-foreground text-base font-bold hover:opacity-90 transition-all min-h-[56px] active:scale-[0.98]"
                 >
                   {currentResult.approved
                     ? isSplit && remaining - currentResult.amount > 0.01
                       ? "Próximo Pagamento"
-                      : "Finalizar Venda"
+                      : "✓ Finalizar Venda"
                     : "Cancelar"
                   }
                 </button>
