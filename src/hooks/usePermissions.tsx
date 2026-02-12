@@ -18,6 +18,7 @@ interface UserPermissions {
   role: CompanyRole | null;
   permissions: Permission[];
   loading: boolean;
+  maxDiscountPercent: number;
   canView: (module: string) => boolean;
   canCreate: (module: string) => boolean;
   canEdit: (module: string) => boolean;
@@ -29,17 +30,19 @@ export function usePermissions(): UserPermissions {
   const { companyId } = useCompany();
   const [role, setRole] = useState<CompanyRole | null>(null);
   const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [maxDiscountPercent, setMaxDiscountPercent] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user || !companyId) {
       setRole(null);
       setPermissions([]);
+      setMaxDiscountPercent(0);
       setLoading(false);
       return;
     }
 
-    const fetch = async () => {
+    const fetchData = async () => {
       // Get user role
       const { data: cu } = await supabase
         .from("company_users")
@@ -56,17 +59,25 @@ export function usePermissions(): UserPermissions {
 
       setRole(cu.role);
 
-      // Get permissions for role
-      const { data: perms } = await supabase
-        .from("permissions")
-        .select("module, can_view, can_create, can_edit, can_delete")
-        .eq("role", cu.role);
+      // Get permissions for role + discount limit in parallel
+      const [permsResult, discountResult] = await Promise.all([
+        supabase
+          .from("permissions")
+          .select("module, can_view, can_create, can_edit, can_delete")
+          .eq("role", cu.role),
+        supabase
+          .from("discount_limits")
+          .select("max_discount_percent")
+          .eq("role", cu.role)
+          .single(),
+      ]);
 
-      setPermissions(perms || []);
+      setPermissions(permsResult.data || []);
+      setMaxDiscountPercent(discountResult.data?.max_discount_percent ?? 0);
       setLoading(false);
     };
 
-    fetch();
+    fetchData();
   }, [user, companyId]);
 
   const findPerm = useCallback(
@@ -78,6 +89,7 @@ export function usePermissions(): UserPermissions {
     role,
     permissions,
     loading,
+    maxDiscountPercent,
     canView: (module: string) => findPerm(module)?.can_view ?? false,
     canCreate: (module: string) => findPerm(module)?.can_create ?? false,
     canEdit: (module: string) => findPerm(module)?.can_edit ?? false,

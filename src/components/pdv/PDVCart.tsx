@@ -1,4 +1,4 @@
-import { Trash2, ShoppingCart } from "lucide-react";
+import { Trash2, ShoppingCart, Percent } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { PDVCartItem } from "@/hooks/usePDV";
 import { useState, useEffect } from "react";
@@ -16,6 +16,14 @@ interface PDVCartProps {
   onSelectItem?: (id: string | null) => void;
   companyName?: string | null;
   logoUrl?: string | null;
+  // Discount props
+  maxDiscountPercent: number;
+  itemDiscounts: Record<string, number>;
+  onSetItemDiscount: (productId: string, percent: number) => void;
+  globalDiscountPercent: number;
+  onSetGlobalDiscount: (percent: number) => void;
+  subtotal: number;
+  globalDiscountValue: number;
 }
 
 function LiveClock() {
@@ -31,11 +39,13 @@ function LiveClock() {
   );
 }
 
-export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, onCheckout, selectedItemId, onSelectItem, companyName, logoUrl }: PDVCartProps) {
-  const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, onCheckout, selectedItemId, onSelectItem, companyName, logoUrl, maxDiscountPercent, itemDiscounts, onSetItemDiscount, globalDiscountPercent, onSetGlobalDiscount, subtotal, globalDiscountValue }: PDVCartProps) {
+  const totalFinal = Math.max(0, subtotal - globalDiscountValue);
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
   const totalQuantity = items.reduce((acc, item) => acc + item.quantity, 0);
   const selectedItem = selectedItemId ? items.find((i) => i.id === selectedItemId) || null : (items.length > 0 ? items[items.length - 1] : null);
+  const [editingItemDiscount, setEditingItemDiscount] = useState<string | null>(null);
+  const [editingGlobalDiscount, setEditingGlobalDiscount] = useState(false);
 
   return (
     <div className="flex flex-col h-full">
@@ -113,10 +123,49 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
                   <span className="text-xs font-bold text-muted-foreground uppercase">Quantidade:</span>
                   <span className="text-lg font-bold text-card-foreground font-mono">{selectedItem.quantity}</span>
                 </div>
+                {/* Item discount */}
+                <div className="flex justify-between items-center py-1.5 border-b border-border/50">
+                  <span className="text-xs font-bold text-muted-foreground uppercase">Desconto:</span>
+                  {editingItemDiscount === selectedItem.id ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={0}
+                        max={maxDiscountPercent}
+                        step={0.5}
+                        defaultValue={itemDiscounts[selectedItem.id] || 0}
+                        autoFocus
+                        onBlur={(e) => {
+                          const val = Math.min(Math.max(0, Number(e.target.value)), maxDiscountPercent);
+                          onSetItemDiscount(selectedItem.id, val);
+                          setEditingItemDiscount(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value)), maxDiscountPercent);
+                            onSetItemDiscount(selectedItem.id, val);
+                            setEditingItemDiscount(null);
+                          }
+                          if (e.key === "Escape") setEditingItemDiscount(null);
+                        }}
+                        className="w-16 px-1.5 py-0.5 rounded bg-muted border border-border text-sm font-mono text-right focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      />
+                      <span className="text-xs text-muted-foreground">%</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => maxDiscountPercent > 0 && setEditingItemDiscount(selectedItem.id)}
+                      className={`text-sm font-bold font-mono ${(itemDiscounts[selectedItem.id] || 0) > 0 ? "text-destructive" : "text-muted-foreground"} hover:text-primary transition-colors`}
+                      title={maxDiscountPercent > 0 ? `Máx: ${maxDiscountPercent}%` : "Sem permissão para desconto"}
+                    >
+                      {(itemDiscounts[selectedItem.id] || 0) > 0 ? `${itemDiscounts[selectedItem.id]}%` : "0%"}
+                    </button>
+                  )}
+                </div>
                 <div className="flex justify-between items-center py-1.5">
                   <span className="text-xs font-bold text-muted-foreground uppercase">Subtotal:</span>
                   <span className="text-lg font-bold text-primary">
-                    {formatCurrency(selectedItem.price * selectedItem.quantity)}
+                    {formatCurrency(selectedItem.price * (1 - (itemDiscounts[selectedItem.id] || 0) / 100) * selectedItem.quantity)}
                   </span>
                 </div>
               </div>
@@ -200,8 +249,18 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
                             )}
                           </div>
                         </td>
-                        <td className="px-3 py-2 text-right font-mono text-muted-foreground">{formatCurrency(item.price)}</td>
-                        <td className="px-3 py-2 text-right font-mono font-bold text-primary">{formatCurrency(item.price * item.quantity)}</td>
+                        <td className="px-3 py-2 text-right font-mono text-muted-foreground">
+                          {(itemDiscounts[item.id] || 0) > 0 ? (
+                            <span className="line-through text-muted-foreground/50 mr-1">{formatCurrency(item.price)}</span>
+                          ) : null}
+                          {formatCurrency(item.price * (1 - (itemDiscounts[item.id] || 0) / 100))}
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono font-bold text-primary">
+                          {formatCurrency(item.price * (1 - (itemDiscounts[item.id] || 0) / 100) * item.quantity)}
+                          {(itemDiscounts[item.id] || 0) > 0 && (
+                            <span className="text-[9px] text-destructive ml-1">-{itemDiscounts[item.id]}%</span>
+                          )}
+                        </td>
                         <td className="px-3 py-2">
                           <button
                             onClick={() => onRemoveItem(item.id)}
@@ -229,16 +288,60 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
                 <span className="text-xs font-bold text-muted-foreground uppercase">Soma Qtd:</span>
                 <span className="text-sm font-bold text-foreground font-mono">{totalQuantity}</span>
               </div>
+              {/* Global discount */}
+              {maxDiscountPercent > 0 && items.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <Percent className="w-3 h-3 text-muted-foreground" />
+                  {editingGlobalDiscount ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={0}
+                        max={maxDiscountPercent}
+                        step={0.5}
+                        defaultValue={globalDiscountPercent}
+                        autoFocus
+                        onBlur={(e) => {
+                          const val = Math.min(Math.max(0, Number(e.target.value)), maxDiscountPercent);
+                          onSetGlobalDiscount(val);
+                          setEditingGlobalDiscount(false);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value)), maxDiscountPercent);
+                            onSetGlobalDiscount(val);
+                            setEditingGlobalDiscount(false);
+                          }
+                          if (e.key === "Escape") setEditingGlobalDiscount(false);
+                        }}
+                        className="w-14 px-1.5 py-0.5 rounded bg-muted border border-border text-xs font-mono text-right focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      />
+                      <span className="text-[10px] text-muted-foreground">%</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setEditingGlobalDiscount(true)}
+                      className={`text-xs font-bold font-mono ${globalDiscountPercent > 0 ? "text-destructive" : "text-muted-foreground"} hover:text-primary transition-colors`}
+                      title={`Desconto geral (máx: ${maxDiscountPercent}%)`}
+                    >
+                      Desc: {globalDiscountPercent > 0 ? `${globalDiscountPercent}%` : "0%"}
+                    </button>
+                  )}
+                  {globalDiscountValue > 0 && (
+                    <span className="text-xs text-destructive font-mono">(-{formatCurrency(globalDiscountValue)})</span>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm font-bold text-muted-foreground uppercase">Total da Compra:</span>
               <motion.span
-                key={subtotal}
+                key={totalFinal}
                 initial={{ scale: 1.1 }}
                 animate={{ scale: 1 }}
                 className="text-4xl font-black text-primary font-mono"
               >
-                {formatCurrency(subtotal)}
+                {formatCurrency(totalFinal)}
               </motion.span>
             </div>
           </div>
