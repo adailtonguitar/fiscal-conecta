@@ -219,12 +219,12 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested }: 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-pos-bg/90 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-pos-bg/90 backdrop-blur-sm touch-manipulation"
     >
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-pos-surface border border-pos-border rounded-2xl w-full max-w-md mx-4 overflow-hidden"
+        className="bg-pos-surface border border-pos-border rounded-2xl w-full max-w-md mx-4 overflow-hidden [&_button]:touch-manipulation"
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-pos-border">
