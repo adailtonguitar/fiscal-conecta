@@ -26,6 +26,8 @@ function crc16(str: string): string {
 export interface PixPayload {
   /** PIX key (CPF, CNPJ, email, phone, or EVP/random) */
   pixKey: string;
+  /** PIX key type (phone, cpf, cnpj, email, evp) */
+  pixKeyType?: string;
   /** Merchant name (max 25 chars) */
   merchantName: string;
   /** Merchant city (max 15 chars) */
@@ -38,19 +40,40 @@ export interface PixPayload {
   description?: string;
 }
 
+/** Remove accents and non-ASCII characters */
+function normalizeASCII(str: string): string {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\x20-\x7E]/g, "");
+}
+
+/** Format PIX key based on type */
+function formatPixKey(key: string, keyType?: string): string {
+  const cleaned = key.replace(/[\s\-().]/g, "");
+  if (keyType === "phone" || (!keyType && /^\d{10,11}$/.test(cleaned))) {
+    // Phone key must have +55 prefix
+    if (cleaned.startsWith("+55")) return cleaned;
+    if (cleaned.startsWith("55") && cleaned.length >= 12) return "+" + cleaned;
+    return "+55" + cleaned;
+  }
+  return key;
+}
+
 /**
  * Generate a PIX BR Code (EMV) payload string.
  * This is the "copia e cola" value that can be rendered as a QR Code.
  */
 export function generatePixPayload(data: PixPayload): string {
-  const merchantName = data.merchantName.substring(0, 25).toUpperCase();
-  const merchantCity = data.merchantCity.substring(0, 15).toUpperCase();
+  const merchantName = normalizeASCII(data.merchantName).substring(0, 25).toUpperCase();
+  const merchantCity = normalizeASCII(data.merchantCity).substring(0, 15).toUpperCase();
   const txId = (data.txId || "***").substring(0, 25);
+  const pixKey = formatPixKey(data.pixKey, data.pixKeyType);
 
   // Merchant Account Information (ID 26)
   let mai = "";
   mai += pad("00", "br.gov.bcb.pix"); // GUI
-  mai += pad("01", data.pixKey);       // Chave PIX
+  mai += pad("01", pixKey);            // Chave PIX
   if (data.description) {
     mai += pad("02", data.description.substring(0, 72));
   }
