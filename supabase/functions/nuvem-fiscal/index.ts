@@ -679,16 +679,14 @@ Deno.serve(async (req: Request) => {
       console.log("[UPLOAD-LOGO] Starting logo upload for company:", companyId);
       const { data: company, error: companyError } = await supabase
         .from("companies")
-        .select("cnpj, logo_url")
+        .select("cnpj, logo_url, name, trade_name, ie, im, email, phone, tax_regime, address_street, address_number, address_complement, address_neighborhood, address_city, address_state, address_zip, address_ibge_code")
         .eq("id", companyId)
         .single();
 
-      if (companyError) {
+      if (companyError || !company) {
         console.error("[UPLOAD-LOGO] Company query error:", companyError);
         throw new Error("Empresa não encontrada");
       }
-      if (!company) throw new Error("Empresa não encontrada");
-      console.log("[UPLOAD-LOGO] Company found, logo_url:", company.logo_url);
       if (!company.logo_url) {
         return new Response(JSON.stringify({ error: "Nenhum logotipo cadastrado na empresa" }), {
           status: 400,
@@ -696,26 +694,84 @@ Deno.serve(async (req: Request) => {
         });
       }
 
+      const cnpj = (company.cnpj as string).replace(/\D/g, "");
+      const nfToken = await getAccessToken("empresa");
+
+      // Check if company exists in Nuvem Fiscal, if not, register it first
+      console.log("[UPLOAD-LOGO] Checking if company is registered in Nuvem Fiscal...");
+      const checkResp = await fetch(`${NUVEM_FISCAL_API_URL}/empresas/${cnpj}`, {
+        headers: { Authorization: `Bearer ${nfToken}` },
+      });
+
+      if (checkResp.status === 404) {
+        console.log("[UPLOAD-LOGO] Company not found in Nuvem Fiscal, registering...");
+        const regimeMap: Record<string, number> = {
+          simples_nacional: 1,
+          lucro_presumido: 3,
+          lucro_real: 3,
+        };
+        const registerBody = {
+          cpf_cnpj: cnpj,
+          razao_social: company.name,
+          nome_fantasia: company.trade_name || company.name,
+          inscricao_estadual: company.ie || "",
+          inscricao_municipal: company.im || "",
+          email: company.email || "",
+          fone: (company.phone || "").replace(/\D/g, ""),
+          optante_simples_nacional: (company.tax_regime || "simples_nacional") === "simples_nacional",
+          regime_tributacao: regimeMap[company.tax_regime || "simples_nacional"] ?? 1,
+          endereco: {
+            logradouro: company.address_street || "",
+            numero: company.address_number || "S/N",
+            complemento: company.address_complement || "",
+            bairro: company.address_neighborhood || "",
+            codigo_municipio: company.address_ibge_code || "",
+            cidade: company.address_city || "",
+            uf: company.address_state || "SP",
+            cep: (company.address_zip || "").replace(/\D/g, ""),
+          },
+        };
+
+        const registerResp = await fetch(`${NUVEM_FISCAL_API_URL}/empresas`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${nfToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(registerBody),
+        });
+
+        if (!registerResp.ok) {
+          const regErr = await registerResp.text();
+          console.error("[UPLOAD-LOGO] Failed to register company:", registerResp.status, regErr);
+          return new Response(JSON.stringify({ error: "Erro ao cadastrar empresa na Nuvem Fiscal. Cadastre a empresa primeiro via configuração fiscal.", details: regErr }), {
+            status: registerResp.status,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        console.log("[UPLOAD-LOGO] Company registered successfully in Nuvem Fiscal");
+      } else if (!checkResp.ok) {
+        await checkResp.text(); // consume body
+        console.log("[UPLOAD-LOGO] Company check returned status:", checkResp.status);
+      } else {
+        await checkResp.text(); // consume body
+        console.log("[UPLOAD-LOGO] Company already registered in Nuvem Fiscal");
+      }
+
       // Download logo from URL
       console.log("[UPLOAD-LOGO] Downloading logo from:", company.logo_url);
       const logoResp = await fetch(company.logo_url);
       if (!logoResp.ok) {
-        console.error("[UPLOAD-LOGO] Logo download failed:", logoResp.status, logoResp.statusText);
+        console.error("[UPLOAD-LOGO] Logo download failed:", logoResp.status);
         throw new Error("Não foi possível baixar o logotipo");
       }
 
       const logoBuffer = await logoResp.arrayBuffer();
       const contentType = logoResp.headers.get("content-type") || "image/png";
-      console.log("[UPLOAD-LOGO] Logo downloaded, size:", logoBuffer.byteLength, "contentType:", contentType);
-
-      const cnpj = (company.cnpj as string).replace(/\D/g, "");
-      console.log("[UPLOAD-LOGO] Getting Nuvem Fiscal token for CNPJ:", cnpj);
-      const nfToken = await getAccessToken("empresa");
 
       // PUT /empresas/{cpf_cnpj}/logotipo
-      const uploadUrl = `${NUVEM_FISCAL_API_URL}/empresas/${cnpj}/logotipo`;
-      console.log("[UPLOAD-LOGO] Uploading to:", uploadUrl);
-      const uploadResp = await fetch(uploadUrl, {
+      console.log("[UPLOAD-LOGO] Uploading logo to Nuvem Fiscal...");
+      const uploadResp = await fetch(`${NUVEM_FISCAL_API_URL}/empresas/${cnpj}/logotipo`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${nfToken}`,
@@ -724,8 +780,8 @@ Deno.serve(async (req: Request) => {
         body: logoBuffer,
       });
 
-      console.log("[UPLOAD-LOGO] Upload response status:", uploadResp.status);
       if (uploadResp.ok) {
+        console.log("[UPLOAD-LOGO] Logo uploaded successfully");
         await supabase.from("action_logs").insert({
           company_id: companyId,
           user_id: user.id,
