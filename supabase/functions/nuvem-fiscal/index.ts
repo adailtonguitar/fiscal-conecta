@@ -676,13 +676,19 @@ Deno.serve(async (req: Request) => {
 
     // ─── UPLOAD LOGO to Nuvem Fiscal ─────────────────────────
     if (req.method === "POST" && action === "upload-logo") {
-      const { data: company } = await supabase
+      console.log("[UPLOAD-LOGO] Starting logo upload for company:", companyId);
+      const { data: company, error: companyError } = await supabase
         .from("companies")
         .select("cnpj, logo_url")
         .eq("id", companyId)
         .single();
 
+      if (companyError) {
+        console.error("[UPLOAD-LOGO] Company query error:", companyError);
+        throw new Error("Empresa não encontrada");
+      }
       if (!company) throw new Error("Empresa não encontrada");
+      console.log("[UPLOAD-LOGO] Company found, logo_url:", company.logo_url);
       if (!company.logo_url) {
         return new Response(JSON.stringify({ error: "Nenhum logotipo cadastrado na empresa" }), {
           status: 400,
@@ -691,17 +697,25 @@ Deno.serve(async (req: Request) => {
       }
 
       // Download logo from URL
+      console.log("[UPLOAD-LOGO] Downloading logo from:", company.logo_url);
       const logoResp = await fetch(company.logo_url);
-      if (!logoResp.ok) throw new Error("Não foi possível baixar o logotipo");
+      if (!logoResp.ok) {
+        console.error("[UPLOAD-LOGO] Logo download failed:", logoResp.status, logoResp.statusText);
+        throw new Error("Não foi possível baixar o logotipo");
+      }
 
       const logoBuffer = await logoResp.arrayBuffer();
       const contentType = logoResp.headers.get("content-type") || "image/png";
+      console.log("[UPLOAD-LOGO] Logo downloaded, size:", logoBuffer.byteLength, "contentType:", contentType);
 
       const cnpj = (company.cnpj as string).replace(/\D/g, "");
+      console.log("[UPLOAD-LOGO] Getting Nuvem Fiscal token for CNPJ:", cnpj);
       const nfToken = await getAccessToken("empresa");
 
       // PUT /empresas/{cpf_cnpj}/logotipo
-      const uploadResp = await fetch(`${NUVEM_FISCAL_API_URL}/empresas/${cnpj}/logotipo`, {
+      const uploadUrl = `${NUVEM_FISCAL_API_URL}/empresas/${cnpj}/logotipo`;
+      console.log("[UPLOAD-LOGO] Uploading to:", uploadUrl);
+      const uploadResp = await fetch(uploadUrl, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${nfToken}`,
@@ -710,6 +724,7 @@ Deno.serve(async (req: Request) => {
         body: logoBuffer,
       });
 
+      console.log("[UPLOAD-LOGO] Upload response status:", uploadResp.status);
       if (uploadResp.ok) {
         await supabase.from("action_logs").insert({
           company_id: companyId,
@@ -724,7 +739,8 @@ Deno.serve(async (req: Request) => {
         });
       } else {
         const errText = await uploadResp.text();
-        return new Response(JSON.stringify({ error: "Erro ao enviar logotipo", details: errText }), {
+        console.error("[UPLOAD-LOGO] Upload failed:", uploadResp.status, errText);
+        return new Response(JSON.stringify({ error: "Erro ao enviar logotipo para Nuvem Fiscal", details: errText }), {
           status: uploadResp.status,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
