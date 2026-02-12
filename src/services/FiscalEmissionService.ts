@@ -65,6 +65,7 @@ export class FiscalEmissionService {
     }>;
     total: number;
     paymentMethod: string;
+    paymentAmounts?: number[];
     customerCpf?: string;
     customerName?: string;
   }) {
@@ -73,6 +74,7 @@ export class FiscalEmissionService {
       items: params.items,
       total: params.total,
       payment_method: params.paymentMethod,
+      payment_amounts: params.paymentAmounts,
       customer_cpf: params.customerCpf,
       customer_name: params.customerName,
     });

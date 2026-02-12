@@ -265,6 +265,7 @@ export class SaleService {
           items,
           total,
           paymentMethod,
+          paymentAmounts: paymentResults ? paymentResults.map(pr => pr.amount) : undefined,
           customerCpf,
           customerName,
         }).catch((err) => {
