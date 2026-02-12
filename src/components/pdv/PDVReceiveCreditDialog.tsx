@@ -38,7 +38,7 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
   const { data: clients = [] } = useClients();
   const { data: entries = [] } = useFinancialEntries({ type: "receber", status: "pendente" });
   const markAsPaid = useMarkAsPaid();
-  const { companyId } = useCompany();
+  const { companyId, companyName, slogan } = useCompany();
   const { user } = useAuth();
   const qc = useQueryClient();
 
@@ -75,6 +75,8 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
       previousBalance: prevBalance,
       newBalance: Math.max(0, prevBalance - amount),
       paymentMethod: selectedMethod,
+      storeName: companyName || undefined,
+      storeSlogan: slogan || undefined,
     });
   };
 

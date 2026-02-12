@@ -20,6 +20,7 @@ export interface CreditReceiptData {
   paymentMethod: string;
   storeName?: string;
   storeCnpj?: string;
+  storeSlogan?: string;
 }
 
 interface PDVCreditReceiptProps {
@@ -49,6 +50,7 @@ export function PDVCreditReceipt({ data, onClose }: PDVCreditReceiptProps) {
         <body>
           <div class="center bold" style="font-size:14px;">RECIBO DE RECEBIMENTO</div>
           ${data.storeName ? `<div class="center line">${data.storeName}</div>` : ""}
+          ${data.storeSlogan ? `<div class="center line" style="font-style:italic;font-size:11px;">${data.storeSlogan}</div>` : ""}
           ${data.storeCnpj ? `<div class="center line">CNPJ: ${data.storeCnpj}</div>` : ""}
           <div class="separator"></div>
           <div class="center line">${now.toLocaleString("pt-BR")}</div>
@@ -96,6 +98,7 @@ export function PDVCreditReceipt({ data, onClose }: PDVCreditReceiptProps) {
         paymentMethod: methodLabels[data.paymentMethod] || data.paymentMethod,
         storeName: data.storeName,
         storeCnpj: data.storeCnpj,
+        storeSlogan: data.storeSlogan,
         date: now,
       });
       // In Capacitor native context, send bytes to USB printer plugin

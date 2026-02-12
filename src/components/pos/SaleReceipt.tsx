@@ -18,10 +18,11 @@ interface SaleReceiptProps {
   total: number;
   payments: TEFResult[];
   nfceNumber: string;
+  slogan?: string;
   onClose: () => void;
 }
 
-export function SaleReceipt({ items, total, payments, nfceNumber, onClose }: SaleReceiptProps) {
+export function SaleReceipt({ items, total, payments, nfceNumber, slogan, onClose }: SaleReceiptProps) {
   const isSplit = payments.length > 1;
   const hasCreditPayment = payments.some(p => p.method === "prazo");
 
@@ -56,6 +57,7 @@ export function SaleReceipt({ items, total, payments, nfceNumber, onClose }: Sal
         </head>
         <body>
           <div class="center bold" style="font-size:16px;">CUPOM NÃO FISCAL</div>
+          ${slogan ? `<div class="center line" style="font-style:italic;font-size:11px;">${slogan}</div>` : ""}
           <div class="separator"></div>
           <div class="center bold">NFC-e #${nfceNumber}</div>
           <div class="center line">${new Date().toLocaleString('pt-BR')}</div>
