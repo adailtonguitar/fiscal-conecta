@@ -43,6 +43,7 @@ import Empresas from "./pages/Empresas";
 import DRE from "./pages/DRE";
 import FluxoCaixaProjetado from "./pages/FluxoCaixaProjetado";
 import CentroCusto from "./pages/CentroCusto";
+import Comissoes from "./pages/Comissoes";
 
 const queryClient = new QueryClient();
 
@@ -147,6 +148,7 @@ function AppRoutes() {
                 <Route path="/dre" element={<DRE />} />
                 <Route path="/fluxo-caixa" element={<FluxoCaixaProjetado />} />
                 <Route path="/centro-custo" element={<CentroCusto />} />
+                <Route path="/comissoes" element={<Comissoes />} />
                 <Route path="/configuracoes" element={<Configuracoes />} />
                 <Route path="/usuarios" element={<Usuarios />} />
                 <Route path="/revendas" element={<Revendas />} />
