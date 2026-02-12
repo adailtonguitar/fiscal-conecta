@@ -14,10 +14,11 @@ import { usePDV, type PDVProduct } from "@/hooks/usePDV";
 import { useCompany } from "@/hooks/useCompany";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { AnimatePresence, motion } from "framer-motion";
-import { Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard, ArrowLeft, Maximize, ScanBarcode, DollarSign, PackageX, PackagePlus } from "lucide-react";
+import { Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard, ArrowLeft, Maximize, ScanBarcode, DollarSign, PackageX, PackagePlus, LockOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { PaymentResult } from "@/services/types";
+import { openCashDrawer } from "@/lib/escpos";
 
 export default function PDV() {
   const pdv = usePDV();
@@ -153,6 +154,7 @@ export default function PDV() {
           e.preventDefault();
           if (pdv.cartItems.length > 0) { pdv.clearCart(); toast.info("Carrinho limpo"); }
           break;
+        case "F7": e.preventDefault(); openCashDrawer(); toast.info("Gaveta aberta"); break;
         case "F8": e.preventDefault(); setShowReceiveCredit(true); break;
         case "F9":
           e.preventDefault();
@@ -559,6 +561,7 @@ export default function PDV() {
           { key: "F4", label: "Caixa", action: () => setShowCashRegister(true) },
           { key: "F5", label: "Cadastrar", action: () => { setQuickProductBarcode(""); setShowQuickProduct(true); } },
           { key: "F6", label: "Limpar", action: () => { if (pdv.cartItems.length > 0) { pdv.clearCart(); toast.info("Carrinho limpo"); } } },
+          { key: "F7", label: "Gaveta", action: () => { openCashDrawer(); toast.info("Gaveta aberta"); } },
           { key: "F8", label: "Receber Fiado", action: () => setShowReceiveCredit(true) },
           { key: "F9", label: "Sincronizar", action: () => { if (pdv.pendingCount > 0 && pdv.isOnline) pdv.syncAll(); } },
           { key: "Del", label: "Remover", action: () => { if (pdv.cartItems.length > 0) { const last = pdv.cartItems[pdv.cartItems.length - 1]; pdv.removeItem(last.id); toast.info(`${last.name} removido`); } } },
