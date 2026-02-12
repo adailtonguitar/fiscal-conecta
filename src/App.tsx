@@ -41,6 +41,7 @@ import PainelLucro from "./pages/PainelLucro";
 import AlertaFinanceiro from "./pages/AlertaFinanceiro";
 import Empresas from "./pages/Empresas";
 import DRE from "./pages/DRE";
+import FluxoCaixaProjetado from "./pages/FluxoCaixaProjetado";
 
 const queryClient = new QueryClient();
 
@@ -143,6 +144,7 @@ function AppRoutes() {
                 <Route path="/fiscal/auditoria" element={<AuditLogs />} />
                 <Route path="/financeiro" element={<Financeiro />} />
                 <Route path="/dre" element={<DRE />} />
+                <Route path="/fluxo-caixa" element={<FluxoCaixaProjetado />} />
                 <Route path="/configuracoes" element={<Configuracoes />} />
                 <Route path="/usuarios" element={<Usuarios />} />
                 <Route path="/revendas" element={<Revendas />} />

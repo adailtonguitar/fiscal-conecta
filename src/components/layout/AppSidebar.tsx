@@ -5,7 +5,7 @@ import {
   Wifi, WifiOff, RefreshCw, ChevronLeft, ChevronRight, ChevronDown,
   Store, Receipt, Shield, ScrollText, LogOut, DollarSign, Landmark,
   Users, Building2, ClipboardList, UserCheck, Factory, Truck, Tags, BarChart3,
-  Download, Tag, TrendingUp, AlertTriangle as AlertTriangleIcon, FileSpreadsheet,
+  Download, Tag, TrendingUp, AlertTriangle as AlertTriangleIcon, FileSpreadsheet, GitGraph,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,6 +40,7 @@ const navItems: NavEntry[] = [
   { icon: DollarSign, label: "Caixa", path: "/caixa" },
   { icon: Landmark, label: "Financeiro", path: "/financeiro" },
   { icon: FileSpreadsheet, label: "DRE", path: "/dre" },
+  { icon: GitGraph, label: "Fluxo Projetado", path: "/fluxo-caixa" },
   { icon: TrendingUp, label: "Painel de Lucro", path: "/painel-lucro" },
   { icon: AlertTriangleIcon, label: "Alertas Financeiros", path: "/alertas" },
   {
