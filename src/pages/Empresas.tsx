@@ -404,12 +404,18 @@ export default function Configuracoes() {
                   <span className="text-[10px] text-muted-foreground mt-1">Upload</span>
                 </div>
               )}
-              <div className="flex-1">
+              <div className="flex-1 space-y-2">
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleLogoSelect} className="hidden" />
                 <button type="button" onClick={() => fileInputRef.current?.click()} className="text-sm text-primary hover:underline">
                   {logoPreview ? "Trocar imagem" : "Selecionar imagem"}
                 </button>
                 <p className="text-xs text-muted-foreground mt-1">PNG, JPG ou SVG. Máx 2MB.</p>
+                {editingId && logoPreview && !logoFile && (
+                  <Button type="button" variant="outline" size="sm" className="gap-1.5 text-xs" onClick={syncLogoToNuvemFiscal}>
+                    <Globe className="w-3.5 h-3.5" />
+                    Sincronizar logo com fiscal
+                  </Button>
+                )}
               </div>
             </div>
           </div>
