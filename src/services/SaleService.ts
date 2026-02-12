@@ -69,8 +69,8 @@ export class SaleService {
     // 3. Register TEF transactions for card/pix payments
     if (paymentResults) {
       for (const pr of paymentResults) {
-        if (pr.method !== "dinheiro" && pr.approved) {
-          await supabase.from("tef_transactions").insert({
+        if (pr.method !== "dinheiro" && pr.method !== "prazo" && pr.approved) {
+          await supabase.from("tef_transactions").insert([{
             company_id: companyId,
             amount: pr.amount,
             payment_method: pr.method,
@@ -85,7 +85,53 @@ export class SaleService {
             session_id: sessionId,
             processed_by: userId,
             transaction_date: new Date().toISOString(),
-          });
+          }]);
+        }
+      }
+    }
+
+    // 3.5 Handle credit sale (a prazo) — generate financial entries
+    if (paymentResults) {
+      for (const pr of paymentResults) {
+        if (pr.method === "prazo" && pr.credit_client_id) {
+          const installmentCount = pr.credit_installments || 1;
+          const installmentAmount = Math.round((pr.amount / installmentCount) * 100) / 100;
+
+          for (let i = 0; i < installmentCount; i++) {
+            const dueDate = new Date();
+            dueDate.setMonth(dueDate.getMonth() + (i + 1));
+
+            await supabase.from("financial_entries").insert({
+              company_id: companyId,
+              created_by: userId,
+              type: "receber" as any,
+              category: "vendas" as any,
+              description: installmentCount > 1
+                ? `Venda a prazo #${doc.id.slice(0, 8)} — ${pr.credit_client_name} (${i + 1}/${installmentCount})`
+                : `Venda fiado #${doc.id.slice(0, 8)} — ${pr.credit_client_name}`,
+              amount: i === installmentCount - 1
+                ? pr.amount - installmentAmount * (installmentCount - 1)  // last installment gets remainder
+                : installmentAmount,
+              due_date: dueDate.toISOString().split("T")[0],
+              status: "pendente" as any,
+              counterpart: pr.credit_client_name,
+              reference: doc.id,
+            });
+          }
+
+          // Update client's credit_balance
+          const { data: client } = await supabase
+            .from("clients")
+            .select("credit_balance")
+            .eq("id", pr.credit_client_id)
+            .single();
+
+          if (client) {
+            await supabase
+              .from("clients")
+              .update({ credit_balance: (Number(client.credit_balance) || 0) + pr.amount })
+              .eq("id", pr.credit_client_id);
+          }
         }
       }
     }

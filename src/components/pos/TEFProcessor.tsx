@@ -17,12 +17,13 @@ import { formatCurrency } from "@/lib/mock-data";
 import { motion, AnimatePresence } from "framer-motion";
 
 type PaymentStep = "select" | "amount" | "details" | "processing" | "result" | "summary";
-type PaymentMethodType = "dinheiro" | "debito" | "credito" | "pix" | "voucher" | "outros";
+type PaymentMethodType = "dinheiro" | "debito" | "credito" | "pix" | "voucher" | "outros" | "prazo";
 
 interface TEFProcessorProps {
   total: number;
   onComplete: (results: TEFResult[]) => void;
   onCancel: () => void;
+  onPrazoRequested?: () => void;
 }
 
 export interface TEFResult {
@@ -44,6 +45,7 @@ const paymentMethods = [
   { id: "credito" as const, label: "Cartão Crédito", icon: CreditCard, color: "bg-purple-500/10 text-purple-500" },
   { id: "pix" as const, label: "PIX", icon: QrCode, color: "bg-teal-500/10 text-teal-500" },
   { id: "voucher" as const, label: "Voucher", icon: Ticket, color: "bg-amber-500/10 text-amber-500" },
+  { id: "prazo" as const, label: "A Prazo", icon: Smartphone, color: "bg-orange-500/10 text-orange-500" },
   { id: "outros" as const, label: "Outros", icon: MoreHorizontal, color: "bg-gray-500/10 text-gray-500" },
 ];
 
@@ -70,7 +72,7 @@ const generateAuthCode = () => String(Math.floor(Math.random() * 999999)).padSta
 const generatePixTxId = () => `E${String(Math.floor(Math.random() * 99999999999)).padStart(32, "0")}`;
 const generateQrPattern = () => Array.from({ length: 25 }, () => Math.random() > 0.4);
 
-export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps) {
+export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested }: TEFProcessorProps) {
   const [step, setStep] = useState<PaymentStep>("select");
   const [method, setMethod] = useState<PaymentMethodType | null>(null);
   const [isSplit, setIsSplit] = useState(false);
@@ -122,15 +124,19 @@ export function TEFProcessor({ total, onComplete, onCancel }: TEFProcessorProps)
   }, [method, installments, cashReceived]);
 
   const handleSelectMethod = (m: PaymentMethodType) => {
+    // "A Prazo" triggers external client selector
+    if (m === "prazo") {
+      onPrazoRequested?.();
+      return;
+    }
+
     setMethod(m);
     setInstallments(1);
     setCashReceived("");
 
     if (isSplit) {
-      // In split mode, always ask for amount first (except if it's the last remaining)
       setStep("amount");
     } else {
-      // Single payment mode — full amount
       if (m === "dinheiro" || m === "credito") {
         setStep("details");
       } else if (m === "voucher" || m === "outros") {

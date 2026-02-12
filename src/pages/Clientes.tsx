@@ -10,6 +10,8 @@ const fields: FieldConfig[] = [
   { key: "email", label: "E-mail", type: "email", showInTable: true },
   { key: "phone", label: "Telefone", type: "tel", showInTable: true },
   { key: "phone2", label: "Telefone 2", type: "tel" },
+  { key: "credit_limit", label: "Limite de Crédito (R$)", type: "number" },
+  { key: "credit_balance", label: "Saldo Devedor (R$)", type: "number", showInTable: true },
   { key: "address_street", label: "Rua" },
   { key: "address_number", label: "Número" },
   { key: "address_complement", label: "Complemento" },

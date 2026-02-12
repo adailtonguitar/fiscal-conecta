@@ -155,6 +155,9 @@ export function usePDV() {
 
     if (navigator.onLine) {
       try {
+        // Extract credit client info from payment results if present
+        const creditPayment = paymentResults.find(p => p.method === "prazo");
+
         const result = await SaleService.finalizeSale({
           companyId,
           userId: user.id,
@@ -163,8 +166,8 @@ export function usePDV() {
           total,
           paymentMethod: paymentMethodLabel,
           paymentResults,
-          customerCpf: undefined, // TODO: pass from checkout form when available
-          customerName: undefined,
+          customerCpf: undefined,
+          customerName: creditPayment?.credit_client_name || undefined,
         });
 
         toast.success("Venda finalizada! NFC-e sendo emitida...");

@@ -28,7 +28,7 @@ export interface Sale {
 }
 
 export interface PaymentResult {
-  method: "dinheiro" | "debito" | "credito" | "pix" | "voucher" | "outros";
+  method: "dinheiro" | "debito" | "credito" | "pix" | "voucher" | "outros" | "prazo";
   approved: boolean;
   amount: number;
   nsu?: string;
@@ -38,6 +38,11 @@ export interface PaymentResult {
   installments?: number;
   change_amount?: number;
   pix_tx_id?: string;
+  // Credit sale fields
+  credit_client_id?: string;
+  credit_client_name?: string;
+  credit_mode?: "fiado" | "parcelado";
+  credit_installments?: number;
 }
 
 export interface StockMovementInput {
