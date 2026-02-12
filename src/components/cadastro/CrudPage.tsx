@@ -125,6 +125,17 @@ export function CrudPage<T extends { id: string }>({
   };
 
   const handleSave = async () => {
+    // Validate required fields
+    const currentFields = getFields ? getFields(formData) : fields;
+    const missing = currentFields.filter(
+      (f) => f.required && (formData[f.key] === "" || formData[f.key] === null || formData[f.key] === undefined)
+    );
+    if (missing.length > 0) {
+      const { toast: toastFn } = await import("sonner");
+      toastFn.error(`Preencha os campos obrigatórios: ${missing.map((f) => f.label).join(", ")}`);
+      return;
+    }
+
     if (onValidate) {
       const err = onValidate(formData);
       if (err) {
