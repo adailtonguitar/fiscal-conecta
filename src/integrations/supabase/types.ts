@@ -345,6 +345,8 @@ export type Database = {
           company_id: string
           cpf_cnpj: string | null
           created_at: string
+          credit_balance: number | null
+          credit_limit: number | null
           email: string | null
           id: string
           ie: string | null
@@ -368,6 +370,8 @@ export type Database = {
           company_id: string
           cpf_cnpj?: string | null
           created_at?: string
+          credit_balance?: number | null
+          credit_limit?: number | null
           email?: string | null
           id?: string
           ie?: string | null
@@ -391,6 +395,8 @@ export type Database = {
           company_id?: string
           cpf_cnpj?: string | null
           created_at?: string
+          credit_balance?: number | null
+          credit_limit?: number | null
           email?: string | null
           id?: string
           ie?: string | null

@@ -3,6 +3,7 @@ import { isScaleBarcode } from "@/lib/scale-barcode";
 import { PDVProductGrid } from "@/components/pdv/PDVProductGrid";
 import { PDVCart } from "@/components/pdv/PDVCart";
 import { PDVQuickProductDialog } from "@/components/pdv/PDVQuickProductDialog";
+import { PDVClientSelector, type CreditClient } from "@/components/pdv/PDVClientSelector";
 import { SaleReceipt } from "@/components/pos/SaleReceipt";
 import { TEFProcessor, type TEFResult } from "@/components/pos/TEFProcessor";
 import { CashRegister } from "@/components/pos/CashRegister";
@@ -36,6 +37,7 @@ export default function PDV() {
   const [stockMovementProduct, setStockMovementProduct] = useState<PDVProduct | null>(null);
   const [showQuickProduct, setShowQuickProduct] = useState(false);
   const [quickProductBarcode, setQuickProductBarcode] = useState("");
+  const [showClientSelector, setShowClientSelector] = useState(false);
 
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
@@ -172,7 +174,7 @@ export default function PDV() {
     if (allApproved) {
       try {
         const paymentResults: PaymentResult[] = tefResults.map((r) => ({
-          method: r.method,
+          method: r.method as PaymentResult["method"],
           approved: r.approved,
           amount: r.amount,
           nsu: r.nsu,
@@ -197,6 +199,42 @@ export default function PDV() {
       }
     }
     setShowTEF(false);
+  };
+
+  const handlePrazoRequested = () => {
+    setShowTEF(false);
+    setShowClientSelector(true);
+  };
+
+  const handleCreditSaleConfirmed = async (client: CreditClient, mode: "fiado" | "parcelado", installments: number) => {
+    setShowClientSelector(false);
+    try {
+      const paymentResults: PaymentResult[] = [{
+        method: "prazo",
+        approved: true,
+        amount: pdv.total,
+        credit_client_id: client.id,
+        credit_client_name: client.name,
+        credit_mode: mode,
+        credit_installments: installments,
+      }];
+      const savedItems = [...pdv.cartItems];
+      const savedTotal = pdv.total;
+      const result = await pdv.finalizeSale(paymentResults);
+      setReceipt({
+        items: savedItems,
+        total: savedTotal,
+        payments: [{
+          method: "prazo" as any,
+          approved: true,
+          amount: savedTotal,
+        }],
+        nfceNumber: result.nfceNumber,
+      });
+      toast.success(`Venda a prazo registrada para ${client.name}`);
+    } catch (err: any) {
+      toast.error(`Erro ao finalizar venda a prazo: ${err.message}`);
+    }
   };
 
   return (
@@ -353,7 +391,19 @@ export default function PDV() {
       {/* ===== OVERLAYS ===== */}
       <AnimatePresence>
         {showTEF && (
-          <TEFProcessor total={pdv.total} onComplete={handleTEFComplete} onCancel={() => setShowTEF(false)} />
+          <TEFProcessor total={pdv.total} onComplete={handleTEFComplete} onCancel={() => setShowTEF(false)} onPrazoRequested={handlePrazoRequested} />
+        )}
+      </AnimatePresence>
+
+      {/* Client selector for credit sales */}
+      <AnimatePresence>
+        {showClientSelector && (
+          <PDVClientSelector
+            open={showClientSelector}
+            onClose={() => setShowClientSelector(false)}
+            onSelect={handleCreditSaleConfirmed}
+            saleTotal={pdv.total}
+          />
         )}
       </AnimatePresence>
 
