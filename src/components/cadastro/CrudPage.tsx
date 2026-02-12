@@ -88,7 +88,15 @@ export function CrudPage<T extends { id: string }>({
   const openCreate = () => {
     setEditing(null);
     const defaults: Record<string, any> = {};
-    fields.forEach((f) => { defaults[f.key] = ""; });
+    fields.forEach((f) => {
+      if (f.type === "select" && f.options?.length) {
+        defaults[f.key] = f.options[0].value;
+      } else if (f.type === "currency" || f.type === "number") {
+        defaults[f.key] = 0;
+      } else {
+        defaults[f.key] = "";
+      }
+    });
     setFormData(defaults);
     setShowForm(true);
   };
