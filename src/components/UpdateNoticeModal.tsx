@@ -54,10 +54,15 @@ export function UpdateNoticeModal() {
           </p>
         </div>
 
-        {/* Button */}
-        <Button onClick={handleClose} className="mt-6 w-full">
-          Entendi
-        </Button>
+        {/* Buttons */}
+        <div className="mt-6 flex flex-col gap-2">
+          <Button onClick={() => window.location.reload()} className="w-full">
+            Atualizar agora
+          </Button>
+          <Button variant="ghost" onClick={handleClose} className="w-full text-muted-foreground">
+            Depois
+          </Button>
+        </div>
       </div>
     </div>
   );
