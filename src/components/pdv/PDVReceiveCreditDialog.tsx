@@ -104,7 +104,7 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
 
   // Direct payment (no financial entry exists)
   const handleDirectReceive = async () => {
-    const amount = customAmount / 100; // convert cents to decimal
+    const amount = customAmount; // CurrencyInput already returns decimal value
     if (!amount || amount <= 0) {
       toast.error("Informe um valor válido");
       return;
@@ -190,7 +190,7 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
   // Receive full balance directly
   const handleReceiveFullBalance = async () => {
     if (clientBalance <= 0) return;
-    setCustomAmount(Math.round(clientBalance * 100));
+    setCustomAmount(clientBalance);
     if (!companyId || !user || !selectedClient) return;
 
     const prevBalance = clientBalance;
