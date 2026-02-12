@@ -1,0 +1,364 @@
+import { useState, useMemo } from "react";
+import { format, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { motion } from "framer-motion";
+import {
+  ChevronLeft, ChevronRight, Download, Plus, PieChart,
+  TrendingUp, TrendingDown, Building2,
+} from "lucide-react";
+import { useFinancialEntries } from "@/hooks/useFinancialEntries";
+import { formatCurrency } from "@/lib/mock-data";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { PieChart as RechartsPie, Pie, Cell, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+
+const DEFAULT_COST_CENTERS = [
+  "Administrativo",
+  "Comercial / Vendas",
+  "Operacional",
+  "Marketing",
+  "Logística",
+  "TI / Tecnologia",
+  "RH / Pessoal",
+  "Financeiro",
+];
+
+const COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--destructive))",
+  "hsl(160, 60%, 45%)",
+  "hsl(45, 90%, 50%)",
+  "hsl(280, 60%, 55%)",
+  "hsl(200, 70%, 50%)",
+  "hsl(15, 80%, 55%)",
+  "hsl(330, 60%, 50%)",
+];
+
+export default function CentroCusto() {
+  const now = new Date();
+  const [month, setMonth] = useState(format(now, "yyyy-MM"));
+
+  const startDate = `${month}-01`;
+  const endDate = `${month}-31`;
+
+  const { data: entries = [], isLoading } = useFinancialEntries({
+    startDate,
+    endDate,
+  });
+
+  const prevMonth = () => {
+    const d = parseISO(`${month}-01`);
+    d.setMonth(d.getMonth() - 1);
+    setMonth(format(d, "yyyy-MM"));
+  };
+  const nextMonth = () => {
+    const d = parseISO(`${month}-01`);
+    d.setMonth(d.getMonth() + 1);
+    setMonth(format(d, "yyyy-MM"));
+  };
+
+  // Group entries by cost_center
+  const { costCenterData, pieData, barData, totals } = useMemo(() => {
+    const grouped: Record<string, { receitas: number; despesas: number; count: number }> = {};
+
+    entries.forEach(entry => {
+      const cc = (entry as any).cost_center || "Sem centro de custo";
+      if (!grouped[cc]) grouped[cc] = { receitas: 0, despesas: 0, count: 0 };
+      grouped[cc].count++;
+      const amount = Number(entry.paid_amount || entry.amount);
+      if (entry.type === "receber") {
+        grouped[cc].receitas += amount;
+      } else {
+        grouped[cc].despesas += amount;
+      }
+    });
+
+    const sortedKeys = Object.keys(grouped).sort((a, b) => {
+      const totalA = grouped[a].receitas + grouped[a].despesas;
+      const totalB = grouped[b].receitas + grouped[b].despesas;
+      return totalB - totalA;
+    });
+
+    const tableData = sortedKeys.map(cc => ({
+      name: cc,
+      ...grouped[cc],
+      resultado: grouped[cc].receitas - grouped[cc].despesas,
+    }));
+
+    const pie = sortedKeys
+      .filter(cc => grouped[cc].despesas > 0)
+      .map((cc, i) => ({
+        name: cc,
+        value: grouped[cc].despesas,
+        color: COLORS[i % COLORS.length],
+      }));
+
+    const bar = sortedKeys.map(cc => ({
+      name: cc.length > 15 ? cc.substring(0, 15) + "…" : cc,
+      fullName: cc,
+      receitas: grouped[cc].receitas,
+      despesas: grouped[cc].despesas,
+    }));
+
+    const totalReceitas = Object.values(grouped).reduce((s, g) => s + g.receitas, 0);
+    const totalDespesas = Object.values(grouped).reduce((s, g) => s + g.despesas, 0);
+
+    return {
+      costCenterData: tableData,
+      pieData: pie,
+      barData: bar,
+      totals: { receitas: totalReceitas, despesas: totalDespesas, resultado: totalReceitas - totalDespesas },
+    };
+  }, [entries]);
+
+  const handleExportCSV = () => {
+    const csv = [
+      "Centro de Custo;Receitas;Despesas;Resultado;Lançamentos",
+      ...costCenterData.map(cc =>
+        `${cc.name};${cc.receitas.toFixed(2)};${cc.despesas.toFixed(2)};${cc.resultado.toFixed(2)};${cc.count}`
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `centro-custo-${month}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const CustomPieTooltip = ({ active, payload }: any) => {
+    if (!active || !payload?.length) return null;
+    const data = payload[0];
+    return (
+      <div className="bg-popover border border-border rounded-lg p-3 shadow-lg text-sm">
+        <p className="font-semibold text-foreground">{data.name}</p>
+        <p className="text-destructive">{formatCurrency(data.value)}</p>
+      </div>
+    );
+  };
+
+  const CustomBarTooltip = ({ active, payload }: any) => {
+    if (!active || !payload?.length) return null;
+    const data = payload[0]?.payload;
+    return (
+      <div className="bg-popover border border-border rounded-lg p-3 shadow-lg text-sm">
+        <p className="font-semibold text-foreground mb-1">{data.fullName}</p>
+        <p className="text-primary">Receitas: {formatCurrency(data.receitas)}</p>
+        <p className="text-destructive">Despesas: {formatCurrency(data.despesas)}</p>
+      </div>
+    );
+  };
+
+  return (
+    <div className="p-6 space-y-6 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Centro de Custo</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Análise de receitas e despesas por departamento
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleExportCSV}>
+          <Download className="w-4 h-4 mr-2" />
+          CSV
+        </Button>
+      </div>
+
+      {/* Month navigation */}
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={prevMonth}>
+          <ChevronLeft className="w-4 h-4" />
+        </Button>
+        <span className="text-sm font-semibold text-foreground min-w-[140px] text-center">
+          {format(parseISO(`${month}-01`), "MMMM yyyy", { locale: ptBR })}
+        </span>
+        <Button variant="ghost" size="icon" onClick={nextMonth}>
+          <ChevronRight className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* Info banner */}
+      <div className="bg-muted/50 border border-border rounded-xl p-4 flex items-start gap-3">
+        <Building2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-medium text-foreground">Como usar</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Ao criar ou editar um lançamento financeiro, selecione o "Centro de Custo" para classificar a despesa/receita.
+            Centros sugeridos: {DEFAULT_COST_CENTERS.join(", ")}.
+          </p>
+        </div>
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-card rounded-xl border border-border p-4 card-shadow">
+          <div className="flex items-center gap-2 mb-1">
+            <TrendingUp className="w-4 h-4 text-primary" />
+            <p className="text-xs text-muted-foreground">Total Receitas</p>
+          </div>
+          <p className="text-xl font-bold font-mono text-primary">
+            {isLoading ? <Skeleton className="h-7 w-28" /> : formatCurrency(totals.receitas)}
+          </p>
+        </div>
+        <div className="bg-card rounded-xl border border-border p-4 card-shadow">
+          <div className="flex items-center gap-2 mb-1">
+            <TrendingDown className="w-4 h-4 text-destructive" />
+            <p className="text-xs text-muted-foreground">Total Despesas</p>
+          </div>
+          <p className="text-xl font-bold font-mono text-destructive">
+            {isLoading ? <Skeleton className="h-7 w-28" /> : formatCurrency(totals.despesas)}
+          </p>
+        </div>
+        <div className="bg-card rounded-xl border border-border p-4 card-shadow">
+          <p className="text-xs text-muted-foreground mb-1">Centros Ativos</p>
+          <p className="text-xl font-bold font-mono text-foreground">
+            {isLoading ? <Skeleton className="h-7 w-16" /> : costCenterData.length}
+          </p>
+        </div>
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Pie chart - Despesas */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card rounded-xl card-shadow border border-border p-5"
+        >
+          <h3 className="text-sm font-semibold text-foreground mb-4">Despesas por Centro de Custo</h3>
+          {isLoading ? (
+            <Skeleton className="h-[250px] w-full" />
+          ) : pieData.length === 0 ? (
+            <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm">
+              Nenhuma despesa com centro de custo
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <RechartsPie>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={90}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                  labelLine={false}
+                >
+                  {pieData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomPieTooltip />} />
+              </RechartsPie>
+            </ResponsiveContainer>
+          )}
+        </motion.div>
+
+        {/* Bar chart - Comparativo */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-card rounded-xl card-shadow border border-border p-5"
+        >
+          <h3 className="text-sm font-semibold text-foreground mb-4">Comparativo Receitas × Despesas</h3>
+          {isLoading ? (
+            <Skeleton className="h-[250px] w-full" />
+          ) : barData.length === 0 ? (
+            <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm">
+              Nenhum dado disponível
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={barData} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+                <Tooltip content={<CustomBarTooltip />} />
+                <Bar dataKey="receitas" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="despesas" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </motion.div>
+      </div>
+
+      {/* Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="bg-card rounded-xl card-shadow border border-border overflow-hidden"
+      >
+        <div className="px-5 py-3 border-b border-border bg-muted/30">
+          <h3 className="text-sm font-semibold text-foreground">Detalhamento por Centro de Custo</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-left px-5 py-3 text-xs font-medium text-muted-foreground uppercase">Centro de Custo</th>
+                <th className="text-right px-5 py-3 text-xs font-medium text-muted-foreground uppercase">Receitas</th>
+                <th className="text-right px-5 py-3 text-xs font-medium text-muted-foreground uppercase">Despesas</th>
+                <th className="text-right px-5 py-3 text-xs font-medium text-muted-foreground uppercase">Resultado</th>
+                <th className="text-center px-5 py-3 text-xs font-medium text-muted-foreground uppercase">Lançamentos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                [...Array(4)].map((_, i) => (
+                  <tr key={i} className="border-b border-border">
+                    <td className="px-5 py-2.5" colSpan={5}><Skeleton className="h-5 w-full" /></td>
+                  </tr>
+                ))
+              ) : costCenterData.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-5 py-12 text-center text-muted-foreground">
+                    Nenhum lançamento com centro de custo neste período.
+                  </td>
+                </tr>
+              ) : (
+                <>
+                  {costCenterData.map(cc => (
+                    <tr key={cc.name} className="border-b border-border last:border-0 hover:bg-muted/50">
+                      <td className="px-5 py-2.5 font-medium text-foreground">{cc.name}</td>
+                      <td className="px-5 py-2.5 text-right font-mono text-primary">
+                        {cc.receitas > 0 ? formatCurrency(cc.receitas) : "—"}
+                      </td>
+                      <td className="px-5 py-2.5 text-right font-mono text-destructive">
+                        {cc.despesas > 0 ? formatCurrency(cc.despesas) : "—"}
+                      </td>
+                      <td className={cn("px-5 py-2.5 text-right font-mono font-semibold", cc.resultado >= 0 ? "text-primary" : "text-destructive")}>
+                        {formatCurrency(cc.resultado)}
+                      </td>
+                      <td className="px-5 py-2.5 text-center">
+                        <Badge variant="secondary">{cc.count}</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                  {/* Total row */}
+                  <tr className="bg-muted/40 border-t-2 border-border">
+                    <td className="px-5 py-2.5 font-bold text-foreground">TOTAL</td>
+                    <td className="px-5 py-2.5 text-right font-mono font-bold text-primary">{formatCurrency(totals.receitas)}</td>
+                    <td className="px-5 py-2.5 text-right font-mono font-bold text-destructive">{formatCurrency(totals.despesas)}</td>
+                    <td className={cn("px-5 py-2.5 text-right font-mono font-bold", totals.resultado >= 0 ? "text-primary" : "text-destructive")}>
+                      {formatCurrency(totals.resultado)}
+                    </td>
+                    <td className="px-5 py-2.5 text-center">
+                      <Badge variant="secondary">{costCenterData.reduce((s, c) => s + c.count, 0)}</Badge>
+                    </td>
+                  </tr>
+                </>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
