@@ -1871,6 +1871,65 @@ export type Database = {
           },
         ]
       }
+      tef_configs: {
+        Row: {
+          accepted_brands: string[] | null
+          api_key: string | null
+          api_secret: string | null
+          auto_confirm: boolean
+          company_id: string
+          created_at: string
+          environment: string
+          id: string
+          is_active: boolean
+          max_installments: number
+          merchant_id: string | null
+          provider: string
+          terminal_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          accepted_brands?: string[] | null
+          api_key?: string | null
+          api_secret?: string | null
+          auto_confirm?: boolean
+          company_id: string
+          created_at?: string
+          environment?: string
+          id?: string
+          is_active?: boolean
+          max_installments?: number
+          merchant_id?: string | null
+          provider?: string
+          terminal_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accepted_brands?: string[] | null
+          api_key?: string | null
+          api_secret?: string | null
+          auto_confirm?: boolean
+          company_id?: string
+          created_at?: string
+          environment?: string
+          id?: string
+          is_active?: boolean
+          max_installments?: number
+          merchant_id?: string | null
+          provider?: string
+          terminal_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tef_configs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tef_transactions: {
         Row: {
           acquirer: string | null

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Download, Clock, HardDrive, Percent, Save, Loader2 } from "lucide-react";
+import { TEFConfigSection } from "@/components/settings/TEFConfigSection";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -148,6 +149,9 @@ export default function Configuracoes() {
 
       {/* Discount Limits */}
       <DiscountLimitsSection />
+
+      {/* TEF Config */}
+      <TEFConfigSection />
 
       {/* Backup / Export */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden">
