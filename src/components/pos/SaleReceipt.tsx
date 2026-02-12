@@ -23,6 +23,7 @@ interface SaleReceiptProps {
 
 export function SaleReceipt({ items, total, payments, nfceNumber, onClose }: SaleReceiptProps) {
   const isSplit = payments.length > 1;
+  const hasCreditPayment = payments.some(p => p.method === "prazo");
 
   const handlePrint = () => {
     try {
@@ -67,6 +68,17 @@ export function SaleReceipt({ items, total, payments, nfceNumber, onClose }: Sal
           <div class="bold line">PAGAMENTO:</div>
           <pre>${paymentLines}</pre>
           <div class="separator"></div>
+          ${hasCreditPayment ? `
+          <div style="margin-top:16px; font-size:11px;">
+            <div class="center line">Declaro ter recebido os produtos acima e me comprometo ao pagamento conforme acordado.</div>
+            <div style="margin-top:40px; border-top:1px dashed #000; width:80%; margin-left:auto; margin-right:auto;"></div>
+            <div class="center line">Assinatura do Responsável</div>
+            <div style="margin-top:24px; border-top:1px dashed #000; width:80%; margin-left:auto; margin-right:auto;"></div>
+            <div class="center line">Nome Completo / CPF</div>
+            <div class="center line" style="margin-top:8px;">Data: ${new Date().toLocaleDateString('pt-BR')}</div>
+          </div>
+          <div class="separator"></div>
+          ` : ''}
           <div class="center line" style="margin-top:16px;">Obrigado pela preferência!</div>
         </body>
         </html>
@@ -183,6 +195,30 @@ export function SaleReceipt({ items, total, payments, nfceNumber, onClose }: Sal
             ))}
           </div>
         </div>
+
+        {/* Signature area for credit sales (prazo/fiado) */}
+        {hasCreditPayment && (
+          <div className="px-6 py-4 border-t border-pos-border space-y-4">
+            <p className="text-xs text-pos-text-muted text-center">
+              Declaro ter recebido os produtos acima descritos e me comprometo ao pagamento conforme acordado.
+            </p>
+            <div className="pt-8 mx-4">
+              <div className="border-t border-pos-text-muted/40 border-dashed" />
+              <p className="text-xs text-pos-text-muted text-center mt-1">
+                Assinatura do Responsável
+              </p>
+            </div>
+            <div className="pt-6 mx-4">
+              <div className="border-t border-pos-text-muted/40 border-dashed" />
+              <p className="text-xs text-pos-text-muted text-center mt-1">
+                Nome Completo / CPF
+              </p>
+            </div>
+            <p className="text-[10px] text-pos-text-muted text-center">
+              Data: {new Date().toLocaleDateString('pt-BR')}
+            </p>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-3 p-4 border-t border-pos-border">
