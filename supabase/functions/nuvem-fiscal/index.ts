@@ -85,6 +85,7 @@ function buildNfceBody(params: {
   items: Array<Record<string, unknown>>;
   total: number;
   paymentMethod: string;
+  paymentAmounts?: number[];
   customerCpf?: string;
   customerName?: string;
 }) {
@@ -98,9 +99,24 @@ function buildNfceBody(params: {
     credito: "03",
     pix: "17",
     voucher: "05",
+    prazo: "05", // Crédito Loja (a prazo)
     outros: "99",
   };
-  const tPag = paymentMap[paymentMethod] || "99";
+
+  // Determine indPag: 0 = à vista, 1 = a prazo
+  const hasPrazo = paymentMethod === "prazo" || paymentMethod.includes("prazo");
+  const indPag = hasPrazo ? 1 : 0;
+
+  // Build detPag: support multi-payment (e.g. "prazo+dinheiro")
+  const paymentMethods = paymentMethod.includes("+") ? paymentMethod.split("+") : [paymentMethod];
+  const paymentAmounts = params.paymentAmounts; // optional array of amounts per method
+  const detPag = paymentMethods.map((method, idx) => ({
+    indPag,
+    tPag: paymentMap[method.trim()] || "99",
+    vPag: paymentAmounts && paymentAmounts[idx] != null
+      ? paymentAmounts[idx]
+      : Number((total / paymentMethods.length).toFixed(2)),
+  }));
 
   // Build product items (det)
   const det = items.map((item, idx) => ({
@@ -209,7 +225,7 @@ function buildNfceBody(params: {
       },
       transp: { modFrete: 9 }, // Sem frete
       pag: {
-        detPag: [{ tPag, vPag: total }],
+        detPag,
       },
       infAdic: {
         infCpl: "Documento emitido por sistema ERP",
@@ -277,7 +293,7 @@ Deno.serve(async (req: Request) => {
 
     if (req.method === "POST" && action === "emitir-nfce") {
       const body = await req.json();
-      const { fiscal_document_id, items, total, payment_method, customer_cpf, customer_name } = body;
+      const { fiscal_document_id, items, total, payment_method, payment_amounts, customer_cpf, customer_name } = body;
 
       // Fetch company data
       const { data: company } = await supabase
@@ -306,6 +322,7 @@ Deno.serve(async (req: Request) => {
         items,
         total,
         paymentMethod: payment_method,
+        paymentAmounts: payment_amounts,
         customerCpf: customer_cpf,
         customerName: customer_name,
       });
