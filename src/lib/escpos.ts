@@ -141,3 +141,98 @@ export function buildReceipt(data: ReceiptData): Uint8Array {
 export function buildOpenDrawerCommand(): Uint8Array {
   return new Uint8Array([ESC, 0x70, 0, 25, 250]);
 }
+
+export interface CreditReceiptInput {
+  clientName: string;
+  clientDoc?: string;
+  amount: number;
+  previousBalance: number;
+  newBalance: number;
+  paymentMethod: string;
+  storeName?: string;
+  storeCnpj?: string;
+  date: Date;
+}
+
+/**
+ * Build ESC/POS receipt for credit payment (recebimento de fiado).
+ */
+export function buildCreditReceipt(data: CreditReceiptInput): Uint8Array {
+  const lines: number[] = [];
+
+  // Initialize
+  lines.push(...cmd(ESC, 0x40));
+
+  // Center
+  lines.push(...cmd(ESC, 0x61, 1));
+
+  // Title
+  lines.push(...cmd(ESC, 0x45, 1));
+  lines.push(...cmd(GS, 0x21, 0x10));
+  lines.push(...textToBytes("RECIBO DE RECEBIMENTO"));
+  lines.push(LF);
+  lines.push(...cmd(GS, 0x21, 0x00));
+  lines.push(...cmd(ESC, 0x45, 0));
+
+  if (data.storeName) {
+    lines.push(...textToBytes(data.storeName));
+    lines.push(LF);
+  }
+  if (data.storeCnpj) {
+    lines.push(...textToBytes(`CNPJ: ${data.storeCnpj}`));
+    lines.push(LF);
+  }
+
+  lines.push(...textToBytes("-".repeat(48)));
+  lines.push(LF);
+  lines.push(...textToBytes(data.date.toLocaleString("pt-BR")));
+  lines.push(LF);
+  lines.push(...textToBytes("-".repeat(48)));
+  lines.push(LF);
+
+  // Left align
+  lines.push(...cmd(ESC, 0x61, 0));
+
+  lines.push(...cmd(ESC, 0x45, 1));
+  lines.push(...textToBytes(`Cliente: ${data.clientName}`));
+  lines.push(LF);
+  lines.push(...cmd(ESC, 0x45, 0));
+
+  if (data.clientDoc) {
+    lines.push(...textToBytes(`Doc: ${data.clientDoc}`));
+    lines.push(LF);
+  }
+
+  lines.push(...textToBytes("-".repeat(48)));
+  lines.push(LF);
+
+  const fmt = (v: number) => `R$ ${v.toFixed(2)}`;
+  lines.push(...textToBytes(`Saldo anterior:    ${fmt(data.previousBalance)}`));
+  lines.push(LF);
+
+  lines.push(...cmd(ESC, 0x45, 1));
+  lines.push(...cmd(GS, 0x21, 0x10));
+  lines.push(...textToBytes(`Valor recebido:    ${fmt(data.amount)}`));
+  lines.push(LF);
+  lines.push(...cmd(GS, 0x21, 0x00));
+  lines.push(...cmd(ESC, 0x45, 0));
+
+  lines.push(...textToBytes(`Saldo remanescente: ${fmt(data.newBalance)}`));
+  lines.push(LF);
+  lines.push(...textToBytes("-".repeat(48)));
+  lines.push(LF);
+  lines.push(...textToBytes(`Forma: ${data.paymentMethod}`));
+  lines.push(LF);
+  lines.push(LF);
+
+  // Center footer
+  lines.push(...cmd(ESC, 0x61, 1));
+  lines.push(...textToBytes("Obrigado!"));
+  lines.push(LF);
+  lines.push(LF);
+
+  // Cut
+  lines.push(...cmd(GS, 0x56, 0x41, 3));
+
+  return new Uint8Array(lines);
+}
