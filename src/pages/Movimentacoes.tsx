@@ -1,10 +1,14 @@
 import { useState } from "react";
-import { ArrowUpDown, Search, Package } from "lucide-react";
+import { ArrowUpDown, Search, Package, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useStockMovements } from "@/hooks/useStockMovements";
-import { formatCurrency } from "@/lib/mock-data";
+import { useProducts } from "@/hooks/useProducts";
+import { BatchMovementMode } from "@/components/stock/BatchMovementMode";
+import { StockMovementDialog } from "@/components/stock/StockMovementDialog";
+import type { Product } from "@/hooks/useProducts";
 
 const typeLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   entrada: { label: "Entrada", variant: "default" },
@@ -16,7 +20,10 @@ const typeLabels: Record<string, { label: string; variant: "default" | "secondar
 
 export default function Movimentacoes() {
   const { data: movements = [], isLoading } = useStockMovements();
+  const { data: products = [] } = useProducts();
   const [search, setSearch] = useState("");
+  const [batchMode, setBatchMode] = useState(false);
+  const [movementProduct, setMovementProduct] = useState<Product | null>(null);
 
   const filtered = movements.filter((m: any) => {
     const name = m.products?.name?.toLowerCase() || "";
@@ -24,16 +31,32 @@ export default function Movimentacoes() {
     return name.includes(search.toLowerCase()) || sku.includes(search.toLowerCase());
   });
 
+  if (batchMode) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <BatchMovementMode products={products} onClose={() => setBatchMode(false)} />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <ArrowUpDown className="w-6 h-6" />
-          Movimentações de Estoque
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Histórico completo de entradas, saídas e ajustes
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <ArrowUpDown className="w-6 h-6" />
+            Movimentações de Estoque
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Histórico completo de entradas, saídas e ajustes
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setBatchMode(true)}>
+            <ArrowUpDown className="w-4 h-4 mr-2" />
+            Movimentação em Lote
+          </Button>
+        </div>
       </div>
 
       <div className="relative max-w-md">
@@ -103,6 +126,14 @@ export default function Movimentacoes() {
           </table>
         </div>
       </motion.div>
+
+      {movementProduct && (
+        <StockMovementDialog
+          open={!!movementProduct}
+          onOpenChange={(v) => !v && setMovementProduct(null)}
+          product={movementProduct}
+        />
+      )}
     </div>
   );
 }
