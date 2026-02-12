@@ -44,7 +44,7 @@ const paymentMethods = [
   { id: "debito" as const, label: "Cartão Débito", icon: CreditCard, color: "bg-blue-500/10 text-blue-500" },
   { id: "credito" as const, label: "Cartão Crédito", icon: CreditCard, color: "bg-purple-500/10 text-purple-500" },
   { id: "pix" as const, label: "PIX", icon: QrCode, color: "bg-teal-500/10 text-teal-500" },
-  { id: "voucher" as const, label: "Voucher", icon: Ticket, color: "bg-amber-500/10 text-amber-500" },
+  { id: "voucher" as const, label: "Vale Alimentação", icon: Ticket, color: "bg-amber-500/10 text-amber-500" },
   { id: "prazo" as const, label: "A Prazo", icon: Smartphone, color: "bg-orange-500/10 text-orange-500" },
   { id: "outros" as const, label: "Outros", icon: MoreHorizontal, color: "bg-gray-500/10 text-gray-500" },
 ];
