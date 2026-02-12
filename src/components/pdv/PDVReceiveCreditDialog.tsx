@@ -12,6 +12,7 @@ import { formatCurrency } from "@/lib/mock-data";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { PDVCreditReceipt, type CreditReceiptData } from "./PDVCreditReceipt";
 
 interface PDVReceiveCreditDialogProps {
   open: boolean;
@@ -32,6 +33,7 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [customAmount, setCustomAmount] = useState(0); // in cents
   const [isProcessingDirect, setIsProcessingDirect] = useState(false);
+  const [receiptData, setReceiptData] = useState<CreditReceiptData | null>(null);
 
   const { data: clients = [] } = useClients();
   const { data: entries = [] } = useFinancialEntries({ type: "receber", status: "pendente" });
@@ -65,8 +67,20 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
   const selectedClient = clients.find((c) => c.id === selectedClientId);
   const clientBalance = Number(selectedClient?.credit_balance || 0);
 
+  const showReceipt = (amount: number, prevBalance: number) => {
+    setReceiptData({
+      clientName: selectedClient?.name || "",
+      clientDoc: selectedClient?.cpf_cnpj || undefined,
+      amount,
+      previousBalance: prevBalance,
+      newBalance: Math.max(0, prevBalance - amount),
+      paymentMethod: selectedMethod,
+    });
+  };
+
   const handleReceiveEntry = async (entryId: string, amount: number) => {
     setProcessingId(entryId);
+    const prevBalance = clientBalance;
     try {
       await markAsPaid.mutateAsync({
         id: entryId,
@@ -80,6 +94,7 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
         qc.invalidateQueries({ queryKey: ["clients"] });
       }
       toast.success("Recebimento registrado no caixa!");
+      showReceipt(amount, prevBalance);
     } catch {
       // error handled by hook
     } finally {
@@ -100,9 +115,9 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
     }
     if (!companyId || !user || !selectedClient) return;
 
+    const prevBalance = clientBalance;
     setIsProcessingDirect(true);
     try {
-      // 1. Register cash movement in open session
       const session = await CashSessionService.getCurrentSession(companyId);
       if (!session) {
         toast.error("Nenhum caixa aberto. Abra o caixa antes de receber.");
@@ -119,7 +134,6 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
         description: `Recebimento fiado: ${selectedClient.name}`,
       });
 
-      // 2. Update session totals
       const paymentField = selectedMethod === "dinheiro" ? "total_dinheiro"
         : selectedMethod === "pix" ? "total_pix"
         : selectedMethod === "debito" ? "total_debito"
@@ -142,11 +156,9 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
           .eq("id", session.id);
       }
 
-      // 3. Update client credit balance
       const newBalance = Math.max(0, clientBalance - amount);
       await supabase.from("clients").update({ credit_balance: newBalance }).eq("id", selectedClient.id);
 
-      // 4. Audit log
       await supabase.from("action_logs").insert({
         company_id: companyId,
         user_id: user.id,
@@ -161,6 +173,7 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
 
       toast.success(`Recebimento de ${formatCurrency(amount)} registrado!`);
       setCustomAmount(0);
+      showReceipt(amount, prevBalance);
     } catch (err: any) {
       toast.error(`Erro: ${err.message}`);
     } finally {
@@ -178,8 +191,9 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
   const handleReceiveFullBalance = async () => {
     if (clientBalance <= 0) return;
     setCustomAmount(Math.round(clientBalance * 100));
-    // Set and immediately process
     if (!companyId || !user || !selectedClient) return;
+
+    const prevBalance = clientBalance;
     setIsProcessingDirect(true);
     try {
       const session = await CashSessionService.getCurrentSession(companyId);
@@ -230,7 +244,6 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
         details: `Recebido total ${formatCurrency(clientBalance)} de ${selectedClient.name} via ${selectedMethod}`,
       });
 
-      // Also mark all entries as paid if any
       for (const entry of clientEntries) {
         await markAsPaid.mutateAsync({ id: entry.id, paid_amount: entry.amount, payment_method: selectedMethod });
       }
@@ -240,6 +253,7 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
       qc.invalidateQueries({ queryKey: ["cash_movements"] });
 
       toast.success(`Recebimento total de ${formatCurrency(clientBalance)} registrado!`);
+      showReceipt(clientBalance, prevBalance);
     } catch (err: any) {
       toast.error(`Erro: ${err.message}`);
     } finally {
@@ -248,6 +262,17 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
   };
 
   if (!open) return null;
+
+  if (receiptData) {
+    return (
+      <PDVCreditReceipt
+        data={receiptData}
+        onClose={() => {
+          setReceiptData(null);
+        }}
+      />
+    );
+  }
 
   return (
     <motion.div
