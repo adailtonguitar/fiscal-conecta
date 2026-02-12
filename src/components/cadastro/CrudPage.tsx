@@ -14,11 +14,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCnpjLookup } from "@/hooks/useCnpjLookup";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 export interface FieldConfig {
   key: string;
   label: string;
-  type?: "text" | "number" | "date" | "email" | "tel" | "select" | "textarea";
+  type?: "text" | "number" | "date" | "email" | "tel" | "select" | "textarea" | "currency";
   required?: boolean;
   placeholder?: string;
   options?: { value: string; label: string }[];
@@ -262,6 +263,12 @@ export function CrudPage<T extends { id: string }>({
                      value={formData[f.key] || ""}
                      onChange={(e) => setFormData({ ...formData, [f.key]: e.target.value })}
                      rows={3}
+                   />
+                 ) : f.type === "currency" ? (
+                   <CurrencyInput
+                     value={formData[f.key] || 0}
+                     onChange={(val) => setFormData({ ...formData, [f.key]: val })}
+                     placeholder={f.placeholder}
                    />
                  ) : (
                    <Input
