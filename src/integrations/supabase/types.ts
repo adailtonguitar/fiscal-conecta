@@ -417,6 +417,7 @@ export type Database = {
           id: string
           ie: string | null
           is_active: boolean
+          loyalty_points: number
           name: string
           notes: string | null
           phone: string | null
@@ -443,6 +444,7 @@ export type Database = {
           id?: string
           ie?: string | null
           is_active?: boolean
+          loyalty_points?: number
           name: string
           notes?: string | null
           phone?: string | null
@@ -469,6 +471,7 @@ export type Database = {
           id?: string
           ie?: string | null
           is_active?: boolean
+          loyalty_points?: number
           name?: string
           notes?: string | null
           phone?: string | null
@@ -1306,6 +1309,114 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_config: {
+        Row: {
+          birthday_multiplier: number
+          company_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          min_redemption_points: number
+          points_per_real: number
+          redemption_value: number
+          updated_at: string
+          welcome_bonus: number
+        }
+        Insert: {
+          birthday_multiplier?: number
+          company_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          min_redemption_points?: number
+          points_per_real?: number
+          redemption_value?: number
+          updated_at?: string
+          welcome_bonus?: number
+        }
+        Update: {
+          birthday_multiplier?: number
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          min_redemption_points?: number
+          points_per_real?: number
+          redemption_value?: number
+          updated_at?: string
+          welcome_bonus?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_config_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_transactions: {
+        Row: {
+          balance_after: number
+          client_id: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          points: number
+          sale_id: string | null
+          type: string
+        }
+        Insert: {
+          balance_after?: number
+          client_id: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          points: number
+          sale_id?: string | null
+          type: string
+        }
+        Update: {
+          balance_after?: number
+          client_id?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          points?: number
+          sale_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_transactions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_transactions_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_documents"
             referencedColumns: ["id"]
           },
         ]
