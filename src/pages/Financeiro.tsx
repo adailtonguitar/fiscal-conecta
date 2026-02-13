@@ -7,7 +7,7 @@ import {
   TrendingUp, TrendingDown, Wallet, BarChart3, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useFinancialEntries, useDeleteFinancialEntry, useMarkAsPaid, type FinancialEntry } from "@/hooks/useFinancialEntries";
+import { useLocalFinancialEntries, useDeleteLocalFinancialEntry, useMarkAsLocalPaid, type LocalFinancialEntry } from "@/hooks/useLocalFinancial";
 import { FinancialEntryFormDialog } from "@/components/financial/FinancialEntryFormDialog";
 import { CashFlowChart } from "@/components/financial/CashFlowChart";
 import { DailyClosingDialog } from "@/components/financial/DailyClosingDialog";
@@ -42,27 +42,27 @@ export default function Financeiro() {
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [editEntry, setEditEntry] = useState<FinancialEntry | null>(null);
+  const [editEntry, setEditEntry] = useState<LocalFinancialEntry | null>(null);
   const [defaultType, setDefaultType] = useState<"pagar" | "receber">("pagar");
-  const [deleteTarget, setDeleteTarget] = useState<FinancialEntry | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<LocalFinancialEntry | null>(null);
   const [showClosing, setShowClosing] = useState(false);
-  const [payTarget, setPayTarget] = useState<FinancialEntry | null>(null);
+  const [payTarget, setPayTarget] = useState<LocalFinancialEntry | null>(null);
   const [payMethod, setPayMethod] = useState("dinheiro");
 
   const typeFilter = tab === "pagar" ? "pagar" : tab === "receber" ? "receber" : undefined;
-  const { data: entries = [], isLoading } = useFinancialEntries({
+  const { data: entries = [], isLoading } = useLocalFinancialEntries({
     type: typeFilter as any,
     startDate: `${month}-01`,
     endDate: `${month}-31`,
   });
 
-  const { data: allEntries = [] } = useFinancialEntries({
+  const { data: allEntries = [] } = useLocalFinancialEntries({
     startDate: `${month}-01`,
     endDate: `${month}-31`,
   });
 
-  const deleteEntry = useDeleteFinancialEntry();
-  const markAsPaid = useMarkAsPaid();
+  const deleteEntry = useDeleteLocalFinancialEntry();
+  const markAsPaid = useMarkAsLocalPaid();
 
   const filtered = entries.filter(
     (e) =>
@@ -94,7 +94,7 @@ export default function Financeiro() {
     setShowForm(true);
   };
 
-  const handleEdit = (entry: FinancialEntry) => {
+  const handleEdit = (entry: LocalFinancialEntry) => {
     setEditEntry(entry);
     setShowForm(true);
   };
@@ -152,7 +152,7 @@ export default function Financeiro() {
       </div>
 
       {/* Cash flow chart */}
-      <CashFlowChart entries={allEntries} month={month} />
+      <CashFlowChart entries={allEntries as any} month={month} />
 
       {/* Entries list */}
       <div className="space-y-4">
@@ -269,7 +269,7 @@ export default function Financeiro() {
         key={editEntry?.id ?? "new"}
         open={showForm}
         onOpenChange={handleCloseForm}
-        entry={editEntry}
+        entry={editEntry as any}
         defaultType={defaultType}
       />
 
