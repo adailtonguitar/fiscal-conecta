@@ -28,11 +28,14 @@ interface SubscriptionState {
   trialDaysLeft: number | null;
   trialExpired: boolean;
   // Inadimplência states
-  wasSubscriber: boolean; // Had a subscription before
-  subscriptionOverdue: boolean; // Subscription expired (past grace period)
-  gracePeriodActive: boolean; // In grace period after expiration
+  wasSubscriber: boolean;
+  subscriptionOverdue: boolean;
+  gracePeriodActive: boolean;
   graceDaysLeft: number | null;
-  daysUntilExpiry: number | null; // Days until current subscription expires
+  daysUntilExpiry: number | null;
+  // Kill switch
+  blocked: boolean;
+  blockReason: string | null;
 }
 
 interface SubscriptionContextType extends SubscriptionState {
@@ -54,6 +57,8 @@ const defaultState: SubscriptionState = {
   gracePeriodActive: false,
   graceDaysLeft: null,
   daysUntilExpiry: null,
+  blocked: false,
+  blockReason: null,
 };
 
 const SubscriptionContext = createContext<SubscriptionContextType>({
@@ -111,6 +116,17 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       const { data, error } = await supabase.functions.invoke("check-subscription");
       if (error) throw error;
 
+      // Kill switch check
+      if (data?.blocked) {
+        setState({
+          ...defaultState,
+          loading: false,
+          blocked: true,
+          blockReason: data.block_reason || "Acesso bloqueado pelo administrador.",
+        });
+        return;
+      }
+
       const isSubscribed = data?.subscribed ?? false;
       const planKey = data?.plan_key ?? null;
       const subscriptionEnd = data?.subscription_end ?? null;
@@ -118,7 +134,6 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       const lastSubscriptionEnd = data?.last_subscription_end ?? null;
 
       if (isSubscribed && subscriptionEnd) {
-        // Active subscription
         const daysUntilExpiry = calcDaysUntilExpiry(subscriptionEnd);
         setState({
           subscribed: true,
@@ -133,9 +148,10 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
           gracePeriodActive: false,
           graceDaysLeft: null,
           daysUntilExpiry,
+          blocked: false,
+          blockReason: null,
         });
       } else if (wasSubscriber && lastSubscriptionEnd) {
-        // Was a subscriber but subscription expired — check grace period
         const grace = calcGracePeriod(lastSubscriptionEnd);
         setState({
           subscribed: false,
@@ -148,9 +164,10 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
           wasSubscriber: true,
           ...grace,
           daysUntilExpiry: null,
+          blocked: false,
+          blockReason: null,
         });
       } else {
-        // Never subscribed — use trial
         const trial = calcTrial(createdAt);
         setState({
           subscribed: false,
@@ -163,6 +180,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
           gracePeriodActive: false,
           graceDaysLeft: null,
           daysUntilExpiry: null,
+          blocked: false,
+          blockReason: null,
         });
       }
     } catch {

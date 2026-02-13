@@ -27,7 +27,7 @@ const plans = [
 
 export default function TrialExpirado() {
   const { user, signOut } = useAuth();
-  const { createCheckout, wasSubscriber, gracePeriodActive, graceDaysLeft, subscriptionOverdue } = useSubscription();
+  const { createCheckout, wasSubscriber, gracePeriodActive, graceDaysLeft, subscriptionOverdue, blocked, blockReason } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
   const handlePlanClick = async (plan: typeof plans[0]) => {
@@ -47,6 +47,33 @@ export default function TrialExpirado() {
   };
 
   const isOverdue = wasSubscriber && (subscriptionOverdue || gracePeriodActive);
+
+  // Kill switch — show blocked message
+  if (blocked) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center max-w-lg mx-auto"
+        >
+          <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-6">
+            <AlertTriangle className="w-8 h-8 text-destructive" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight mb-3">Acesso Bloqueado</h1>
+          <p className="text-muted-foreground text-lg mb-6">
+            {blockReason || "O acesso ao sistema foi bloqueado pelo administrador. Entre em contato com o suporte."}
+          </p>
+          <button
+            onClick={signOut}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors underline"
+          >
+            Sair da conta
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12">

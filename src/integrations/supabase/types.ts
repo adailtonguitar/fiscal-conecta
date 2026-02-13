@@ -500,12 +500,14 @@ export type Database = {
           address_state: string | null
           address_street: string | null
           address_zip: string | null
+          block_reason: string | null
           cnpj: string
           created_at: string
           email: string | null
           id: string
           ie: string | null
           im: string | null
+          is_blocked: boolean
           logo_url: string | null
           modo_seguro_fiscal: boolean
           name: string
@@ -527,12 +529,14 @@ export type Database = {
           address_state?: string | null
           address_street?: string | null
           address_zip?: string | null
+          block_reason?: string | null
           cnpj: string
           created_at?: string
           email?: string | null
           id?: string
           ie?: string | null
           im?: string | null
+          is_blocked?: boolean
           logo_url?: string | null
           modo_seguro_fiscal?: boolean
           name: string
@@ -554,12 +558,14 @@ export type Database = {
           address_state?: string | null
           address_street?: string | null
           address_zip?: string | null
+          block_reason?: string | null
           cnpj?: string
           created_at?: string
           email?: string | null
           id?: string
           ie?: string | null
           im?: string | null
+          is_blocked?: boolean
           logo_url?: string | null
           modo_seguro_fiscal?: boolean
           name?: string
@@ -2474,6 +2480,65 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telemetry: {
+        Row: {
+          active_users: number
+          app_version: string | null
+          clients_count: number
+          company_id: string
+          id: string
+          metadata: Json | null
+          nfce_count: number
+          nfe_count: number
+          period_date: string
+          platform: string | null
+          products_count: number
+          reported_at: string
+          sales_count: number
+          sales_total: number
+        }
+        Insert: {
+          active_users?: number
+          app_version?: string | null
+          clients_count?: number
+          company_id: string
+          id?: string
+          metadata?: Json | null
+          nfce_count?: number
+          nfe_count?: number
+          period_date: string
+          platform?: string | null
+          products_count?: number
+          reported_at?: string
+          sales_count?: number
+          sales_total?: number
+        }
+        Update: {
+          active_users?: number
+          app_version?: string | null
+          clients_count?: number
+          company_id?: string
+          id?: string
+          metadata?: Json | null
+          nfce_count?: number
+          nfe_count?: number
+          period_date?: string
+          platform?: string | null
+          products_count?: number
+          reported_at?: string
+          sales_count?: number
+          sales_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telemetry_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
