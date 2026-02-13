@@ -2,7 +2,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArrowDownCircle, ArrowUpCircle, RefreshCw, ShoppingCart, Undo2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useStockMovements } from "@/hooks/useStockMovements";
+import { useLocalStockMovements } from "@/hooks/useLocalStock";
 import { formatCurrency } from "@/lib/mock-data";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -22,7 +22,7 @@ const typeConfig: Record<string, { icon: typeof ArrowDownCircle; label: string; 
 };
 
 export function MovementHistoryDialog({ open, onOpenChange, productId, productName }: Props) {
-  const { data: movements, isLoading } = useStockMovements(productId);
+  const { data: movements, isLoading } = useLocalStockMovements(productId);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

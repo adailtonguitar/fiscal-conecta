@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useProducts } from "@/hooks/useProducts";
+import { useLocalProducts } from "@/hooks/useLocalProducts";
 import { formatCurrency } from "@/lib/mock-data";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { BarChart3, TrendingUp } from "lucide-react";
 
 export default function CurvaABC() {
-  const { data: products = [], isLoading } = useProducts();
+  const { data: rawProducts = [], isLoading } = useLocalProducts();
+  const products = rawProducts.map(p => ({ ...p, is_active: !!p.is_active }));
 
   const abcData = useMemo(() => {
     if (products.length === 0) return [];

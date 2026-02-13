@@ -62,7 +62,7 @@ export function useCreateLocalProduct() {
   const { companyId } = useCompany();
 
   return useMutation({
-    mutationFn: async (product: Omit<LocalProduct, "id" | "company_id" | "created_at" | "updated_at">) => {
+    mutationFn: async (product: Partial<Omit<LocalProduct, "id" | "company_id" | "created_at" | "updated_at">> & { name: string; sku: string; price: number }) => {
       if (!companyId) throw new Error("Empresa não encontrada");
       const result = await DataLayer.insert<LocalProduct>("products", {
         ...product,

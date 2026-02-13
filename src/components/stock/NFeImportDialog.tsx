@@ -1,8 +1,8 @@
 import { useState, useRef, useCallback } from "react";
 import { FileUp, Upload, Check, Link2, Plus, Pencil, X, FileText } from "lucide-react";
 import { parseNFeXML, type NFeItem, type NFeData } from "@/lib/nfe-parser";
-import { useProducts, useCreateProduct, type Product } from "@/hooks/useProducts";
-import { useCreateStockMovement } from "@/hooks/useStockMovements";
+import { useLocalProducts, useCreateLocalProduct, type LocalProduct } from "@/hooks/useLocalProducts";
+import { useRegisterLocalStockMovement } from "@/hooks/useLocalStock";
 import { useAuth } from "@/hooks/useAuth";
 import { useCompany } from "@/hooks/useCompany";
 import { formatCurrency } from "@/lib/mock-data";
@@ -59,9 +59,9 @@ export function NFeImportDialog({ open, onOpenChange }: Props) {
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const { data: existingProducts = [] } = useProducts();
-  const createProduct = useCreateProduct();
-  const createStockMovement = useCreateStockMovement();
+  const { data: existingProducts = [] } = useLocalProducts();
+  const createProduct = useCreateLocalProduct();
+  const createStockMovement = useRegisterLocalStockMovement();
   const { user } = useAuth();
   const { companyId } = useCompany();
 
@@ -78,8 +78,8 @@ export function NFeImportDialog({ open, onOpenChange }: Props) {
   };
 
   const findMatch = useCallback(
-    (item: NFeItem): { product: Product; score: number } | null => {
-      let bestMatch: { product: Product; score: number } | null = null;
+    (item: NFeItem): { product: LocalProduct; score: number } | null => {
+      let bestMatch: { product: LocalProduct; score: number } | null = null;
 
       for (const p of existingProducts) {
         let score = 0;
@@ -204,7 +204,7 @@ export function NFeImportDialog({ open, onOpenChange }: Props) {
             category: item.category || undefined,
             stock_quantity: item.nfeItem.qCom,
             min_stock: 0,
-            is_active: true,
+            is_active: 1,
           });
           created++;
         } else if (item.action === "link" && item.linkedProductId) {
@@ -443,7 +443,7 @@ function EditItemForm({
   onClose,
 }: {
   item: ReviewItem;
-  existingProducts: Product[];
+  existingProducts: LocalProduct[];
   onUpdate: (updates: Partial<ReviewItem>) => void;
   onClose: () => void;
 }) {

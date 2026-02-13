@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateProduct } from "@/hooks/useProducts";
+import { useCreateLocalProduct } from "@/hooks/useLocalProducts";
 import { PackagePlus } from "lucide-react";
 
 const units = ["UN", "KG", "LT", "MT", "CX", "PCT"];
@@ -19,7 +19,7 @@ interface Props {
 }
 
 export function PDVQuickProductDialog({ open, onOpenChange, initialBarcode = "", onProductCreated }: Props) {
-  const createProduct = useCreateProduct();
+  const createProduct = useCreateLocalProduct();
   const [form, setForm] = useState({
     name: "",
     sku: "",

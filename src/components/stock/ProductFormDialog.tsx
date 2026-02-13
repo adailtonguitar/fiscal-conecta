@@ -7,7 +7,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateProduct, useUpdateProduct, type Product } from "@/hooks/useProducts";
+import { useCreateLocalProduct, useUpdateLocalProduct, type LocalProduct } from "@/hooks/useLocalProducts";
 import { useFiscalCategories } from "@/hooks/useFiscalCategories";
 import { Check, Search } from "lucide-react";
 import { NCM_TABLE } from "@/lib/ncm-table";
@@ -47,7 +47,7 @@ type FormData = z.infer<typeof schema>;
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  product?: Product | null;
+  product?: LocalProduct | null;
 }
 
 const categories = ["Bebidas", "Alimentos", "Limpeza", "Higiene", "Hortifrúti", "Padaria", "Frios", "Outros"];
@@ -55,8 +55,8 @@ const units = ["UN", "KG", "LT", "MT", "CX", "PCT"];
 
 export function ProductFormDialog({ open, onOpenChange, product }: Props) {
   const { data: fiscalCategories = [] } = useFiscalCategories();
-  const createProduct = useCreateProduct();
-  const updateProduct = useUpdateProduct();
+  const createProduct = useCreateLocalProduct();
+  const updateProduct = useUpdateLocalProduct();
   const isEditing = !!product;
   const initialMargin = product && product.cost_price && product.cost_price > 0
     ? ((product.price - product.cost_price) / product.cost_price) * 100
