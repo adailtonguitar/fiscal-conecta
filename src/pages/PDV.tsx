@@ -3,6 +3,7 @@ import { isScaleBarcode } from "@/lib/scale-barcode";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLoyalty } from "@/hooks/useLoyalty";
 import { PDVProductGrid } from "@/components/pdv/PDVProductGrid";
+import { PDVLoyaltyClientList } from "@/components/pdv/PDVLoyaltyClientList";
 import { PDVCart } from "@/components/pdv/PDVCart";
 import { PDVQuickProductDialog } from "@/components/pdv/PDVQuickProductDialog";
 import { PDVClientSelector, type CreditClient } from "@/components/pdv/PDVClientSelector";
@@ -15,7 +16,7 @@ import { usePDV, type PDVProduct } from "@/hooks/usePDV";
 import { useCompany } from "@/hooks/useCompany";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { AnimatePresence, motion } from "framer-motion";
-import { Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard, ArrowLeft, Maximize, ScanBarcode, DollarSign, PackageX, PackagePlus, LockOpen } from "lucide-react";
+import { Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard, ArrowLeft, Maximize, ScanBarcode, DollarSign, PackageX, PackagePlus, LockOpen, User, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { PaymentResult } from "@/services/types";
@@ -45,6 +46,8 @@ export default function PDV() {
   const [quickProductBarcode, setQuickProductBarcode] = useState("");
   const [showClientSelector, setShowClientSelector] = useState(false);
   const [showReceiveCredit, setShowReceiveCredit] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<CreditClient | null>(null);
+  const [showLoyaltyClientSelector, setShowLoyaltyClientSelector] = useState(false);
 
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
@@ -154,7 +157,7 @@ export default function PDV() {
         case "F5": e.preventDefault(); setQuickProductBarcode(""); setShowQuickProduct(true); break;
         case "F6":
           e.preventDefault();
-          if (pdv.cartItems.length > 0) { pdv.clearCart(); toast.info("Carrinho limpo"); }
+          if (pdv.cartItems.length > 0) { pdv.clearCart(); setSelectedClient(null); toast.info("Carrinho limpo"); }
           break;
         case "F7": e.preventDefault(); openCashDrawer(); toast.info("Gaveta aberta"); break;
         case "F8": e.preventDefault(); setShowReceiveCredit(true); break;
@@ -196,6 +199,7 @@ export default function PDV() {
         }));
         const savedItems = [...pdv.cartItems];
         const savedTotal = pdv.total;
+        const savedClient = selectedClient;
         const result = await pdv.finalizeSale(paymentResults);
         setReceipt({
           items: savedItems,
@@ -203,6 +207,12 @@ export default function PDV() {
           payments: tefResults,
           nfceNumber: result.nfceNumber,
         });
+        setSelectedClient(null);
+        // Award loyalty points if client was identified
+        if (loyaltyActive && savedClient?.id) {
+          const pts = await earnPoints(savedClient.id, savedTotal, result.fiscalDocId);
+          if (pts > 0) toast.info(`🎁 ${savedClient.name} ganhou ${pts} pontos de fidelidade!`);
+        }
       } catch (err: any) {
         toast.error(`Erro ao finalizar venda: ${err.message}`);
       }
@@ -241,6 +251,7 @@ export default function PDV() {
         nfceNumber: result.nfceNumber,
       });
       toast.success(`Venda a prazo registrada para ${client.name}`);
+      setSelectedClient(null);
       // Award loyalty points
       if (loyaltyActive && client.id) {
         const pts = await earnPoints(client.id, savedTotal, result.fiscalDocId);
@@ -364,6 +375,28 @@ export default function PDV() {
           <PackagePlus className="w-3 h-3" />
           Cadastrar (F5)
         </button>
+        <div className="h-4 w-px bg-border mx-1" />
+        {selectedClient ? (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
+            <User className="w-3 h-3" />
+            <span className="font-bold truncate max-w-[120px]">{selectedClient.name}</span>
+            {loyaltyActive && <span className="text-[10px] opacity-70">🎁</span>}
+            <button
+              onClick={() => setSelectedClient(null)}
+              className="ml-1 p-0.5 rounded hover:bg-primary/20 transition-colors"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowLoyaltyClientSelector(true)}
+            className="px-3 py-1.5 rounded bg-muted border border-border text-muted-foreground hover:text-foreground text-xs font-medium hover:bg-accent transition-all flex items-center gap-1.5"
+          >
+            <User className="w-3 h-3" />
+            Cliente {loyaltyActive && "🎁"}
+          </button>
+        )}
       </div>
 
       {/* ===== MAIN CONTENT ===== */}
@@ -429,6 +462,46 @@ export default function PDV() {
             onSelect={handleCreditSaleConfirmed}
             saleTotal={pdv.total}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Loyalty client selector */}
+      <AnimatePresence>
+        {showLoyaltyClientSelector && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowLoyaltyClientSelector(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[85vh] flex flex-col"
+            >
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                <h2 className="text-lg font-bold text-foreground">Identificar Cliente {loyaltyActive && "🎁"}</h2>
+                <button onClick={() => setShowLoyaltyClientSelector(false)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                  <X className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </div>
+              {loyaltyActive && (
+                <div className="px-5 py-2 bg-primary/5 border-b border-border">
+                  <p className="text-xs text-primary">Identifique o cliente para acumular pontos de fidelidade automaticamente.</p>
+                </div>
+              )}
+              <PDVLoyaltyClientList
+                onSelect={(client) => {
+                  setSelectedClient(client);
+                  setShowLoyaltyClientSelector(false);
+                  toast.success(`Cliente: ${client.name}`);
+                }}
+              />
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -567,7 +640,7 @@ export default function PDV() {
           { key: "F3", label: "Buscar", action: () => setShowProductList((p) => !p) },
           { key: "F4", label: "Caixa", action: () => setShowCashRegister(true) },
           { key: "F5", label: "Cadastrar", action: () => { setQuickProductBarcode(""); setShowQuickProduct(true); } },
-          { key: "F6", label: "Limpar", action: () => { if (pdv.cartItems.length > 0) { pdv.clearCart(); toast.info("Carrinho limpo"); } } },
+          { key: "F6", label: "Limpar", action: () => { if (pdv.cartItems.length > 0) { pdv.clearCart(); setSelectedClient(null); toast.info("Carrinho limpo"); } } },
           { key: "F7", label: "Gaveta", action: () => { openCashDrawer(); toast.info("Gaveta aberta"); } },
           { key: "F8", label: "Receber Fiado", action: () => setShowReceiveCredit(true) },
           { key: "F9", label: "Sincronizar", action: () => { if (pdv.pendingCount > 0 && pdv.isOnline) pdv.syncAll(); } },
