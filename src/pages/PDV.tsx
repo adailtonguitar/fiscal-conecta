@@ -66,6 +66,13 @@ export default function PDV() {
     pdv.reloadSession(terminalId);
   }, [terminalId]);
 
+  // Auto-open cash register dialog if no session is open
+  useEffect(() => {
+    if (!pdv.loadingSession && !pdv.currentSession && !showCashRegister) {
+      setShowCashRegister(true);
+    }
+  }, [pdv.loadingSession, pdv.currentSession]);
+
   // Auto-focus barcode input on mount and after closing receipt
   useEffect(() => {
     if (!showTEF && !receipt && !showCashRegister && !showProductList) {
@@ -361,11 +368,29 @@ export default function PDV() {
             <span className="text-xs font-bold text-foreground font-mono">T{terminalId}</span>
           </button>
           <div className="h-4 w-px bg-border" />
-          {/* Status: Caixa Aberto */}
-          <div className={`flex items-center gap-1.5 px-3 py-1 rounded border ${pdv.trainingMode ? "bg-warning/20 border-warning/30" : "bg-success/20 border-success/30"}`}>
-            <div className={`w-2 h-2 rounded-full animate-pulse ${pdv.trainingMode ? "bg-warning" : "bg-success"}`} />
-            <span className={`text-xs font-bold uppercase tracking-wider ${pdv.trainingMode ? "text-warning" : "text-success"}`}>
-              {pdv.trainingMode ? "🎓 Treinamento" : "Caixa Aberto"}
+          {/* Status: Caixa */}
+          <div className={`flex items-center gap-1.5 px-3 py-1 rounded border ${
+            pdv.trainingMode 
+              ? "bg-warning/20 border-warning/30" 
+              : pdv.currentSession 
+                ? "bg-success/20 border-success/30" 
+                : "bg-destructive/20 border-destructive/30"
+          }`}>
+            <div className={`w-2 h-2 rounded-full ${
+              pdv.trainingMode 
+                ? "bg-warning animate-pulse" 
+                : pdv.currentSession 
+                  ? "bg-success animate-pulse" 
+                  : "bg-destructive"
+            }`} />
+            <span className={`text-xs font-bold uppercase tracking-wider ${
+              pdv.trainingMode 
+                ? "text-warning" 
+                : pdv.currentSession 
+                  ? "text-success" 
+                  : "text-destructive"
+            }`}>
+              {pdv.trainingMode ? "🎓 Treinamento" : pdv.currentSession ? "Caixa Aberto" : "Caixa Fechado"}
             </span>
           </div>
         </div>
