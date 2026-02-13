@@ -44,7 +44,7 @@ function createWindow() {
     }
   }
 
-  // Unregister SWs and add safety net after page loads
+  // Unregister SWs, disable backdrop-blur, and add safety net after page loads
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.webContents.executeJavaScript(`
       // Unregister service workers
@@ -53,6 +53,14 @@ function createWindow() {
           regs.forEach(function(r) { r.unregister(); });
         });
       }
+
+      // Disable backdrop-filter which can cause white screen on some GPUs
+      var style = document.createElement('style');
+      style.textContent = '* { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }';
+      document.head.appendChild(style);
+
+      // Remove update modal localStorage entry to prevent it from showing
+      localStorage.removeItem('update-notice-version-dismissed');
 
       // Safety: if React hasn't rendered after 8s, reload once
       setTimeout(function() {
