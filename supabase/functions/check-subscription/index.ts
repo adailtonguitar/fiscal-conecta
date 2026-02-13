@@ -67,8 +67,25 @@ serve(async (req) => {
         .eq("status", "active")
         .lt("current_period_end", new Date().toISOString());
 
-      logStep("No active subscription found");
-      return new Response(JSON.stringify({ subscribed: false }), {
+      // Check if user was ever a subscriber (for grace period / inadimplência)
+      const { data: lastSub } = await supabase
+        .from("subscriptions")
+        .select("plan_key, current_period_end, status")
+        .eq("user_id", userId)
+        .in("status", ["expired", "canceled"])
+        .order("current_period_end", { ascending: false })
+        .limit(1)
+        .single();
+
+      const wasSubscriber = !!lastSub;
+      logStep("No active subscription found", { wasSubscriber, lastEnd: lastSub?.current_period_end });
+
+      return new Response(JSON.stringify({
+        subscribed: false,
+        was_subscriber: wasSubscriber,
+        last_subscription_end: lastSub?.current_period_end ?? null,
+        plan_key: lastSub?.plan_key ?? null,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });

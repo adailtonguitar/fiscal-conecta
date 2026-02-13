@@ -62,13 +62,12 @@ const queryClient = new QueryClient();
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, signOut } = useAuth();
   const { companyId, loading: companyLoading } = useCompany();
-  const { subscribed, trialExpired, loading: subLoading } = useSubscription();
+  const { subscribed, trialExpired, subscriptionOverdue, loading: subLoading } = useSubscription();
   const hasSignedOut = useRef(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     if (!loading && !companyLoading && user && companyId === null && !hasSignedOut.current) {
-      // Check if user has no company — show onboarding instead of signing out
       const checkCompany = async () => {
         const { data } = await (await import("@/integrations/supabase/client")).supabase
           .from("company_users")
@@ -105,15 +104,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) return <Navigate to="/" replace />;
 
-  // Show onboarding wizard for new users without a company
   if (showOnboarding) {
     return <OnboardingWizard onComplete={() => window.location.reload()} />;
   }
 
   if (!companyId) return <Navigate to="/" replace />;
 
-  // Trial expired and no active subscription → redirect to plans
-  if (trialExpired && !subscribed) {
+  // Block access: trial expired, subscription overdue, or no subscription
+  if ((trialExpired && !subscribed) || subscriptionOverdue) {
     return <Navigate to="/trial-expirado" replace />;
   }
 
