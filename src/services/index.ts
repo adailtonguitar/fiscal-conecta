@@ -9,4 +9,6 @@ export { FinancialService } from "./FinancialService";
 export { AuditService } from "./AuditService";
 export { FiscalEmissionService } from "./FiscalEmissionService";
 export { FiscalEngine } from "./FiscalEngine";
+export { SyncEngine } from "./SyncEngine";
+export { hydrateCompany, needsHydration } from "./HydrationService";
 export type * from "./types";
