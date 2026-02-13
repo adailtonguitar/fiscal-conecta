@@ -48,6 +48,7 @@ const navItems: NavEntry[] = [
     ],
   },
   { icon: FileText, label: "Vendas", path: "/vendas" },
+  { icon: ScrollText, label: "Orçamentos", path: "/orcamentos" },
   {
     icon: BarChart3,
     label: "Relatórios",
