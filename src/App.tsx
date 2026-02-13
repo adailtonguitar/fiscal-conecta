@@ -57,6 +57,7 @@ import Fidelidade from "./pages/Fidelidade";
 import RelatoriosIA from "./pages/RelatoriosIA";
 import Orcamentos from "./pages/Orcamentos";
 import Terminais from "./pages/Terminais";
+import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -202,6 +203,7 @@ function AppRoutes() {
                 <Route path="/etiquetas" element={<Etiquetas />} />
                 <Route path="/orcamentos" element={<Orcamentos />} />
                 <Route path="/terminais" element={<Terminais />} />
+                <Route path="/admin" element={<Admin />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AppLayout>
