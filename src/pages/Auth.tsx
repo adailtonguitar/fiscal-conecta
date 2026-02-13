@@ -12,6 +12,8 @@ export default function Auth() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
   const [mode, setMode] = useState<"login" | "set-password" | "processing">(() => {
     // Check sessionStorage first (set by useAuth or previous redirect)
     if (sessionStorage.getItem("needs-password-setup") === "true") {
@@ -120,6 +122,27 @@ export default function Auth() {
       navigate("/");
     } catch (error: any) {
       toast.error(error.message || "Erro ao definir senha");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) {
+      toast.error("Informe seu e-mail");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+      if (error) throw error;
+      toast.success("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
+      setShowForgotPassword(false);
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao enviar e-mail de recuperação");
     } finally {
       setLoading(false);
     }
@@ -284,9 +307,50 @@ export default function Auth() {
                 </button>
               </form>
 
-              <p className="mt-4 text-center text-xs text-muted-foreground">
-                Solicite seu acesso ao administrador da empresa
-              </p>
+              {showForgotPassword ? (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <p className="text-sm font-medium text-foreground mb-3">Recuperar senha</p>
+                  <form onSubmit={handleForgotPassword} className="space-y-3">
+                    <input
+                      type="email"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      placeholder="Seu e-mail cadastrado"
+                      required
+                      className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotPassword(false)}
+                        className="flex-1 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-90 transition-all"
+                      >
+                        Voltar
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
+                      >
+                        {loading ? "Enviando..." : "Enviar"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                <div className="mt-4 text-center space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Esqueci minha senha
+                  </button>
+                  <p className="text-xs text-muted-foreground">
+                    Solicite seu acesso ao administrador da empresa
+                  </p>
+                </div>
+              )}
             </>
           )}
         </div>
