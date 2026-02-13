@@ -65,26 +65,11 @@ function createWindow() {
       // Remove update modal localStorage entry to prevent it from showing
       localStorage.removeItem('update-notice-version-dismissed');
 
-      // Debug overlay — shows diagnostic info on screen
-      var dbg = document.createElement('div');
-      dbg.id = 'electron-debug';
-      dbg.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:black;color:lime;font:12px monospace;padding:8px;z-index:999999;max-height:200px;overflow:auto;';
-      document.body.appendChild(dbg);
-      function log(msg) { dbg.innerHTML += msg + '<br>'; }
-      log('URL: ' + location.href);
-      log('Root: ' + (document.getElementById('root') ? document.getElementById('root').innerHTML.length + ' chars' : 'NOT FOUND'));
-
-      // Capture JS errors
-      window.addEventListener('error', function(e) { log('ERR: ' + e.message); });
-      window.addEventListener('unhandledrejection', function(e) { log('REJECT: ' + (e.reason && e.reason.message || e.reason)); });
-
       // Safety: if React hasn't rendered after 8s, reload once
       setTimeout(function() {
         var root = document.getElementById('root');
-        log('8s check — root length: ' + (root ? root.innerHTML.length : 'null'));
         if (root && root.innerHTML.length < 100 && !window.__pdv_reloaded) {
           window.__pdv_reloaded = true;
-          log('Reloading...');
           location.reload();
         }
       }, 8000);
@@ -128,10 +113,6 @@ app.on('ready', () => {
     }
   });
 
-  // Auto-open DevTools for 30s to capture errors on startup
-  if (mainWindow && mainWindow.webContents) {
-    mainWindow.webContents.openDevTools();
-  }
 });
 
 app.on('window-all-closed', () => {
