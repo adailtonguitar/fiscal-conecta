@@ -11,13 +11,28 @@ export class CashSessionService {
     openingBalance: number;
     terminalId?: string;
   }) {
+    const terminalId = params.terminalId || "01";
+
+    // Check if there's already an open session for this terminal
+    const { data: existing } = await supabase
+      .from("cash_sessions")
+      .select("id")
+      .eq("company_id", params.companyId)
+      .eq("terminal_id", terminalId)
+      .eq("status", "aberto")
+      .maybeSingle();
+
+    if (existing) {
+      throw new Error(`Terminal ${terminalId} já possui um caixa aberto`);
+    }
+
     const { data, error } = await supabase
       .from("cash_sessions")
       .insert({
         company_id: params.companyId,
         opened_by: params.userId,
         opening_balance: params.openingBalance,
-        terminal_id: params.terminalId || "01",
+        terminal_id: terminalId,
         status: "aberto",
       })
       .select()
@@ -143,13 +158,19 @@ export class CashSessionService {
     return data;
   }
 
-  /** Get the current open session for a company */
-  static async getCurrentSession(companyId: string) {
-    const { data, error } = await supabase
+  /** Get the current open session for a company (optionally filtered by terminal) */
+  static async getCurrentSession(companyId: string, terminalId?: string) {
+    let query = supabase
       .from("cash_sessions")
       .select("*")
       .eq("company_id", companyId)
-      .eq("status", "aberto")
+      .eq("status", "aberto");
+
+    if (terminalId) {
+      query = query.eq("terminal_id", terminalId);
+    }
+
+    const { data, error } = await query
       .order("opened_at", { ascending: false })
       .limit(1)
       .maybeSingle();
