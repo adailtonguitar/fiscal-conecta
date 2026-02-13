@@ -1,18 +1,47 @@
-import { useState } from "react";
-import { AlertTriangle, X, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+declare const __APP_VERSION__: string;
+
+const STORAGE_KEY = "update-notice-version-dismissed";
+const APP_VERSION = __APP_VERSION__;
+
 export function UpdateNoticeModal() {
-  const [open, setOpen] = useState(() => {
-    const dismissed = sessionStorage.getItem("update-notice-dismissed");
-    return dismissed !== "true";
-  });
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const dismissedVersion = localStorage.getItem(STORAGE_KEY);
+    // Only show if user hasn't dismissed this specific version
+    if (dismissedVersion !== APP_VERSION) {
+      setOpen(true);
+    }
+  }, []);
 
   if (!open) return null;
 
   const handleClose = () => {
-    sessionStorage.setItem("update-notice-dismissed", "true");
+    localStorage.setItem(STORAGE_KEY, APP_VERSION);
     setOpen(false);
+  };
+
+  const handleUpdate = async () => {
+    try {
+      // Unregister all service workers and clear caches
+      if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((r) => r.unregister()));
+      }
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+    } catch (e) {
+      console.warn("Cache cleanup error:", e);
+    }
+    // Mark as dismissed and force reload
+    localStorage.setItem(STORAGE_KEY, APP_VERSION);
+    window.location.reload();
   };
 
   return (
@@ -20,12 +49,9 @@ export function UpdateNoticeModal() {
       className="fixed inset-0 flex items-center justify-center p-4"
       style={{ zIndex: 2147483647 }}
     >
-      {/* Overlay */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={handleClose} />
 
-      {/* Modal */}
       <div className="relative w-full max-w-md rounded-2xl border border-primary/40 bg-card p-6 shadow-2xl shadow-primary/10 animate-in fade-in zoom-in-95 duration-300">
-        {/* Close */}
         <button
           onClick={handleClose}
           className="absolute right-3 top-3 rounded-full p-1 text-muted-foreground hover:text-foreground transition-colors"
@@ -33,30 +59,19 @@ export function UpdateNoticeModal() {
           <X className="w-4 h-4" />
         </button>
 
-        {/* Icon */}
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
           <Zap className="h-7 w-7 text-primary" />
         </div>
 
-        {/* Content */}
         <h2 className="text-center text-xl font-bold tracking-tight text-foreground">
           Atualização disponível
         </h2>
         <p className="mt-2 text-center text-sm text-muted-foreground leading-relaxed">
-          Uma nova versão do sistema está disponível com melhorias de desempenho e correções.
-          Atualize quando puder para a melhor experiência.
+          Uma nova versão do sistema está disponível. Clique em atualizar para aplicar todas as melhorias de uma vez.
         </p>
 
-        <div className="mt-5 flex items-start gap-3 rounded-xl bg-accent/50 border border-border p-3">
-          <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Nenhuma ação é necessária agora. Seus dados estão seguros e o sistema continua funcionando normalmente.
-          </p>
-        </div>
-
-        {/* Buttons */}
         <div className="mt-6 flex flex-col gap-2">
-          <Button onClick={() => window.location.reload()} className="w-full">
+          <Button onClick={handleUpdate} className="w-full">
             Atualizar agora
           </Button>
           <Button variant="ghost" onClick={handleClose} className="w-full text-muted-foreground">
