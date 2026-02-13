@@ -56,7 +56,7 @@ export default function Produtos() {
 
   if (showForm) {
     return (
-      <div className="p-6 max-w-7xl mx-auto min-h-full bg-background">
+      <div className="p-6 max-w-7xl mx-auto">
         <ProductFormDialog
           key={editingProduct?.id ?? "new"}
           open={showForm}
