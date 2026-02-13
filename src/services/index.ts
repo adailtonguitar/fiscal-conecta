@@ -11,4 +11,6 @@ export { FiscalEmissionService } from "./FiscalEmissionService";
 export { FiscalEngine } from "./FiscalEngine";
 export { SyncEngine } from "./SyncEngine";
 export { hydrateCompany, needsHydration } from "./HydrationService";
+export { syncConfigs, getLocalConfig, needsConfigSync } from "./ConfigSyncService";
+export type * from "./types";
 export type * from "./types";
