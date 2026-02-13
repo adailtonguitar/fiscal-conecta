@@ -11,6 +11,9 @@ export function UpdateNoticeModal() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    // Skip update modal inside Electron — the app always loads the latest published URL
+    if ((window as any).electronAPI?.isElectron) return;
+
     const dismissedVersion = localStorage.getItem(STORAGE_KEY);
     // Only show if user hasn't dismissed this specific version
     if (dismissedVersion !== APP_VERSION) {
