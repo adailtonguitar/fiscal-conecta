@@ -47,8 +47,14 @@ const navItems: NavEntry[] = [
       { icon: TrendingDown, label: "Perdas", path: "/estoque/perdas" },
     ],
   },
-  { icon: FileText, label: "Vendas", path: "/vendas" },
-  { icon: ScrollText, label: "Orçamentos", path: "/orcamentos" },
+  {
+    icon: FileText,
+    label: "Vendas",
+    children: [
+      { icon: FileText, label: "Histórico", path: "/vendas" },
+      { icon: ScrollText, label: "Orçamentos", path: "/orcamentos" },
+    ],
+  },
   {
     icon: BarChart3,
     label: "Relatórios",
