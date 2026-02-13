@@ -1,6 +1,9 @@
 const { app, BrowserWindow, Menu, session, dialog } = require('electron');
 const path = require('path');
 
+// Disable GPU acceleration to prevent white screen on some machines
+app.disableHardwareAcceleration();
+
 let mainWindow;
 
 function createWindow() {
