@@ -63,7 +63,7 @@ const queryClient = new QueryClient();
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, signOut } = useAuth();
   const { companyId, loading: companyLoading } = useCompany();
-  const { subscribed, trialExpired, subscriptionOverdue, loading: subLoading } = useSubscription();
+  const { subscribed, trialExpired, subscriptionOverdue, blocked, loading: subLoading } = useSubscription();
   const hasSignedOut = useRef(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -111,8 +111,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!companyId) return <Navigate to="/" replace />;
 
-  // Block access: trial expired, subscription overdue, or no subscription
-  if ((trialExpired && !subscribed) || subscriptionOverdue) {
+  // Kill switch or subscription block
+  if (blocked || (trialExpired && !subscribed) || subscriptionOverdue) {
     return <Navigate to="/trial-expirado" replace />;
   }
 

@@ -5,6 +5,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from "react";
 import { SyncEngine, type SyncStats } from "@/services/SyncEngine";
+import { TelemetryService } from "@/services/TelemetryService";
 import { useCompany } from "./useCompany";
 import { toast } from "sonner";
 
@@ -109,15 +110,17 @@ export function useSyncEngine() {
       const s = await SyncEngine.getStats();
       if (s.pending > 0) syncNow();
 
-      // Check if it's time for daily summary
+      // Check if it's time for daily summary + telemetry
       const hour = new Date().getHours();
-      if (hour === DAILY_SUMMARY_HOUR && companyId) {
+      if (hour >= 21 && companyId) {
         const today = new Date().toISOString().slice(0, 10);
         const { DataLayer } = await import("@/lib/local-db");
         const alreadySent = await DataLayer.getMeta(`daily_summary_${today}`);
         if (!alreadySent) {
           pushDailySummary();
         }
+        // Send telemetry
+        TelemetryService.sendDailyTelemetry(companyId).catch(console.error);
       }
     }, SYNC_INTERVAL_MS);
     return () => clearInterval(interval);

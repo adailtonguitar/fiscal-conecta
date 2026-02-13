@@ -47,6 +47,35 @@ serve(async (req) => {
     const userId = userData.user.id;
     logStep("User authenticated", { id: userId });
 
+    // Check kill switch — is the user's company blocked?
+    const { data: companyUser } = await supabase
+      .from("company_users")
+      .select("company_id")
+      .eq("user_id", userId)
+      .eq("is_active", true)
+      .limit(1)
+      .single();
+
+    if (companyUser?.company_id) {
+      const { data: company } = await supabase
+        .from("companies")
+        .select("is_blocked, block_reason")
+        .eq("id", companyUser.company_id)
+        .single();
+
+      if (company?.is_blocked) {
+        logStep("Company blocked", { company_id: companyUser.company_id, reason: company.block_reason });
+        return new Response(JSON.stringify({
+          subscribed: false,
+          blocked: true,
+          block_reason: company.block_reason || "Acesso bloqueado pelo administrador do sistema.",
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+    }
+
     // Check local subscriptions table for active subscription
     const { data: sub, error: subError } = await supabase
       .from("subscriptions")
