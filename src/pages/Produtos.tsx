@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Search, Plus, Edit, Package, Upload, Trash2, History, FileText, ArrowUpDown } from "lucide-react";
 import { formatCurrency } from "@/lib/mock-data";
 import { motion } from "framer-motion";
-import { useProducts, useDeleteProduct, type Product } from "@/hooks/useProducts";
+import { useLocalProducts, useDeleteLocalProduct, type LocalProduct } from "@/hooks/useLocalProducts";
 import { ProductFormDialog } from "@/components/stock/ProductFormDialog";
 import { StockMovementDialog } from "@/components/stock/StockMovementDialog";
 import { MovementHistoryDialog } from "@/components/stock/MovementHistoryDialog";
@@ -24,16 +24,16 @@ import {
 
 export default function Produtos() {
   const [search, setSearch] = useState("");
-  const { data: products = [], isLoading } = useProducts();
-  const deleteProduct = useDeleteProduct();
+  const { data: products = [], isLoading } = useLocalProducts();
+  const deleteProduct = useDeleteLocalProduct();
 
   const [showForm, setShowForm] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [movementProduct, setMovementProduct] = useState<Product | null>(null);
-  const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<LocalProduct | null>(null);
+  const [movementProduct, setMovementProduct] = useState<LocalProduct | null>(null);
+  const [historyProduct, setHistoryProduct] = useState<LocalProduct | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [showNFeImport, setShowNFeImport] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<LocalProduct | null>(null);
   
 
   const filtered = products.filter(
@@ -43,7 +43,7 @@ export default function Produtos() {
       (p.barcode && p.barcode.includes(search))
   );
 
-  const handleEdit = (product: Product) => {
+  const handleEdit = (product: LocalProduct) => {
     setEditingProduct(product);
     setShowForm(true);
   };
@@ -54,14 +54,18 @@ export default function Produtos() {
   };
 
 
+  // Adapt local products to component-expected format
+  const adaptedProducts = products.map(p => ({ ...p, is_active: !!p.is_active }));
+  const adaptedEditing = editingProduct ? { ...editingProduct, is_active: !!editingProduct.is_active } : null;
+
   if (showForm) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
         <ProductFormDialog
-          key={editingProduct?.id ?? "new"}
+          key={adaptedEditing?.id ?? "new"}
           open={showForm}
           onOpenChange={handleCloseForm}
-          product={editingProduct}
+          product={adaptedEditing as any}
         />
       </div>
     );
@@ -93,7 +97,7 @@ export default function Produtos() {
       </div>
 
       {/* Low stock alert */}
-      <LowStockAlert products={products} />
+      <LowStockAlert products={adaptedProducts as any} />
 
       {/* Search */}
       <div className="relative max-w-md">
@@ -216,7 +220,7 @@ export default function Produtos() {
         <StockMovementDialog
           open={!!movementProduct}
           onOpenChange={(v) => !v && setMovementProduct(null)}
-          product={movementProduct}
+          product={{ ...movementProduct!, is_active: !!movementProduct!.is_active } as any}
         />
       )}
 

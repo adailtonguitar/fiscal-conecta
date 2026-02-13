@@ -1,6 +1,6 @@
 import { Users } from "lucide-react";
 import { CrudPage, type FieldConfig } from "@/components/cadastro/CrudPage";
-import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from "@/hooks/useClients";
+import { useLocalClients, useCreateLocalClient, useUpdateLocalClient, useDeleteLocalClient } from "@/hooks/useLocalClients";
 import { useCallback } from "react";
 
 const baseFields: FieldConfig[] = [
@@ -39,10 +39,10 @@ function cleanDoc(value: string) {
 }
 
 export default function Clientes() {
-  const { data = [], isLoading } = useClients();
-  const create = useCreateClient();
-  const update = useUpdateClient();
-  const del = useDeleteClient();
+  const { data = [], isLoading } = useLocalClients();
+  const create = useCreateLocalClient();
+  const update = useUpdateLocalClient();
+  const del = useDeleteLocalClient();
 
   const getFields = useCallback((formData: Record<string, any>): FieldConfig[] => {
     const isPJ = formData.tipo_pessoa === "pj";

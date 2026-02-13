@@ -4,11 +4,10 @@ import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useStockMovements } from "@/hooks/useStockMovements";
-import { useProducts } from "@/hooks/useProducts";
+import { useLocalStockMovements, type LocalStockMovement } from "@/hooks/useLocalStock";
+import { useLocalProducts, type LocalProduct } from "@/hooks/useLocalProducts";
 import { BatchMovementMode } from "@/components/stock/BatchMovementMode";
 import { StockMovementDialog } from "@/components/stock/StockMovementDialog";
-import type { Product } from "@/hooks/useProducts";
 
 const typeLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   entrada: { label: "Entrada", variant: "default" },
@@ -19,22 +18,31 @@ const typeLabels: Record<string, { label: string; variant: "default" | "secondar
 };
 
 export default function Movimentacoes() {
-  const { data: movements = [], isLoading } = useStockMovements();
-  const { data: products = [] } = useProducts();
+  const { data: movements = [], isLoading } = useLocalStockMovements();
+  const { data: products = [] } = useLocalProducts();
   const [search, setSearch] = useState("");
   const [batchMode, setBatchMode] = useState(false);
-  const [movementProduct, setMovementProduct] = useState<Product | null>(null);
+  const [movementProduct, setMovementProduct] = useState<LocalProduct | null>(null);
 
-  const filtered = movements.filter((m: any) => {
-    const name = m.products?.name?.toLowerCase() || "";
-    const sku = m.products?.sku?.toLowerCase() || "";
+  const getProductName = (m: LocalStockMovement) => {
+    const p = products.find(prod => prod.id === m.product_id);
+    return p?.name ?? "—";
+  };
+  const getProductSku = (m: LocalStockMovement) => {
+    const p = products.find(prod => prod.id === m.product_id);
+    return p?.sku ?? "";
+  };
+
+  const filtered = movements.filter((m) => {
+    const name = getProductName(m).toLowerCase();
+    const sku = getProductSku(m).toLowerCase();
     return name.includes(search.toLowerCase()) || sku.includes(search.toLowerCase());
   });
 
   if (batchMode) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
-        <BatchMovementMode products={products} onClose={() => setBatchMode(false)} />
+        <BatchMovementMode products={products as any} onClose={() => setBatchMode(false)} />
       </div>
     );
   }
@@ -108,7 +116,7 @@ export default function Movimentacoes() {
                       <td className="px-5 py-3 font-medium text-foreground">
                         <div className="flex items-center gap-2">
                           <Package className="w-4 h-4 text-muted-foreground" />
-                          {m.products?.name ?? "—"}
+                          {getProductName(m)}
                         </div>
                       </td>
                       <td className="px-5 py-3 text-center">
@@ -131,7 +139,7 @@ export default function Movimentacoes() {
         <StockMovementDialog
           open={!!movementProduct}
           onOpenChange={(v) => !v && setMovementProduct(null)}
-          product={movementProduct}
+          product={{ ...movementProduct!, is_active: !!movementProduct!.is_active } as any}
         />
       )}
     </div>

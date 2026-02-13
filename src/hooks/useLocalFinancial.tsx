@@ -30,19 +30,36 @@ export interface LocalFinancialEntry {
   synced_at: string | null;
 }
 
-export function useLocalFinancialEntries(type?: "pagar" | "receber") {
+export function useLocalFinancialEntries(filters?: {
+  type?: "pagar" | "receber";
+  startDate?: string;
+  endDate?: string;
+}) {
   const { companyId } = useCompany();
 
   return useQuery({
-    queryKey: ["local-financial", companyId, type],
+    queryKey: ["local-financial", companyId, filters],
     queryFn: async () => {
       if (!companyId) return [];
-      const where: Record<string, unknown> = { company_id: companyId };
-      if (type) where.type = type;
-      const result = await DataLayer.select<LocalFinancialEntry>("financial_entries", {
-        where,
-        orderBy: "due_date ASC",
-      });
+      let sql = `SELECT * FROM financial_entries WHERE company_id = ?`;
+      const values: unknown[] = [companyId];
+
+      if (filters?.type) {
+        sql += ` AND type = ?`;
+        values.push(filters.type);
+      }
+      if (filters?.startDate) {
+        sql += ` AND due_date >= ?`;
+        values.push(filters.startDate);
+      }
+      if (filters?.endDate) {
+        sql += ` AND due_date <= ?`;
+        values.push(filters.endDate);
+      }
+
+      sql += ` ORDER BY due_date ASC`;
+
+      const result = await DataLayer.raw<LocalFinancialEntry>(sql, values);
       if (result.error) throw new Error(result.error);
       return result.data;
     },
@@ -99,6 +116,27 @@ export function useDeleteLocalFinancialEntry() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["local-financial"] });
       toast.success("Lançamento excluído");
+    },
+    onError: (e: Error) => toast.error(`Erro: ${e.message}`),
+  });
+}
+
+export function useMarkAsLocalPaid() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, paid_amount, payment_method }: { id: string; paid_amount: number; payment_method?: string }) => {
+      const result = await DataLayer.update("financial_entries", id, {
+        status: "pago",
+        paid_amount,
+        paid_date: new Date().toISOString().split("T")[0],
+        payment_method: payment_method || "dinheiro",
+      });
+      if (result.error) throw new Error(result.error);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["local-financial"] });
+      toast.success("Marcado como pago");
     },
     onError: (e: Error) => toast.error(`Erro: ${e.message}`),
   });

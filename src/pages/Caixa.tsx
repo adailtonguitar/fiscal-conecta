@@ -1,46 +1,36 @@
-import { useState, useEffect, useCallback } from "react";
-import { DollarSign, Lock, Unlock, Calendar, Eye, Loader2, RefreshCw } from "lucide-react";
+import { useState } from "react";
+import { DollarSign, Lock, Unlock, Calendar, Loader2, RefreshCw } from "lucide-react";
 import { formatCurrency } from "@/lib/mock-data";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/hooks/useCompany";
 import { CashRegister } from "@/components/pos/CashRegister";
-import type { Tables } from "@/integrations/supabase/types";
-
-type CashSession = Tables<"cash_sessions">;
+import { DataLayer } from "@/lib/local-db";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { LocalCashSession } from "@/hooks/useLocalCash";
 
 export default function Caixa() {
   const { companyId } = useCompany();
-  const [sessions, setSessions] = useState<CashSession[]>([]);
-  const [loading, setLoading] = useState(true);
+  const qc = useQueryClient();
   const [showCashRegister, setShowCashRegister] = useState(false);
 
-  const loadSessions = useCallback(async () => {
-    if (!companyId) return;
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("cash_sessions")
-        .select("*")
-        .eq("company_id", companyId)
-        .order("opened_at", { ascending: false })
-        .limit(20);
-
-      if (!error && data) setSessions(data);
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
-  }, [companyId]);
-
-  useEffect(() => {
-    loadSessions();
-  }, [loadSessions]);
+  const { data: sessions = [], isLoading: loading } = useQuery({
+    queryKey: ["local-cash-sessions-history", companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      const result = await DataLayer.select<LocalCashSession>("cash_sessions", {
+        where: { company_id: companyId },
+        orderBy: "opened_at DESC",
+        limit: 20,
+      });
+      if (result.error) throw new Error(result.error);
+      return result.data;
+    },
+    enabled: !!companyId,
+  });
 
   const handleCashRegisterClose = () => {
     setShowCashRegister(false);
-    loadSessions(); // refresh after changes
+    qc.invalidateQueries({ queryKey: ["local-cash-sessions-history"] });
   };
 
   return (
@@ -52,7 +42,7 @@ export default function Caixa() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={loadSessions}
+            onClick={() => qc.invalidateQueries({ queryKey: ["local-cash-sessions-history"] })}
             disabled={loading}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-90 transition-all"
           >
@@ -183,7 +173,6 @@ export default function Caixa() {
         </div>
       )}
 
-      {/* Cash Register overlay */}
       <AnimatePresence>
         {showCashRegister && (
           <CashRegister onClose={handleCashRegisterClose} />

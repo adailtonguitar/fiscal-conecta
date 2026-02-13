@@ -7,8 +7,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCompany } from "@/hooks/useCompany";
 import { useSync } from "@/hooks/useSync";
 import { SaleService, CashSessionService } from "@/services";
+import { DataLayer } from "@/lib/local-db";
 import { cacheEntities, getCachedEntities } from "@/lib/sync-queue";
-import { supabase } from "@/integrations/supabase/client";
 import { isScaleBarcode, parseScaleBarcode } from "@/lib/scale-barcode";
 import type { SaleItem, PaymentResult } from "@/services/types";
 import { toast } from "sonner";
@@ -56,24 +56,20 @@ export function usePDV() {
   const globalDiscountValue = subtotal * (globalDiscountPercent / 100);
   const total = Math.max(0, subtotal - globalDiscountValue);
 
-  // Load products from DB or cache
+  // Load products from local SQLite (offline-first)
   const loadProducts = useCallback(async () => {
     if (!companyId) return;
     setLoadingProducts(true);
     try {
-      if (navigator.onLine) {
-        const { data, error } = await supabase
-          .from("products")
-          .select("id, name, price, category, sku, ncm, unit, stock_quantity, barcode")
-          .eq("company_id", companyId)
-          .eq("is_active", true)
-          .order("name");
-
-        if (!error && data) {
-          setProducts(data as PDVProduct[]);
-          await cacheEntities("products", data);
-        }
+      const result = await DataLayer.raw<PDVProduct>(
+        `SELECT id, name, price, category, sku, ncm, unit, stock_quantity, barcode
+         FROM products WHERE company_id = ? AND is_active = 1 ORDER BY name`,
+        [companyId]
+      );
+      if (!result.error && result.data.length > 0) {
+        setProducts(result.data);
       } else {
+        // Fallback to sync-queue cache
         const cached = await getCachedEntities<PDVProduct>("products");
         setProducts(cached);
       }
