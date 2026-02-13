@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, dialog } = require('electron');
 const path = require('path');
 
 let mainWindow;
@@ -14,6 +14,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
+      webSecurity: true,
     },
     autoHideMenuBar: true,
     title: 'Sistema PDV',
@@ -32,9 +33,22 @@ function createWindow() {
     `).catch(() => {});
   });
 
+  // Log any page errors
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    dialog.showErrorBox('Erro ao carregar', 
+      'URL: ' + validatedURL + '\nErro: ' + errorDescription + ' (' + errorCode + ')');
+    // Fallback to local
+    mainWindow.loadFile(path.join(__dirname, '../dist/index.html')).catch(() => {});
+  });
+
+  mainWindow.webContents.on('render-process-gone', (event, details) => {
+    dialog.showErrorBox('Processo encerrado', 'Razão: ' + details.reason);
+  });
+
   if (app.isPackaged) {
-    mainWindow.loadURL(publishedURL).catch(() => {
-      mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    mainWindow.loadURL(publishedURL).catch((err) => {
+      dialog.showErrorBox('Falha na conexão', err.message);
+      mainWindow.loadFile(path.join(__dirname, '../dist/index.html')).catch(() => {});
     });
     mainWindow.webContents.openDevTools();
   } else {
