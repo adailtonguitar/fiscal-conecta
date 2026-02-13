@@ -6,7 +6,7 @@ import {
   Store, Receipt, Shield, ScrollText, LogOut, DollarSign, Landmark,
   Users, Building2, ClipboardList, UserCheck, Factory, Truck, Tags, BarChart3, ArrowUpDown,
   Download, Tag, TrendingUp, AlertTriangle as AlertTriangleIcon, FileSpreadsheet, GitGraph,
-  Percent, ArrowRightLeft, TrendingDown, Gift, Brain,
+  Percent, ArrowRightLeft, TrendingDown, Gift, Brain, Monitor,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -63,6 +63,7 @@ const navItems: NavEntry[] = [
       { icon: Brain, label: "Relatórios IA", path: "/relatorios-ia" },
     ],
   },
+  { icon: Monitor, label: "Terminais", path: "/terminais" },
   { icon: DollarSign, label: "Caixa", path: "/caixa" },
   { icon: Landmark, label: "Financeiro", path: "/financeiro" },
   { icon: FileSpreadsheet, label: "DRE", path: "/dre" },
