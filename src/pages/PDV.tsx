@@ -13,10 +13,11 @@ import { CashRegister } from "@/components/pos/CashRegister";
 import { StockMovementDialog } from "@/components/stock/StockMovementDialog";
 import { PDVReceiveCreditDialog } from "@/components/pdv/PDVReceiveCreditDialog";
 import { usePDV, type PDVProduct } from "@/hooks/usePDV";
+import { useQuotes } from "@/hooks/useQuotes";
 import { useCompany } from "@/hooks/useCompany";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { AnimatePresence, motion } from "framer-motion";
-import { Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard, ArrowLeft, Maximize, ScanBarcode, DollarSign, PackageX, PackagePlus, LockOpen, User, X, GraduationCap, Search, Repeat, Monitor } from "lucide-react";
+import { Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard, ArrowLeft, Maximize, ScanBarcode, DollarSign, PackageX, PackagePlus, LockOpen, User, X, GraduationCap, Search, Repeat, Monitor, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { PaymentResult } from "@/services/types";
@@ -28,6 +29,9 @@ export default function PDV() {
   const { companyName, logoUrl, slogan, pixKey, pixKeyType, pixCity } = useCompany();
   const { maxDiscountPercent } = usePermissions();
   const { earnPoints, isActive: loyaltyActive } = useLoyalty();
+  const { createQuote } = useQuotes();
+  const [showSaveQuote, setShowSaveQuote] = useState(false);
+  const [quoteNotes, setQuoteNotes] = useState("");
   const [showTEF, setShowTEF] = useState(false);
   const [showCashRegister, setShowCashRegister] = useState(false);
   const [receipt, setReceipt] = useState<{
@@ -61,6 +65,64 @@ export default function PDV() {
       setTimeout(() => barcodeInputRef.current?.focus(), 100);
     }
   }, [showTEF, receipt, showCashRegister, showProductList]);
+
+  // Load quote from sessionStorage (when converting from Orçamentos page)
+  useEffect(() => {
+    const raw = sessionStorage.getItem("pdv_load_quote");
+    if (raw && pdv.products.length > 0) {
+      sessionStorage.removeItem("pdv_load_quote");
+      try {
+        const { items, clientName } = JSON.parse(raw);
+        if (Array.isArray(items)) {
+          items.forEach((item: any) => {
+            const product = pdv.products.find((p) => p.id === item.product_id);
+            if (product) {
+              for (let i = 0; i < (item.quantity || 1); i++) {
+                pdv.addToCart(product);
+              }
+            }
+          });
+          if (clientName) toast.info(`Orçamento carregado — Cliente: ${clientName}`);
+          else toast.info("Orçamento carregado no carrinho");
+        }
+      } catch { /* ignore */ }
+    }
+  }, [pdv.products.length]);
+
+  const handleSaveQuote = async () => {
+    if (pdv.cartItems.length === 0) {
+      toast.warning("Carrinho vazio");
+      return;
+    }
+    try {
+      const items = pdv.cartItems.map((item) => ({
+        product_id: item.id,
+        name: item.name,
+        sku: item.sku,
+        quantity: item.quantity,
+        unit_price: item.price,
+        unit: item.unit,
+      }));
+      await createQuote({
+        items,
+        subtotal: pdv.subtotal,
+        discountPercent: pdv.globalDiscountPercent,
+        discountValue: pdv.globalDiscountValue,
+        total: pdv.total,
+        clientName: selectedClient?.name,
+        clientId: selectedClient?.id,
+        notes: quoteNotes || undefined,
+        validDays: 30,
+      });
+      toast.success("Orçamento salvo com sucesso!");
+      pdv.clearCart();
+      setSelectedClient(null);
+      setShowSaveQuote(false);
+      setQuoteNotes("");
+    } catch (err: any) {
+      toast.error(`Erro ao salvar orçamento: ${err.message}`);
+    }
+  };
 
   const handleCheckout = useCallback(() => {
     if (pdv.cartItems.length > 0) setShowTEF(true);
@@ -724,6 +786,69 @@ export default function PDV() {
         )}
       </AnimatePresence>
 
+      {/* Save Quote Dialog */}
+      <AnimatePresence>
+        {showSaveQuote && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowSaveQuote(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+            >
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" />
+                  Salvar Orçamento
+                </h2>
+                <button onClick={() => setShowSaveQuote(false)} className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground">✕</button>
+              </div>
+              <div className="p-5 space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">{pdv.cartItems.length} item(ns) no carrinho</p>
+                  <p className="text-2xl font-black font-mono text-primary">
+                    {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(pdv.total)}
+                  </p>
+                </div>
+                {selectedClient && (
+                  <div className="text-sm text-foreground">
+                    Cliente: <strong>{selectedClient.name}</strong>
+                  </div>
+                )}
+                <div>
+                  <label className="text-xs text-muted-foreground font-medium">Observações (opcional)</label>
+                  <textarea
+                    value={quoteNotes}
+                    onChange={(e) => setQuoteNotes(e.target.value)}
+                    rows={3}
+                    placeholder="Ex: Validade 30 dias, condições especiais..."
+                    className="w-full mt-1 px-3 py-2 rounded-xl bg-muted border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowSaveQuote(false)}
+                    className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSaveQuote}
+                    className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Salvar Orçamento
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex items-center justify-center gap-2 px-4 py-2.5 bg-sidebar-background border-t border-border flex-shrink-0 flex-wrap">
         {[
           { key: "F1", label: "Atalhos", action: () => setShowShortcuts((p) => !p) },
@@ -740,6 +865,7 @@ export default function PDV() {
           { key: "F12", label: "Treinamento", action: () => { pdv.setTrainingMode(!pdv.trainingMode); toast.info(pdv.trainingMode ? "Modo treinamento DESATIVADO" : "🎓 Modo treinamento ATIVADO"); } },
           { key: "Del", label: "Remover", action: () => { if (pdv.cartItems.length > 0) { const last = pdv.cartItems[pdv.cartItems.length - 1]; pdv.removeItem(last.id); toast.info(`${last.name} removido`); } } },
           { key: "ESC", label: "Fechar", action: () => setShowShortcuts(false) },
+          { key: "ORC", label: "Orçamento", action: () => { if (pdv.cartItems.length > 0) setShowSaveQuote(true); else toast.warning("Carrinho vazio"); } },
         ].map(({ key, label, action }) => (
           <button
             key={key}

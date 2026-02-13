@@ -1789,6 +1789,91 @@ export type Database = {
         }
         Relationships: []
       }
+      quotes: {
+        Row: {
+          client_id: string | null
+          client_name: string | null
+          company_id: string
+          converted_at: string | null
+          converted_sale_id: string | null
+          created_at: string
+          created_by: string
+          discount_percent: number
+          discount_value: number
+          id: string
+          items_json: Json
+          notes: string | null
+          quote_number: number
+          status: string
+          subtotal: number
+          total: number
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          client_name?: string | null
+          company_id: string
+          converted_at?: string | null
+          converted_sale_id?: string | null
+          created_at?: string
+          created_by: string
+          discount_percent?: number
+          discount_value?: number
+          id?: string
+          items_json?: Json
+          notes?: string | null
+          quote_number?: number
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string | null
+          company_id?: string
+          converted_at?: string | null
+          converted_sale_id?: string | null
+          created_at?: string
+          created_by?: string
+          discount_percent?: number
+          discount_value?: number
+          id?: string
+          items_json?: Json
+          notes?: string | null
+          quote_number?: number
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_converted_sale_id_fkey"
+            columns: ["converted_sale_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reseller_commissions: {
         Row: {
           base_amount: number
