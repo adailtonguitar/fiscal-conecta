@@ -15,13 +15,14 @@ export function useAdminRole() {
     }
 
     const check = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
         .eq("role", "super_admin")
         .limit(1);
 
+      console.log("[useAdminRole] user:", user.id, "data:", data, "error:", error);
       setIsSuperAdmin((data?.length ?? 0) > 0);
       setLoading(false);
     };
