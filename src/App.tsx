@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +8,8 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useCompany } from "@/hooks/useCompany";
 import { SubscriptionProvider, useSubscription } from "@/hooks/useSubscription";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { toast } from "sonner";
 import Dashboard from "./pages/Dashboard";
 import LandingPage from "./pages/LandingPage";
@@ -60,18 +62,34 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { companyId, loading: companyLoading } = useCompany();
   const { subscribed, trialExpired, loading: subLoading } = useSubscription();
   const hasSignedOut = useRef(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     if (!loading && !companyLoading && user && companyId === null && !hasSignedOut.current) {
-      hasSignedOut.current = true;
-      toast.error("Sua conta foi desativada. Entre em contato com o administrador.");
-      signOut();
+      // Check if user has no company — show onboarding instead of signing out
+      const checkCompany = async () => {
+        const { data } = await (await import("@/integrations/supabase/client")).supabase
+          .from("company_users")
+          .select("id")
+          .eq("user_id", user.id)
+          .limit(1);
+        
+        if (!data || data.length === 0) {
+          setShowOnboarding(true);
+        } else if (!companyId) {
+          hasSignedOut.current = true;
+          toast.error("Sua conta foi desativada. Entre em contato com o administrador.");
+          signOut();
+        }
+      };
+      checkCompany();
     }
   }, [loading, companyLoading, user, companyId, signOut]);
 
   useEffect(() => {
     if (!user) {
       hasSignedOut.current = false;
+      setShowOnboarding(false);
     }
   }, [user]);
 
@@ -84,6 +102,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) return <Navigate to="/" replace />;
+
+  // Show onboarding wizard for new users without a company
+  if (showOnboarding) {
+    return <OnboardingWizard onComplete={() => window.location.reload()} />;
+  }
+
   if (!companyId) return <Navigate to="/" replace />;
 
   // Trial expired and no active subscription → redirect to plans
@@ -186,19 +210,21 @@ function AppRoutes() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <SubscriptionProvider>
-            <AppRoutes />
-          </SubscriptionProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <SubscriptionProvider>
+              <AppRoutes />
+            </SubscriptionProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
