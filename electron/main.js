@@ -19,9 +19,9 @@ function createWindow() {
     title: 'Sistema PDV',
   });
 
-  // In production, load the built files
+  // Always load the published URL so updates arrive automatically
   if (app.isPackaged) {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    mainWindow.loadURL('https://cloud-ponto-magico.lovable.app');
   } else {
     // In development, load from Vite dev server
     mainWindow.loadURL('http://localhost:5173');
