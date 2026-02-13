@@ -46,6 +46,21 @@
 
   <body>
     <div id="root"></div>
+    <script>
+      // Prevent PWA service worker registration inside Electron
+      if (window.electronAPI && window.electronAPI.isElectron) {
+        // Unregister existing service workers
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            registrations.forEach(function(r) { r.unregister(); });
+          });
+        }
+        // Block future registrations
+        Object.defineProperty(navigator, 'serviceWorker', {
+          get: function() { return { register: function() { return Promise.resolve(); }, getRegistrations: function() { return Promise.resolve([]); } }; }
+        });
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

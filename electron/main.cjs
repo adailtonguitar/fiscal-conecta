@@ -21,13 +21,21 @@ function createWindow() {
 
   const publishedURL = 'https://cloud-ponto-magico.lovable.app';
 
+  // Unregister any service workers to prevent blank screen in Electron
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.executeJavaScript(`
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          registrations.forEach(r => r.unregister());
+        });
+      }
+    `).catch(() => {});
+  });
+
   if (app.isPackaged) {
-    // Try online first, fallback to local dist if offline
     mainWindow.loadURL(publishedURL).catch(() => {
       mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
     });
-    // Temporarily enable DevTools for debugging
-    mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
