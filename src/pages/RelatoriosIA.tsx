@@ -53,7 +53,6 @@ export default function RelatoriosIA() {
   };
 
   return (
-    <AppLayout>
       <div className="p-6 space-y-6 max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -158,6 +157,5 @@ export default function RelatoriosIA() {
           </Card>
         )}
       </div>
-    </AppLayout>
   );
 }
