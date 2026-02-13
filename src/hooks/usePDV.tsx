@@ -38,6 +38,8 @@ export function usePDV() {
   const [cartItems, setCartItems] = useState<PDVCartItem[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [currentSession, setCurrentSession] = useState<any>(null);
+  const [trainingMode, setTrainingMode] = useState(false);
+  const [lastSaleItems, setLastSaleItems] = useState<PDVCartItem[]>([]);
   const [loadingSession, setLoadingSession] = useState(true);
 
   // Discount state: per-item discounts stored as { [productId]: percentValue }
@@ -152,6 +154,19 @@ export function usePDV() {
   const finalizeSale = useCallback(async (paymentResults: PaymentResult[]) => {
     if (!companyId || !user || cartItems.length === 0) {
       throw new Error("Dados incompletos para finalizar venda");
+    }
+
+    // Save items for "repeat last sale" before clearing
+    setLastSaleItems([...cartItems]);
+
+    // Training mode: simulate sale without persisting
+    if (trainingMode) {
+      const nfceNumber = "TREINO-" + String(Math.floor(Math.random() * 999999)).padStart(6, "0");
+      setCartItems([]);
+      setItemDiscounts({});
+      setGlobalDiscountPercent(0);
+      toast.info("🎓 Venda simulada (modo treinamento) — nenhum dado foi salvo.");
+      return { fiscalDocId: `training-${Date.now()}`, nfceNumber };
     }
 
     const items: SaleItem[] = cartItems.map((item) => ({
@@ -319,6 +334,23 @@ export function usePDV() {
 
     // Barcode
     handleBarcodeScan,
+
+    // Training mode
+    trainingMode,
+    setTrainingMode,
+
+    // Last sale
+    lastSaleItems,
+    repeatLastSale: () => {
+      if (lastSaleItems.length === 0) {
+        toast.warning("Nenhuma venda anterior para repetir");
+        return;
+      }
+      setCartItems([...lastSaleItems]);
+      setItemDiscounts({});
+      setGlobalDiscountPercent(0);
+      toast.success("Última venda carregada no carrinho");
+    },
 
     // Sync
     ...sync,

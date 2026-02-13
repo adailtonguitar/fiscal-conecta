@@ -16,7 +16,7 @@ import { usePDV, type PDVProduct } from "@/hooks/usePDV";
 import { useCompany } from "@/hooks/useCompany";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { AnimatePresence, motion } from "framer-motion";
-import { Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard, ArrowLeft, Maximize, ScanBarcode, DollarSign, PackageX, PackagePlus, LockOpen, User, X } from "lucide-react";
+import { Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard, ArrowLeft, Maximize, ScanBarcode, DollarSign, PackageX, PackagePlus, LockOpen, User, X, GraduationCap, Search, Repeat, Monitor } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { PaymentResult } from "@/services/types";
@@ -48,7 +48,9 @@ export default function PDV() {
   const [showReceiveCredit, setShowReceiveCredit] = useState(false);
   const [selectedClient, setSelectedClient] = useState<CreditClient | null>(null);
   const [showLoyaltyClientSelector, setShowLoyaltyClientSelector] = useState(false);
-
+  const [showPriceLookup, setShowPriceLookup] = useState(false);
+  const [priceLookupQuery, setPriceLookupQuery] = useState("");
+  const [terminalId, setTerminalId] = useState(() => localStorage.getItem("pdv_terminal_id") || "01");
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
   useBarcodeScanner(pdv.handleBarcodeScan);
@@ -165,8 +167,11 @@ export default function PDV() {
           e.preventDefault();
           if (pdv.pendingCount > 0 && pdv.isOnline) pdv.syncAll();
           break;
+        case "F10": e.preventDefault(); setShowPriceLookup(true); setPriceLookupQuery(""); break;
+        case "F11": e.preventDefault(); pdv.repeatLastSale(); break;
+        case "F12": e.preventDefault(); pdv.setTrainingMode(!pdv.trainingMode); toast.info(pdv.trainingMode ? "Modo treinamento DESATIVADO" : "🎓 Modo treinamento ATIVADO"); break;
         case "F1": e.preventDefault(); setShowShortcuts((prev) => !prev); break;
-        case "Escape": e.preventDefault(); setShowShortcuts(false); break;
+        case "Escape": e.preventDefault(); setShowShortcuts(false); setShowPriceLookup(false); break;
         case "Delete":
           e.preventDefault();
           if (pdv.cartItems.length > 0) {
@@ -263,7 +268,7 @@ export default function PDV() {
   };
 
   return (
-    <div className="pdv-theme flex flex-col h-screen bg-background text-foreground relative overflow-hidden">
+    <div className={`pdv-theme flex flex-col h-screen bg-background text-foreground relative overflow-hidden ${pdv.trainingMode ? "ring-4 ring-warning/50 ring-inset" : ""}`}>
       {/* ===== TOP HEADER BAR ===== */}
       <div className="flex items-center justify-between px-4 h-11 bg-sidebar-background border-b border-border flex-shrink-0">
         <div className="flex items-center gap-3">
@@ -277,10 +282,18 @@ export default function PDV() {
           <div className="h-4 w-px bg-border" />
           <span className="text-sm font-bold text-sidebar-foreground tracking-wide">PDV</span>
           <div className="h-4 w-px bg-border" />
+          {/* Terminal ID */}
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-muted border border-border">
+            <Monitor className="w-3 h-3 text-muted-foreground" />
+            <span className="text-xs font-bold text-foreground font-mono">T{terminalId}</span>
+          </div>
+          <div className="h-4 w-px bg-border" />
           {/* Status: Caixa Aberto */}
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded bg-success/20 border border-success/30">
-            <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-            <span className="text-xs font-bold text-success uppercase tracking-wider">Caixa Aberto</span>
+          <div className={`flex items-center gap-1.5 px-3 py-1 rounded border ${pdv.trainingMode ? "bg-warning/20 border-warning/30" : "bg-success/20 border-success/30"}`}>
+            <div className={`w-2 h-2 rounded-full animate-pulse ${pdv.trainingMode ? "bg-warning" : "bg-success"}`} />
+            <span className={`text-xs font-bold uppercase tracking-wider ${pdv.trainingMode ? "text-warning" : "text-success"}`}>
+              {pdv.trainingMode ? "🎓 Treinamento" : "Caixa Aberto"}
+            </span>
           </div>
         </div>
 
@@ -321,6 +334,13 @@ export default function PDV() {
             title="Tela cheia"
           >
             <Maximize className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => { pdv.setTrainingMode(!pdv.trainingMode); toast.info(pdv.trainingMode ? "Modo treinamento DESATIVADO" : "🎓 Modo treinamento ATIVADO"); }}
+            className={`p-1.5 rounded border transition-all ${pdv.trainingMode ? "bg-warning/20 border-warning/30 text-warning" : "bg-muted border-border text-muted-foreground hover:text-foreground hover:bg-accent"}`}
+            title="Modo Treinamento (F12)"
+          >
+            <GraduationCap className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => setShowShortcuts((p) => !p)}
@@ -632,7 +652,78 @@ export default function PDV() {
         onProductCreated={() => pdv.refreshProducts()}
       />
 
-      {/* Fixed shortcuts bar at bottom */}
+      {/* Price Lookup Dialog */}
+      <AnimatePresence>
+        {showPriceLookup && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowPriceLookup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
+            >
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <Search className="w-5 h-5 text-primary" />
+                  Consulta de Preço
+                </h2>
+                <button onClick={() => setShowPriceLookup(false)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                  <X className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </div>
+              <div className="p-5 space-y-4">
+                <input
+                  type="text"
+                  value={priceLookupQuery}
+                  onChange={(e) => setPriceLookupQuery(e.target.value)}
+                  placeholder="Digite código de barras, SKU ou nome..."
+                  autoFocus
+                  className="w-full px-4 py-3 rounded-xl bg-muted border border-border text-foreground text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
+                <div className="max-h-[300px] overflow-y-auto space-y-2">
+                  {priceLookupQuery.trim().length >= 2 && pdv.products
+                    .filter((p) =>
+                      p.name.toLowerCase().includes(priceLookupQuery.toLowerCase()) ||
+                      p.sku.toLowerCase().includes(priceLookupQuery.toLowerCase()) ||
+                      (p.barcode && p.barcode.includes(priceLookupQuery))
+                    )
+                    .slice(0, 10)
+                    .map((p) => (
+                      <div key={p.id} className="flex items-center justify-between px-4 py-3 rounded-xl bg-muted/50 border border-border">
+                        <div>
+                          <p className="text-sm font-bold text-foreground">{p.name}</p>
+                          <p className="text-xs text-muted-foreground font-mono">SKU: {p.sku} {p.barcode && `| CB: ${p.barcode}`}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-black text-primary font-mono">
+                            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(p.price)}
+                          </p>
+                          <p className={`text-xs font-mono ${p.stock_quantity > 0 ? "text-success" : "text-destructive"}`}>
+                            Estoque: {p.stock_quantity} {p.unit}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  {priceLookupQuery.trim().length >= 2 && pdv.products.filter((p) =>
+                    p.name.toLowerCase().includes(priceLookupQuery.toLowerCase()) ||
+                    p.sku.toLowerCase().includes(priceLookupQuery.toLowerCase()) ||
+                    (p.barcode && p.barcode.includes(priceLookupQuery))
+                  ).length === 0 && (
+                    <p className="text-center text-sm text-muted-foreground py-8">Nenhum produto encontrado</p>
+                  )}
+                  {priceLookupQuery.trim().length < 2 && (
+                    <p className="text-center text-sm text-muted-foreground py-8">Digite ao menos 2 caracteres para buscar</p>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex items-center justify-center gap-2 px-4 py-2.5 bg-sidebar-background border-t border-border flex-shrink-0 flex-wrap">
         {[
           { key: "F1", label: "Atalhos", action: () => setShowShortcuts((p) => !p) },
@@ -644,6 +735,9 @@ export default function PDV() {
           { key: "F7", label: "Gaveta", action: () => { openCashDrawer(); toast.info("Gaveta aberta"); } },
           { key: "F8", label: "Receber Fiado", action: () => setShowReceiveCredit(true) },
           { key: "F9", label: "Sincronizar", action: () => { if (pdv.pendingCount > 0 && pdv.isOnline) pdv.syncAll(); } },
+          { key: "F10", label: "Consultar Preço", action: () => { setShowPriceLookup(true); setPriceLookupQuery(""); } },
+          { key: "F11", label: "Repetir Venda", action: () => pdv.repeatLastSale() },
+          { key: "F12", label: "Treinamento", action: () => { pdv.setTrainingMode(!pdv.trainingMode); toast.info(pdv.trainingMode ? "Modo treinamento DESATIVADO" : "🎓 Modo treinamento ATIVADO"); } },
           { key: "Del", label: "Remover", action: () => { if (pdv.cartItems.length > 0) { const last = pdv.cartItems[pdv.cartItems.length - 1]; pdv.removeItem(last.id); toast.info(`${last.name} removido`); } } },
           { key: "ESC", label: "Fechar", action: () => setShowShortcuts(false) },
         ].map(({ key, label, action }) => (
