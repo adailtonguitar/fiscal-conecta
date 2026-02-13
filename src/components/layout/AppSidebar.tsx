@@ -6,13 +6,14 @@ import {
   Store, Receipt, Shield, ScrollText, LogOut, DollarSign, Landmark,
   Users, Building2, ClipboardList, UserCheck, Factory, Truck, Tags, BarChart3, ArrowUpDown,
   Download, Tag, TrendingUp, AlertTriangle as AlertTriangleIcon, FileSpreadsheet, GitGraph,
-  Percent, ArrowRightLeft, TrendingDown, Gift, Brain, Monitor,
+  Percent, ArrowRightLeft, TrendingDown, Gift, Brain, Monitor, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useSync } from "@/hooks/useSync";
 import { useIsReseller } from "@/hooks/useIsReseller";
+import { useAdminRole } from "@/hooks/useAdminRole";
 
 interface NavItem {
   icon: any;
@@ -97,6 +98,7 @@ const navItems: NavEntry[] = [
 ];
 
 const resellerNavItem: NavItem = { icon: Building2, label: "Revendas", path: "/revendas" };
+const adminNavItem: NavItem = { icon: ShieldCheck, label: "Admin", path: "/admin" };
 
 export function AppSidebar() {
   const location = useLocation();
@@ -104,6 +106,7 @@ export function AppSidebar() {
   const { isOnline, pendingCount, syncing, syncAll } = useSync();
   const { signOut } = useAuth();
   const { isReseller } = useIsReseller();
+  const { isSuperAdmin } = useAdminRole();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     // Auto-open groups that have an active child on initial load
     const initial: Record<string, boolean> = {};
@@ -115,9 +118,12 @@ export function AppSidebar() {
     return initial;
   });
 
-  const visibleNavItems: NavEntry[] = isReseller
+  let visibleNavItems: NavEntry[] = isReseller
     ? [...navItems.slice(0, -1), resellerNavItem, navItems[navItems.length - 1]]
     : navItems;
+  if (isSuperAdmin) {
+    visibleNavItems = [...visibleNavItems, adminNavItem];
+  }
 
   const toggleGroup = (label: string) => {
     if (collapsed) return;
