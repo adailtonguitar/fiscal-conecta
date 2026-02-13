@@ -1,6 +1,5 @@
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Clock, ArrowRight, Check } from "lucide-react";
+import { Clock, ArrowRight, Check, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PLANS, useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,7 +27,7 @@ const plans = [
 
 export default function TrialExpirado() {
   const { user, signOut } = useAuth();
-  const { createCheckout } = useSubscription();
+  const { createCheckout, wasSubscriber, gracePeriodActive, graceDaysLeft, subscriptionOverdue } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
   const handlePlanClick = async (plan: typeof plans[0]) => {
@@ -47,6 +46,8 @@ export default function TrialExpirado() {
     }
   };
 
+  const isOverdue = wasSubscriber && (subscriptionOverdue || gracePeriodActive);
+
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12">
       <motion.div
@@ -54,15 +55,41 @@ export default function TrialExpirado() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center max-w-2xl mx-auto mb-12"
       >
-        <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-6">
-          <Clock className="w-8 h-8 text-destructive" />
+        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 ${
+          isOverdue ? "bg-warning/10" : "bg-destructive/10"
+        }`}>
+          {isOverdue ? (
+            <AlertTriangle className="w-8 h-8 text-warning" />
+          ) : (
+            <Clock className="w-8 h-8 text-destructive" />
+          )}
         </div>
-        <h1 className="text-3xl font-bold tracking-tight mb-3">
-          Seu período de teste expirou
-        </h1>
-        <p className="text-muted-foreground text-lg">
-          Seus 8 dias de teste gratuito terminaram. Escolha um plano para continuar usando o sistema.
-        </p>
+
+        {isOverdue ? (
+          <>
+            <h1 className="text-3xl font-bold tracking-tight mb-3">
+              {subscriptionOverdue ? "Acesso bloqueado por inadimplência" : "Sua assinatura venceu"}
+            </h1>
+            <p className="text-muted-foreground text-lg">
+              {gracePeriodActive ? (
+                <>
+                  Sua assinatura expirou. Você tem <span className="font-bold text-warning">{graceDaysLeft} dia{graceDaysLeft !== 1 ? "s" : ""}</span> de carência para renovar sem perder acesso.
+                </>
+              ) : (
+                "O período de carência terminou. Renove sua assinatura para voltar a usar o sistema. Seus dados estão seguros e serão mantidos."
+              )}
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-3xl font-bold tracking-tight mb-3">
+              Seu período de teste expirou
+            </h1>
+            <p className="text-muted-foreground text-lg">
+              Seus 8 dias de teste gratuito terminaram. Escolha um plano para continuar usando o sistema.
+            </p>
+          </>
+        )}
       </motion.div>
 
       <div className="grid md:grid-cols-2 gap-6 max-w-3xl w-full mx-auto">
@@ -104,7 +131,7 @@ export default function TrialExpirado() {
               disabled={loadingPlan === plan.name}
               onClick={() => handlePlanClick(plan)}
             >
-              {loadingPlan === plan.name ? "Redirecionando..." : "Assinar agora"}
+              {loadingPlan === plan.name ? "Redirecionando..." : isOverdue ? "Renovar agora" : "Assinar agora"}
             </Button>
           </motion.div>
         ))}

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 const TRIAL_DAYS = 8;
+const GRACE_PERIOD_DAYS = 3; // Days after subscription expires before blocking
 
 // Mercado Pago plan mapping
 export const PLANS = {
@@ -26,6 +27,12 @@ interface SubscriptionState {
   trialActive: boolean;
   trialDaysLeft: number | null;
   trialExpired: boolean;
+  // Inadimplência states
+  wasSubscriber: boolean; // Had a subscription before
+  subscriptionOverdue: boolean; // Subscription expired (past grace period)
+  gracePeriodActive: boolean; // In grace period after expiration
+  graceDaysLeft: number | null;
+  daysUntilExpiry: number | null; // Days until current subscription expires
 }
 
 interface SubscriptionContextType extends SubscriptionState {
@@ -42,6 +49,11 @@ const defaultState: SubscriptionState = {
   trialActive: false,
   trialDaysLeft: null,
   trialExpired: false,
+  wasSubscriber: false,
+  subscriptionOverdue: false,
+  gracePeriodActive: false,
+  graceDaysLeft: null,
+  daysUntilExpiry: null,
 };
 
 const SubscriptionContext = createContext<SubscriptionContextType>({
@@ -59,6 +71,24 @@ function calcTrial(createdAt: string) {
   const remainMs = totalMs - elapsed;
   const daysLeft = Math.max(0, Math.ceil(remainMs / (24 * 60 * 60 * 1000)));
   return { trialActive: daysLeft > 0, trialDaysLeft: daysLeft, trialExpired: daysLeft <= 0 };
+}
+
+function calcGracePeriod(subscriptionEnd: string) {
+  const endDate = new Date(subscriptionEnd).getTime();
+  const now = Date.now();
+  const graceEndMs = endDate + GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000;
+  const remainMs = graceEndMs - now;
+  const graceDaysLeft = Math.max(0, Math.ceil(remainMs / (24 * 60 * 60 * 1000)));
+  const isInGrace = now > endDate && graceDaysLeft > 0;
+  const isOverdue = graceDaysLeft <= 0 && now > endDate;
+  return { gracePeriodActive: isInGrace, graceDaysLeft: isInGrace ? graceDaysLeft : null, subscriptionOverdue: isOverdue };
+}
+
+function calcDaysUntilExpiry(subscriptionEnd: string): number | null {
+  const endDate = new Date(subscriptionEnd).getTime();
+  const now = Date.now();
+  if (now > endDate) return null;
+  return Math.ceil((endDate - now) / (24 * 60 * 60 * 1000));
 }
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
@@ -83,17 +113,58 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
       const isSubscribed = data?.subscribed ?? false;
       const planKey = data?.plan_key ?? null;
-      const trial = isSubscribed
-        ? { trialActive: false, trialDaysLeft: null, trialExpired: false }
-        : calcTrial(createdAt);
+      const subscriptionEnd = data?.subscription_end ?? null;
+      const wasSubscriber = data?.was_subscriber ?? false;
+      const lastSubscriptionEnd = data?.last_subscription_end ?? null;
 
-      setState({
-        subscribed: isSubscribed,
-        planKey,
-        subscriptionEnd: data?.subscription_end ?? null,
-        loading: false,
-        ...trial,
-      });
+      if (isSubscribed && subscriptionEnd) {
+        // Active subscription
+        const daysUntilExpiry = calcDaysUntilExpiry(subscriptionEnd);
+        setState({
+          subscribed: true,
+          planKey,
+          subscriptionEnd,
+          loading: false,
+          trialActive: false,
+          trialDaysLeft: null,
+          trialExpired: false,
+          wasSubscriber: true,
+          subscriptionOverdue: false,
+          gracePeriodActive: false,
+          graceDaysLeft: null,
+          daysUntilExpiry,
+        });
+      } else if (wasSubscriber && lastSubscriptionEnd) {
+        // Was a subscriber but subscription expired — check grace period
+        const grace = calcGracePeriod(lastSubscriptionEnd);
+        setState({
+          subscribed: false,
+          planKey,
+          subscriptionEnd: lastSubscriptionEnd,
+          loading: false,
+          trialActive: false,
+          trialDaysLeft: null,
+          trialExpired: false,
+          wasSubscriber: true,
+          ...grace,
+          daysUntilExpiry: null,
+        });
+      } else {
+        // Never subscribed — use trial
+        const trial = calcTrial(createdAt);
+        setState({
+          subscribed: false,
+          planKey: null,
+          subscriptionEnd: null,
+          loading: false,
+          ...trial,
+          wasSubscriber: false,
+          subscriptionOverdue: false,
+          gracePeriodActive: false,
+          graceDaysLeft: null,
+          daysUntilExpiry: null,
+        });
+      }
     } catch {
       const trial = calcTrial(createdAt);
       setState((s) => ({ ...s, loading: false, ...trial }));

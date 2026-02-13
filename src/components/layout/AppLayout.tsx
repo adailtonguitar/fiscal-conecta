@@ -2,6 +2,7 @@ import { AppSidebar } from "./AppSidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { User } from "lucide-react";
 import { UpdateNoticeModal } from "@/components/UpdateNoticeModal";
+import { SubscriptionBanner } from "./SubscriptionBanner";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -15,6 +16,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <UpdateNoticeModal />
       <AppSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
+        <SubscriptionBanner />
         <header className="h-12 border-b border-border bg-card flex items-center justify-end px-4 shrink-0">
           <div className="flex items-center gap-2 text-foreground">
             <User className="w-5 h-5" />
