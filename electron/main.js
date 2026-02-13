@@ -19,11 +19,14 @@ function createWindow() {
     title: 'Sistema PDV',
   });
 
-  // Always load the published URL so updates arrive automatically
+  const publishedURL = 'https://cloud-ponto-magico.lovable.app';
+
   if (app.isPackaged) {
-    mainWindow.loadURL('https://cloud-ponto-magico.lovable.app');
+    // Try online first, fallback to local dist if offline
+    mainWindow.loadURL(publishedURL).catch(() => {
+      mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    });
   } else {
-    // In development, load from Vite dev server
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   }
