@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useCompany } from "@/hooks/useCompany";
 import { SubscriptionProvider, useSubscription } from "@/hooks/useSubscription";
+import { LocalDBProvider } from "@/components/providers/LocalDBProvider";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
@@ -220,7 +221,9 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <SubscriptionProvider>
-              <AppRoutes />
+              <LocalDBProvider>
+                <AppRoutes />
+              </LocalDBProvider>
             </SubscriptionProvider>
           </AuthProvider>
         </BrowserRouter>
