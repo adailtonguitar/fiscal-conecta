@@ -1,7 +1,8 @@
 {
   "appId": "app.lovable.pdv",
   "extraMetadata": {
-    "main": "electron/main.cjs"
+    "main": "electron/main.cjs",
+    "type": "commonjs"
   },
   "productName": "Sistema PDV",
   "directories": {
