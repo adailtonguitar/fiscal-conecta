@@ -1,7 +1,7 @@
 {
   "appId": "app.lovable.pdv",
   "extraMetadata": {
-    "main": "electron/main.js"
+    "main": "electron/main.cjs"
   },
   "productName": "Sistema PDV",
   "directories": {
@@ -10,7 +10,7 @@
   "files": [
     "dist/**/*",
     "electron/**/*",
-    "index.js",
+    "index.cjs",
     "public/pwa-icon-512.png"
   ],
   "win": {

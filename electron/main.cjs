@@ -11,7 +11,7 @@ function createWindow() {
     minHeight: 600,
     icon: path.join(__dirname, '../public/pwa-icon-512.png'),
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
     },
