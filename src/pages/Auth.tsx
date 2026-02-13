@@ -14,6 +14,8 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [signUpName, setSignUpName] = useState("");
   const [mode, setMode] = useState<"login" | "set-password" | "processing">(() => {
     // Check sessionStorage first (set by useAuth or previous redirect)
     if (sessionStorage.getItem("needs-password-setup") === "true") {
@@ -148,6 +150,36 @@ export default function Auth() {
     }
   };
 
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signUpName.trim()) {
+      toast.error("Informe seu nome");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("A senha deve ter no mínimo 6 caracteres");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: signUpName.trim() },
+          emailRedirectTo: window.location.origin,
+        },
+      });
+      if (error) throw error;
+      toast.success("Conta criada! Verifique seu e-mail para confirmar.");
+      setIsSignUp(false);
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao criar conta");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -250,12 +282,33 @@ export default function Auth() {
             </>
           ) : (
             <>
-              <h2 className="text-lg font-semibold text-foreground mb-1">Entrar</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-1">
+                {isSignUp ? "Criar Conta" : "Entrar"}
+              </h2>
               <p className="text-sm text-muted-foreground mb-6">
-                Acesse sua conta para continuar
+                {isSignUp
+                  ? "Preencha os dados para criar sua conta"
+                  : "Acesse sua conta para continuar"}
               </p>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={isSignUp ? handleSignUp : handleSubmit} className="space-y-4">
+                {isSignUp && (
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">Nome</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        value={signUpName}
+                        onChange={(e) => setSignUpName(e.target.value)}
+                        placeholder="Seu nome completo"
+                        required
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className="text-sm font-medium text-foreground mb-1.5 block">E-mail</label>
                   <div className="relative">
@@ -287,27 +340,29 @@ export default function Auth() {
                   </div>
                 </div>
 
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary"
-                  />
-                  <span className="text-sm text-muted-foreground">Manter-me conectado</span>
-                </label>
+                {!isSignUp && (
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 accent-primary"
+                    />
+                    <span className="text-sm text-muted-foreground">Manter-me conectado</span>
+                  </label>
+                )}
 
                 <button
                   type="submit"
                   disabled={loading}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
                 >
-                  {loading ? "Processando..." : "Entrar"}
+                  {loading ? "Processando..." : isSignUp ? "Criar Conta" : "Entrar"}
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </form>
 
-              {showForgotPassword ? (
+              {!isSignUp && showForgotPassword ? (
                 <div className="mt-4 pt-4 border-t border-border">
                   <p className="text-sm font-medium text-foreground mb-3">Recuperar senha</p>
                   <form onSubmit={handleForgotPassword} className="space-y-3">
@@ -339,15 +394,24 @@ export default function Auth() {
                 </div>
               ) : (
                 <div className="mt-4 text-center space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowForgotPassword(true)}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    Esqueci minha senha
-                  </button>
-                  <p className="text-xs text-muted-foreground">
-                    Solicite seu acesso ao administrador da empresa
+                  {!isSignUp && (
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword(true)}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Esqueci minha senha
+                    </button>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    {isSignUp ? "Já tem conta?" : "Não tem conta?"}{" "}
+                    <button
+                      type="button"
+                      onClick={() => { setIsSignUp(!isSignUp); setShowForgotPassword(false); }}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      {isSignUp ? "Entrar" : "Criar conta"}
+                    </button>
                   </p>
                 </div>
               )}
