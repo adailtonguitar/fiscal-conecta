@@ -22,8 +22,8 @@ export function useAdminRole() {
         .eq("role", "super_admin")
         .limit(1);
 
-      console.log("[useAdminRole] user:", user.id, "data:", data, "error:", error);
       setIsSuperAdmin((data?.length ?? 0) > 0);
+      setLoading(false);
       setLoading(false);
     };
 
