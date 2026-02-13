@@ -116,12 +116,22 @@ app.on('ready', () => {
   }
   createWindow();
 
-  // Register F12 to open DevTools in production
+  // Register F12 and Ctrl+Shift+I to open DevTools in production
   globalShortcut.register('F12', () => {
     if (mainWindow && mainWindow.webContents) {
       mainWindow.webContents.toggleDevTools();
     }
   });
+  globalShortcut.register('CommandOrControl+Shift+I', () => {
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.toggleDevTools();
+    }
+  });
+
+  // Auto-open DevTools for 30s to capture errors on startup
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.openDevTools();
+  }
 });
 
 app.on('window-all-closed', () => {
