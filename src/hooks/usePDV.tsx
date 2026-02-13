@@ -89,26 +89,25 @@ export function usePDV() {
     loadProducts();
   }, [loadProducts, sync.isOnline]);
 
-  // Load current cash session
-  useEffect(() => {
+  // Load current cash session — accepts optional terminalId for filtering
+  const loadSession = useCallback(async (tid?: string) => {
     if (!companyId) return;
-
-    const loadSession = async () => {
-      setLoadingSession(true);
-      try {
-        if (navigator.onLine) {
-          const session = await CashSessionService.getCurrentSession(companyId);
-          setCurrentSession(session);
-        }
-      } catch {
-        // offline — no session data
-      } finally {
-        setLoadingSession(false);
+    setLoadingSession(true);
+    try {
+      if (navigator.onLine) {
+        const session = await CashSessionService.getCurrentSession(companyId, tid);
+        setCurrentSession(session);
       }
-    };
-
-    loadSession();
+    } catch {
+      // offline — no session data
+    } finally {
+      setLoadingSession(false);
+    }
   }, [companyId]);
+
+  useEffect(() => {
+    loadSession();
+  }, [loadSession]);
 
   // Cart operations — returns false if product has no stock
   const addToCart = useCallback((product: PDVProduct): boolean => {
@@ -331,6 +330,7 @@ export function usePDV() {
     // Session
     currentSession,
     loadingSession,
+    reloadSession: loadSession,
 
     // Barcode
     handleBarcodeScan,

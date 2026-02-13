@@ -25,9 +25,10 @@ type CashSession = Tables<"cash_sessions">;
 
 interface CashRegisterProps {
   onClose: () => void;
+  terminalId?: string;
 }
 
-export function CashRegister({ onClose }: CashRegisterProps) {
+export function CashRegister({ onClose, terminalId = "01" }: CashRegisterProps) {
   const { user } = useAuth();
   const { companyId } = useCompany();
 
@@ -51,14 +52,14 @@ export function CashRegister({ onClose }: CashRegisterProps) {
     if (!companyId) return;
     setLoading(true);
     try {
-      const data = await CashSessionService.getCurrentSession(companyId);
+      const data = await CashSessionService.getCurrentSession(companyId, terminalId);
       setSession(data);
     } catch {
       // no session
     } finally {
       setLoading(false);
     }
-  }, [companyId]);
+  }, [companyId, terminalId]);
 
   useEffect(() => {
     loadSession();
@@ -90,6 +91,7 @@ export function CashRegister({ onClose }: CashRegisterProps) {
         companyId,
         userId: user.id,
         openingBalance: Number(openingBalance) || 0,
+        terminalId,
       });
       setSession(data);
       setView("status");

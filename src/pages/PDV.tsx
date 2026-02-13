@@ -55,9 +55,16 @@ export default function PDV() {
   const [showPriceLookup, setShowPriceLookup] = useState(false);
   const [priceLookupQuery, setPriceLookupQuery] = useState("");
   const [terminalId, setTerminalId] = useState(() => localStorage.getItem("pdv_terminal_id") || "01");
+  const [showTerminalPicker, setShowTerminalPicker] = useState(false);
+  const [tempTerminalId, setTempTerminalId] = useState(terminalId);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
   useBarcodeScanner(pdv.handleBarcodeScan);
+
+  // Load session for current terminal on mount and terminal change
+  useEffect(() => {
+    pdv.reloadSession(terminalId);
+  }, [terminalId]);
 
   // Auto-focus barcode input on mount and after closing receipt
   useEffect(() => {
@@ -345,10 +352,14 @@ export default function PDV() {
           <span className="text-sm font-bold text-sidebar-foreground tracking-wide">PDV</span>
           <div className="h-4 w-px bg-border" />
           {/* Terminal ID */}
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-muted border border-border">
+          <button
+            onClick={() => { setTempTerminalId(terminalId); setShowTerminalPicker(true); }}
+            className="flex items-center gap-1.5 px-2 py-1 rounded bg-muted border border-border hover:bg-accent transition-all cursor-pointer"
+            title="Trocar terminal"
+          >
             <Monitor className="w-3 h-3 text-muted-foreground" />
             <span className="text-xs font-bold text-foreground font-mono">T{terminalId}</span>
-          </div>
+          </button>
           <div className="h-4 w-px bg-border" />
           {/* Status: Caixa Aberto */}
           <div className={`flex items-center gap-1.5 px-3 py-1 rounded border ${pdv.trainingMode ? "bg-warning/20 border-warning/30" : "bg-success/20 border-success/30"}`}>
@@ -613,7 +624,15 @@ export default function PDV() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showCashRegister && <CashRegister onClose={() => setShowCashRegister(false)} />}
+        {showCashRegister && (
+          <CashRegister
+            terminalId={terminalId}
+            onClose={() => {
+              setShowCashRegister(false);
+              pdv.reloadSession(terminalId);
+            }}
+          />
+        )}
       </AnimatePresence>
 
       {/* Zero stock dialog */}
@@ -843,6 +862,81 @@ export default function PDV() {
                     Salvar Orçamento
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Terminal Picker Modal */}
+      <AnimatePresence>
+        {showTerminalPicker && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm"
+            onClick={() => setShowTerminalPicker(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-card rounded-2xl border border-border card-shadow w-full max-w-sm mx-4 p-6 space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
+                  <Monitor className="w-5 h-5 text-accent-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-foreground">Selecionar Terminal</h3>
+                  <p className="text-xs text-muted-foreground">Identificação deste ponto de venda</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {["01", "02", "03", "04", "05", "06", "07", "08"].map((tid) => (
+                  <button
+                    key={tid}
+                    onClick={() => setTempTerminalId(tid)}
+                    className={`py-3 rounded-xl text-sm font-bold font-mono transition-all ${
+                      tempTerminalId === tid
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-foreground hover:bg-accent"
+                    }`}
+                  >
+                    T{tid}
+                  </button>
+                ))}
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Ou digite o número:</label>
+                <input
+                  type="text"
+                  maxLength={3}
+                  value={tempTerminalId}
+                  onChange={(e) => setTempTerminalId(e.target.value.replace(/\D/g, "").padStart(2, "0").slice(-2))}
+                  className="w-full px-3 py-2 rounded-xl bg-background border border-border text-foreground font-mono text-center text-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowTerminalPicker(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    const newId = tempTerminalId || "01";
+                    setTerminalId(newId);
+                    localStorage.setItem("pdv_terminal_id", newId);
+                    setShowTerminalPicker(false);
+                    toast.success(`Terminal alterado para T${newId}`);
+                  }}
+                  className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:opacity-90 transition-all"
+                >
+                  Confirmar
+                </button>
               </div>
             </motion.div>
           </motion.div>
