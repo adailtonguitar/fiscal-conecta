@@ -48,7 +48,14 @@ const navItems: NavEntry[] = [
     ],
   },
   { icon: FileText, label: "Vendas", path: "/vendas" },
-  { icon: BarChart3, label: "Relatório Vendas", path: "/relatorio-vendas" },
+  {
+    icon: BarChart3,
+    label: "Relatórios",
+    children: [
+      { icon: BarChart3, label: "Relatório Vendas", path: "/relatorio-vendas" },
+      { icon: Brain, label: "Relatórios IA", path: "/relatorios-ia" },
+    ],
+  },
   { icon: DollarSign, label: "Caixa", path: "/caixa" },
   { icon: Landmark, label: "Financeiro", path: "/financeiro" },
   { icon: FileSpreadsheet, label: "DRE", path: "/dre" },
@@ -72,7 +79,6 @@ const navItems: NavEntry[] = [
     ],
   },
   { icon: Gift, label: "Fidelidade", path: "/fidelidade" },
-  { icon: Brain, label: "Relatórios IA", path: "/relatorios-ia" },
   { icon: Tag, label: "Etiquetas", path: "/etiquetas" },
   { icon: Receipt, label: "Fiscal", path: "/fiscal" },
   { icon: Shield, label: "Config. Fiscal", path: "/fiscal/config" },
