@@ -2543,12 +2543,40 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       get_user_company_ids: { Args: never; Returns: string[] }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_company_admin_or_manager: {
         Args: { _company_id: string }
         Returns: boolean
@@ -2557,6 +2585,7 @@ export type Database = {
       is_reseller_owner: { Args: { _reseller_id: string }; Returns: boolean }
     }
     Enums: {
+      app_role: "super_admin"
       cash_movement_type:
         | "abertura"
         | "sangria"
@@ -2738,6 +2767,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["super_admin"],
       cash_movement_type: [
         "abertura",
         "sangria",
