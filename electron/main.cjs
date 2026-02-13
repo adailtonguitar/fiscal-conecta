@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, session } = require('electron');
+const { app, BrowserWindow, Menu, session, dialog } = require('electron');
 const path = require('path');
 
 let mainWindow;
@@ -66,9 +66,18 @@ function createWindow() {
   });
 
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-    mainWindow.webContents.executeJavaScript(
-      'document.body.innerHTML = "<div style=\\'padding:40px;font:16px sans-serif\\'><h1>Erro ao carregar</h1><p>Erro: ' + errorDescription + ' (' + errorCode + ')</p><p>Verifique sua conexão com a internet.</p></div>";'
-    ).catch(function() {});
+    dialog.showErrorBox(
+      'Erro ao carregar',
+      'Não foi possível conectar ao servidor.\nErro: ' + errorDescription + ' (' + errorCode + ')\n\nVerifique sua conexão com a internet.'
+    );
+    // Try local fallback
+    mainWindow.loadFile(path.join(__dirname, '../dist/index.html')).catch(function() {});
+  });
+
+  // Render process crashed
+  mainWindow.webContents.on('render-process-gone', (event, details) => {
+    dialog.showErrorBox('Erro', 'O processo de renderização falhou: ' + details.reason);
+  });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
