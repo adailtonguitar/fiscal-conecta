@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useStockMovements, useCreateStockMovement } from "@/hooks/useStockMovements";
-import { useProducts, type Product } from "@/hooks/useProducts";
+import { useLocalStockMovements, useRegisterLocalStockMovement } from "@/hooks/useLocalStock";
+import { useLocalProducts, type LocalProduct } from "@/hooks/useLocalProducts";
 import { formatCurrency } from "@/lib/mock-data";
 import {
   Dialog,
@@ -51,9 +51,9 @@ function RegisterLossDialog({
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  products: Product[];
+  products: LocalProduct[];
 }) {
-  const createMovement = useCreateStockMovement();
+  const createMovement = useRegisterLocalStockMovement();
   const [productId, setProductId] = useState("");
   const [category, setCategory] = useState<LossCategory>("quebra");
   const [quantity, setQuantity] = useState("");
@@ -170,8 +170,8 @@ function RegisterLossDialog({
 }
 
 export default function Perdas() {
-  const { data: movements = [], isLoading } = useStockMovements();
-  const { data: products = [] } = useProducts();
+  const { data: movements = [], isLoading } = useLocalStockMovements();
+  const { data: products = [] } = useLocalProducts();
   const [search, setSearch] = useState("");
   const [showRegister, setShowRegister] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>("all");

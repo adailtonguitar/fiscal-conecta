@@ -725,7 +725,7 @@ export default function PDV() {
             unit: stockMovementProduct.unit,
             stock_quantity: stockMovementProduct.stock_quantity,
             price: stockMovementProduct.price,
-            is_active: true,
+            is_active: 1,
             created_at: "",
             updated_at: "",
             company_id: "",

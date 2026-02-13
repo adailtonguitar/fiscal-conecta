@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { useCreateStockMovement } from "@/hooks/useStockMovements";
-import type { Product } from "@/hooks/useProducts";
+import { useRegisterLocalStockMovement } from "@/hooks/useLocalStock";
+import type { LocalProduct } from "@/hooks/useLocalProducts";
 
 const schema = z.object({
   type: z.enum(["entrada", "saida", "ajuste"]),
@@ -24,7 +24,7 @@ type FormData = z.infer<typeof schema>;
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  product: Product;
+  product: LocalProduct;
 }
 
 const typeLabels: Record<string, { label: string; color: string }> = {
@@ -34,7 +34,7 @@ const typeLabels: Record<string, { label: string; color: string }> = {
 };
 
 export function StockMovementDialog({ open, onOpenChange, product }: Props) {
-  const createMovement = useCreateStockMovement();
+  const createMovement = useRegisterLocalStockMovement();
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),

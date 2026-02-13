@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useCreateProduct } from "@/hooks/useProducts";
+import { useCreateLocalProduct } from "@/hooks/useLocalProducts";
 import { toast } from "sonner";
 
 interface Props {
@@ -29,7 +29,7 @@ export function CSVImportDialog({ open, onOpenChange }: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
   const [done, setDone] = useState(false);
-  const createProduct = useCreateProduct();
+  const createProduct = useCreateLocalProduct();
 
   const parseCSV = (text: string) => {
     const lines = text.split("\n").map(l => l.trim()).filter(Boolean);

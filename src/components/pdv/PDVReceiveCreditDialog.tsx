@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Search, X, User, CreditCard, Check, DollarSign } from "lucide-react";
-import { useClients } from "@/hooks/useClients";
-import { useFinancialEntries, useMarkAsPaid } from "@/hooks/useFinancialEntries";
+import { useLocalClients } from "@/hooks/useLocalClients";
+import { useLocalFinancialEntries, useMarkAsLocalPaid } from "@/hooks/useLocalFinancial";
 import { useCompany } from "@/hooks/useCompany";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,9 +35,9 @@ export function PDVReceiveCreditDialog({ open, onClose }: PDVReceiveCreditDialog
   const [isProcessingDirect, setIsProcessingDirect] = useState(false);
   const [receiptData, setReceiptData] = useState<CreditReceiptData | null>(null);
 
-  const { data: clients = [] } = useClients();
-  const { data: entries = [] } = useFinancialEntries({ type: "receber", status: "pendente" });
-  const markAsPaid = useMarkAsPaid();
+  const { data: clients = [] } = useLocalClients();
+  const { data: entries = [] } = useLocalFinancialEntries({ type: "receber" });
+  const markAsPaid = useMarkAsLocalPaid();
   const { companyId, companyName, slogan } = useCompany();
   const { user } = useAuth();
   const qc = useQueryClient();

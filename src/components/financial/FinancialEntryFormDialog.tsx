@@ -8,7 +8,7 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { useCreateFinancialEntry, useUpdateFinancialEntry, type FinancialEntry } from "@/hooks/useFinancialEntries";
+import { useCreateLocalFinancialEntry, useUpdateLocalFinancialEntry, type LocalFinancialEntry } from "@/hooks/useLocalFinancial";
 
 const schema = z.object({
   type: z.enum(["pagar", "receber"]),
@@ -33,7 +33,7 @@ type FormData = z.infer<typeof schema>;
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  entry?: FinancialEntry | null;
+  entry?: LocalFinancialEntry | null;
   defaultType?: "pagar" | "receber";
 }
 
@@ -57,8 +57,8 @@ const payCategories = ["fornecedor", "aluguel", "energia", "agua", "internet", "
 const receiveCategories = ["venda", "servico", "comissao", "reembolso", "outros"];
 
 export function FinancialEntryFormDialog({ open, onOpenChange, entry, defaultType = "pagar" }: Props) {
-  const createEntry = useCreateFinancialEntry();
-  const updateEntry = useUpdateFinancialEntry();
+  const createEntry = useCreateLocalFinancialEntry();
+  const updateEntry = useUpdateLocalFinancialEntry();
   const isEditing = !!entry;
 
   const form = useForm<FormData>({

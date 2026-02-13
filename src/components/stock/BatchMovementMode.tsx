@@ -5,13 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/mock-data";
-import { useUpdateProduct, type Product } from "@/hooks/useProducts";
-import { useCreateStockMovement } from "@/hooks/useStockMovements";
+import { useUpdateLocalProduct, type LocalProduct } from "@/hooks/useLocalProducts";
+import { useRegisterLocalStockMovement } from "@/hooks/useLocalStock";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Props {
-  products: Product[];
+  products: LocalProduct[];
   onClose: () => void;
 }
 
@@ -35,8 +35,8 @@ export function BatchMovementMode({ products, onClose }: Props) {
   const [priceEntries, setPriceEntries] = useState<Record<string, PriceEntry>>({});
   const [saving, setSaving] = useState(false);
 
-  const createMovement = useCreateStockMovement();
-  const updateProduct = useUpdateProduct();
+  const createMovement = useRegisterLocalStockMovement();
+  const updateProduct = useUpdateLocalProduct();
 
   const filtered = useMemo(
     () =>
