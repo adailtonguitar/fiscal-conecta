@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, dialog } = require('electron');
+const { app, BrowserWindow, Menu, dialog, globalShortcut } = require('electron');
 const path = require('path');
 
 let mainWindow;
@@ -67,6 +67,10 @@ app.on('ready', () => {
     Menu.setApplicationMenu(null);
   }
   createWindow();
+  // Enable F12 for DevTools in production
+  globalShortcut.register('F12', () => {
+    if (mainWindow) mainWindow.webContents.toggleDevTools();
+  });
 });
 
 app.on('window-all-closed', () => {
