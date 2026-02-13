@@ -1,14 +1,16 @@
 import { AlertTriangle, Clock, X } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export function SubscriptionBanner() {
   const { subscribed, daysUntilExpiry, gracePeriodActive, graceDaysLeft, trialActive, trialDaysLeft } = useSubscription();
+  const { isSuperAdmin } = useAdminRole();
   const [dismissed, setDismissed] = useState(false);
   const navigate = useNavigate();
 
-  if (dismissed) return null;
+  if (dismissed || isSuperAdmin) return null;
 
   // Show warning when subscription expires in 5 days or less
   if (subscribed && daysUntilExpiry !== null && daysUntilExpiry <= 5) {
