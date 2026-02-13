@@ -10,6 +10,7 @@
   "files": [
     "dist/**/*",
     "electron/**/*",
+    "index.js",
     "public/pwa-icon-512.png"
   ],
   "win": {
