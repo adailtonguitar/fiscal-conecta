@@ -51,6 +51,7 @@ import Lotes from "./pages/Lotes";
 import Movimentacoes from "./pages/Movimentacoes";
 import Perdas from "./pages/Perdas";
 import Fidelidade from "./pages/Fidelidade";
+import RelatoriosIA from "./pages/RelatoriosIA";
 
 const queryClient = new QueryClient();
 
@@ -172,6 +173,7 @@ function AppRoutes() {
                 <Route path="/estoque/lotes" element={<Lotes />} />
                 <Route path="/estoque/perdas" element={<Perdas />} />
                 <Route path="/fidelidade" element={<Fidelidade />} />
+                <Route path="/relatorios-ia" element={<RelatoriosIA />} />
                 <Route path="/etiquetas" element={<Etiquetas />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
