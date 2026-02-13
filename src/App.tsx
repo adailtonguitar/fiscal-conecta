@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useCompany } from "@/hooks/useCompany";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import { SubscriptionProvider, useSubscription } from "@/hooks/useSubscription";
 import { LocalDBProvider } from "@/components/providers/LocalDBProvider";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -65,6 +66,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, signOut } = useAuth();
   const { companyId, loading: companyLoading } = useCompany();
   const { subscribed, trialExpired, subscriptionOverdue, blocked, loading: subLoading } = useSubscription();
+  const { isSuperAdmin, loading: adminLoading } = useAdminRole();
   const hasSignedOut = useRef(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -96,7 +98,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
-  if (loading || companyLoading || subLoading) {
+  if (loading || companyLoading || subLoading || adminLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -112,8 +114,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!companyId) return <Navigate to="/" replace />;
 
-  // Kill switch or subscription block
-  if (blocked || (trialExpired && !subscribed) || subscriptionOverdue) {
+  // Kill switch or subscription block (super_admin bypasses)
+  if (!isSuperAdmin && (blocked || (trialExpired && !subscribed) || subscriptionOverdue)) {
     return <Navigate to="/trial-expirado" replace />;
   }
 
