@@ -1,0 +1,29 @@
+{
+  "appId": "app.lovable.pdv",
+  "productName": "Sistema PDV",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/**/*",
+    "public/pwa-icon-512.png"
+  ],
+  "win": {
+    "target": ["nsis"],
+    "icon": "public/pwa-icon-512.png"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "installerIcon": "public/pwa-icon-512.png",
+    "uninstallerIcon": "public/pwa-icon-512.png",
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Sistema PDV"
+  },
+  "linux": {
+    "target": ["AppImage"],
+    "icon": "public/pwa-icon-512.png"
+  }
+}
