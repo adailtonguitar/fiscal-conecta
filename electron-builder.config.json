@@ -1,5 +1,8 @@
 {
   "appId": "app.lovable.pdv",
+  "extraMetadata": {
+    "main": "electron/main.js"
+  },
   "productName": "Sistema PDV",
   "directories": {
     "output": "release"
