@@ -50,8 +50,8 @@ export default function Instalar() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-start justify-center p-4 overflow-y-auto">
-      <div className="max-w-lg w-full space-y-6">
+    <div className="h-screen bg-background overflow-y-auto">
+      <div className="max-w-lg w-full mx-auto space-y-6 p-4 pb-12">
         <div className="text-center space-y-2">
           <img src="/pwa-icon-192.png" alt="PDV Fiscal" className="w-20 h-20 mx-auto rounded-2xl shadow-lg" />
           <h1 className="text-3xl font-bold text-foreground">PDV Fiscal</h1>
