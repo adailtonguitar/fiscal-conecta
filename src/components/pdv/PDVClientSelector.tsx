@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Search, User, X, CreditCard, Calendar } from "lucide-react";
+import { Search, User, X, CreditCard, Calendar, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/hooks/useCompany";
@@ -31,21 +31,79 @@ export function PDVClientSelector({ open, onClose, onSelect, saleTotal }: PDVCli
   const [selectedClient, setSelectedClient] = useState<CreditClient | null>(null);
   const [mode, setMode] = useState<"fiado" | "parcelado">("fiado");
   const [installments, setInstallments] = useState(2);
+  const [overdueCount, setOverdueCount] = useState(0);
+  const [overdueTotal, setOverdueTotal] = useState(0);
+  const [checkingOverdue, setCheckingOverdue] = useState(false);
+  // Map client_id -> has overdue (for list badges)
+  const [overdueClients, setOverdueClients] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!open || !companyId) return;
     setLoading(true);
-    supabase
-      .from("clients")
-      .select("id, name, cpf_cnpj, phone, credit_limit, credit_balance")
-      .eq("company_id", companyId)
-      .eq("is_active", true)
-      .order("name")
-      .then(({ data }) => {
-        setClients((data as CreditClient[]) || []);
-        setLoading(false);
-      });
+    setSelectedClient(null);
+    setOverdueCount(0);
+    setOverdueTotal(0);
+
+    const loadData = async () => {
+      const [clientsRes, overdueRes] = await Promise.all([
+        supabase
+          .from("clients")
+          .select("id, name, cpf_cnpj, phone, credit_limit, credit_balance")
+          .eq("company_id", companyId)
+          .eq("is_active", true)
+          .order("name"),
+        // Get all overdue receivables linked to clients
+        supabase
+          .from("financial_entries")
+          .select("counterpart, amount")
+          .eq("company_id", companyId)
+          .eq("type", "receber")
+          .eq("status", "pendente")
+          .lt("due_date", new Date().toISOString().slice(0, 10)),
+      ]);
+
+      setClients((clientsRes.data as CreditClient[]) || []);
+
+      // Build set of client names with overdue entries
+      const overdueSet = new Set<string>();
+      if (overdueRes.data) {
+        for (const entry of overdueRes.data) {
+          if (entry.counterpart) {
+            overdueSet.add(entry.counterpart);
+          }
+        }
+      }
+      setOverdueClients(overdueSet);
+      setLoading(false);
+    };
+
+    loadData();
   }, [open, companyId]);
+
+  // Check overdue for selected client
+  useEffect(() => {
+    if (!selectedClient || !companyId) {
+      setOverdueCount(0);
+      setOverdueTotal(0);
+      return;
+    }
+
+    setCheckingOverdue(true);
+    supabase
+      .from("financial_entries")
+      .select("id, amount, due_date")
+      .eq("company_id", companyId)
+      .eq("type", "receber")
+      .eq("status", "pendente")
+      .eq("counterpart", selectedClient.name)
+      .lt("due_date", new Date().toISOString().slice(0, 10))
+      .then(({ data }) => {
+        const entries = data || [];
+        setOverdueCount(entries.length);
+        setOverdueTotal(entries.reduce((sum, e) => sum + Number(e.amount), 0));
+        setCheckingOverdue(false);
+      });
+  }, [selectedClient, companyId]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return clients;
@@ -64,10 +122,10 @@ export function PDVClientSelector({ open, onClose, onSelect, saleTotal }: PDVCli
   const hasEnoughCredit = selectedClient
     ? selectedClient.credit_limit === 0 || availableCredit >= saleTotal
     : false;
-  // credit_limit === 0 means no limit set, but we should still check
   const creditBlocked = selectedClient
     ? selectedClient.credit_limit > 0 && availableCredit < saleTotal
     : false;
+  const hasOverdue = overdueCount > 0;
 
   if (!open) return null;
 
@@ -119,20 +177,30 @@ export function PDVClientSelector({ open, onClose, onSelect, saleTotal }: PDVCli
               ) : (
                 filtered.map((client) => {
                   const available = client.credit_limit > 0 ? client.credit_limit - client.credit_balance : null;
+                  const clientHasOverdue = overdueClients.has(client.name);
                   return (
                     <button
                       key={client.id}
                       onClick={() => setSelectedClient(client)}
                       className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-all text-left"
                     >
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <User className="w-5 h-5 text-primary" />
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        clientHasOverdue ? "bg-destructive/10" : "bg-primary/10"
+                      }`}>
+                        {clientHasOverdue ? (
+                          <AlertTriangle className="w-5 h-5 text-destructive" />
+                        ) : (
+                          <User className="w-5 h-5 text-primary" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{client.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {client.cpf_cnpj || "Sem documento"}{" "}
-                          {client.credit_balance > 0 && (
+                          {clientHasOverdue && (
+                            <span className="text-destructive font-bold">• INADIMPLENTE</span>
+                          )}
+                          {!clientHasOverdue && client.credit_balance > 0 && (
                             <span className="text-warning">• Devendo {formatCurrency(client.credit_balance)}</span>
                           )}
                         </p>
@@ -191,7 +259,22 @@ export function PDVClientSelector({ open, onClose, onSelect, saleTotal }: PDVCli
               </div>
             )}
 
-            {creditBlocked && (
+            {/* Overdue block */}
+            {hasOverdue && !checkingOverdue && (
+              <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 space-y-2">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-destructive" />
+                  <p className="text-sm font-bold text-destructive">Cliente inadimplente</p>
+                </div>
+                <p className="text-xs text-destructive/80">
+                  Este cliente possui {overdueCount} conta{overdueCount !== 1 ? "s" : ""} vencida{overdueCount !== 1 ? "s" : ""} totalizando{" "}
+                  <span className="font-bold">{formatCurrency(overdueTotal)}</span>. 
+                  Novas vendas a prazo estão bloqueadas até a regularização.
+                </p>
+              </div>
+            )}
+
+            {creditBlocked && !hasOverdue && (
               <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-center">
                 <p className="text-sm font-medium text-destructive">
                   Limite de crédito insuficiente para esta venda ({formatCurrency(saleTotal)})
@@ -199,7 +282,7 @@ export function PDVClientSelector({ open, onClose, onSelect, saleTotal }: PDVCli
               </div>
             )}
 
-            {!creditBlocked && (
+            {!creditBlocked && !hasOverdue && !checkingOverdue && (
               <>
                 {/* Mode selection */}
                 <div className="space-y-2">
