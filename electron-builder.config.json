@@ -15,13 +15,13 @@
   ],
   "win": {
     "target": ["nsis"],
-    "icon": "public/pwa-icon-512.png"
+    "icon": "public/app-icon.ico"
   },
   "nsis": {
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
-    "installerIcon": "public/pwa-icon-512.png",
-    "uninstallerIcon": "public/pwa-icon-512.png",
+    "installerIcon": "public/app-icon.ico",
+    "uninstallerIcon": "public/app-icon.ico",
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
     "shortcutName": "Sistema PDV"
