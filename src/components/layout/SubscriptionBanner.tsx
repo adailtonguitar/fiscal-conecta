@@ -6,10 +6,11 @@ import { useNavigate } from "react-router-dom";
 
 export function SubscriptionBanner() {
   const { subscribed, daysUntilExpiry, gracePeriodActive, graceDaysLeft, trialActive, trialDaysLeft } = useSubscription();
-  const { isSuperAdmin } = useAdminRole();
+  const { isSuperAdmin, loading: adminLoading } = useAdminRole();
   const [dismissed, setDismissed] = useState(false);
   const navigate = useNavigate();
 
+  if (adminLoading) return null;
   if (dismissed || isSuperAdmin) return null;
 
   // Show warning when subscription expires in 5 days or less
