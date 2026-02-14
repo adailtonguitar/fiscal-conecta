@@ -22,6 +22,7 @@ import { generatePixPayload } from "@/lib/pix-brcode";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { MercadoPagoTEFService } from "@/services/MercadoPagoTEFService";
+import { TEFGatewayService } from "@/services/TEFGatewayService";
 import { supabase } from "@/integrations/supabase/client";
 
 type PaymentStep = "select" | "amount" | "details" | "processing" | "result" | "summary";
@@ -41,9 +42,11 @@ interface TEFProcessorProps {
   tefConfig?: {
     provider: string;
     apiKey?: string | null;
+    apiSecret?: string | null;
     terminalId?: string;
     merchantId?: string | null;
     companyId?: string;
+    environment?: string;
   } | null;
 }
 
@@ -264,6 +267,55 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, pi
           amount: amt,
         };
         setCurrentResult(tefResult);
+        setStep("result");
+        return;
+      }
+    }
+
+    // === Real integration for Cielo, Rede, PagSeguro, Stone ===
+    const gatewayProviders = ["cielo", "rede", "pagseguro", "stone"];
+    if (tefConfig?.provider && gatewayProviders.includes(tefConfig.provider) && tefConfig?.apiKey) {
+      try {
+        const result = await TEFGatewayService.processPayment({
+          credentials: {
+            provider: tefConfig.provider as "cielo" | "rede" | "pagseguro" | "stone",
+            environment: tefConfig.environment || "sandbox",
+            merchantId: tefConfig.merchantId || undefined,
+            merchantKey: tefConfig.apiSecret || tefConfig.apiKey || undefined,
+            apiKey: tefConfig.apiKey || undefined,
+            accessToken: tefConfig.apiKey || undefined,
+            pv: tefConfig.merchantId || undefined,
+            integrationKey: tefConfig.apiKey || undefined,
+          },
+          amount: amt,
+          installments: method === "credito" ? installments : 1,
+          paymentType: method === "debito" ? "debito" : "credito",
+          description: "Venda PDV",
+          onStatusChange: (status) => setProcessingStatus(status),
+        });
+
+        const tefResult: TEFResult = {
+          method,
+          approved: result.approved,
+          amount: amt,
+          nsu: result.nsu,
+          authCode: result.authCode,
+          cardBrand: result.cardBrand,
+          cardLastDigits: result.cardLastDigits,
+          installments: method === "credito" ? installments : undefined,
+        };
+
+        setCurrentResult(tefResult);
+        setStep("result");
+
+        if (!result.approved) {
+          toast.error(result.errorMessage || "Pagamento não aprovado");
+        }
+        return;
+      } catch (err: any) {
+        console.error(`[TEF-${tefConfig.provider}] Erro:`, err);
+        toast.error(`Erro TEF: ${err.message}`);
+        setCurrentResult({ method, approved: false, amount: amt });
         setStep("result");
         return;
       }
