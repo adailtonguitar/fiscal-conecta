@@ -38,28 +38,33 @@ export function useCompany(): CompanyData {
     }
 
     const fetchCompany = async () => {
-      const { data: cuData } = await supabase
-        .from("company_users")
-        .select("company_id")
-        .eq("user_id", user.id)
-        .eq("is_active", true)
-        .limit(1)
-        .single();
-
-      if (cuData?.company_id) {
-        setCompanyId(cuData.company_id);
-        const { data: company } = await supabase
-          .from("companies")
-          .select("name, logo_url, slogan, pix_key, pix_key_type, pix_city, address_city")
-          .eq("id", cuData.company_id)
+      try {
+        const { data: cuData } = await supabase
+          .from("company_users")
+          .select("company_id")
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .limit(1)
           .single();
-        setCompanyName(company?.name ?? null);
-        setLogoUrl(company?.logo_url ?? null);
-        setSlogan((company as any)?.slogan ?? null);
-        setPixKey((company as any)?.pix_key ?? null);
-        setPixKeyType((company as any)?.pix_key_type ?? null);
-        setPixCity((company as any)?.pix_city || (company as any)?.address_city || null);
-      } else {
+
+        if (cuData?.company_id) {
+          setCompanyId(cuData.company_id);
+          const { data: company } = await supabase
+            .from("companies")
+            .select("name, logo_url, slogan, pix_key, pix_key_type, pix_city, address_city")
+            .eq("id", cuData.company_id)
+            .single();
+          setCompanyName(company?.name ?? null);
+          setLogoUrl(company?.logo_url ?? null);
+          setSlogan((company as any)?.slogan ?? null);
+          setPixKey((company as any)?.pix_key ?? null);
+          setPixKeyType((company as any)?.pix_key_type ?? null);
+          setPixCity((company as any)?.pix_city || (company as any)?.address_city || null);
+        } else {
+          setCompanyId(null);
+        }
+      } catch (err) {
+        console.error("[useCompany] Failed to fetch company:", err);
         setCompanyId(null);
       }
       setLoading(false);

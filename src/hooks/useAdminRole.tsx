@@ -30,16 +30,22 @@ export function useAdminRole() {
     }
 
     const check = async () => {
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "super_admin")
-        .limit(1);
+      try {
+        const { data } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .eq("role", "super_admin")
+          .limit(1);
 
-      const result = (data?.length ?? 0) > 0;
-      cachedResult = { userId: user.id, isSuperAdmin: result };
-      setIsSuperAdmin(result);
+        const result = (data?.length ?? 0) > 0;
+        cachedResult = { userId: user.id, isSuperAdmin: result };
+        setIsSuperAdmin(result);
+      } catch (err) {
+        console.error("[useAdminRole] Check failed:", err);
+        cachedResult = { userId: user.id, isSuperAdmin: false };
+        setIsSuperAdmin(false);
+      }
       setLoading(false);
     };
 
