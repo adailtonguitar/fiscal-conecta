@@ -216,7 +216,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold tracking-tight">Planos que cabem no seu negócio</h2>
-            <p className="mt-3 text-muted-foreground">Comece grátis por 14 dias. Sem cartão de crédito.</p>
+            <p className="mt-3 text-muted-foreground">Comece grátis por 8 dias. Sem cartão de crédito.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {plans.map((plan, i) => (
@@ -280,7 +280,7 @@ export default function LandingPage() {
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold tracking-tight">Pronto para modernizar seu negócio?</h2>
           <p className="mt-4 text-muted-foreground text-lg">
-            Cadastre-se em segundos e comece a vender hoje mesmo. 14 dias grátis, sem compromisso.
+            Cadastre-se em segundos e comece a vender hoje mesmo. 8 dias grátis, sem compromisso.
           </p>
           <Button asChild size="lg" className="mt-8 text-base px-10 h-12">
             <Link to="/auth">
