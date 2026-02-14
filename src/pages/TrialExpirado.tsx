@@ -69,7 +69,7 @@ export default function TrialExpirado() {
   // Kill switch — show blocked message
   if (blocked) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12">
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-background flex flex-col items-center justify-center px-4 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -94,7 +94,7 @@ export default function TrialExpirado() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-background flex flex-col items-center justify-center px-4 py-12">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
