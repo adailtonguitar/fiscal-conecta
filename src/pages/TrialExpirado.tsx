@@ -5,6 +5,7 @@ import { PLANS, useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Navigate } from "react-router-dom";
 
 const plans = [
   {
@@ -45,8 +46,13 @@ const plans = [
 
 export default function TrialExpirado() {
   const { user, signOut } = useAuth();
-  const { createCheckout, wasSubscriber, gracePeriodActive, graceDaysLeft, subscriptionOverdue, blocked, blockReason } = useSubscription();
+  const { subscribed, createCheckout, wasSubscriber, gracePeriodActive, graceDaysLeft, subscriptionOverdue, blocked, blockReason, loading: subLoading } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  // If user has active subscription, redirect to dashboard
+  if (!subLoading && subscribed) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handlePlanClick = async (plan: typeof plans[0]) => {
     if (!user) {
