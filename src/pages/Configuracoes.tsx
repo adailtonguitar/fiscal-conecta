@@ -1,11 +1,81 @@
 import { useState, useEffect } from "react";
-import { Download, Clock, HardDrive, Percent, Save, Loader2, Crown, Check, ArrowRight } from "lucide-react";
+import { Download, Clock, HardDrive, Percent, Save, Loader2, Crown, Check, ArrowRight, MessageCircle } from "lucide-react";
 import { TEFConfigSection } from "@/components/settings/TEFConfigSection";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useSubscription, PLANS } from "@/hooks/useSubscription";
+import { useCompany } from "@/hooks/useCompany";
+
+function WhatsAppSupportSection() {
+  const { role } = usePermissions();
+  const { companyId } = useCompany();
+  const [number, setNumber] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!companyId) return;
+    const load = async () => {
+      const { data } = await supabase.from("companies").select("whatsapp_support").eq("id", companyId).single();
+      if (data?.whatsapp_support) setNumber(data.whatsapp_support);
+      setLoading(false);
+    };
+    load();
+  }, [companyId]);
+
+  const handleSave = async () => {
+    if (!companyId) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("companies").update({ whatsapp_support: number || null }).eq("id", companyId);
+      if (error) throw error;
+      toast.success("WhatsApp de suporte salvo!");
+    } catch {
+      toast.error("Erro ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (role !== "admin") return null;
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden">
+      <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+        <MessageCircle className="w-4 h-4 text-primary" />
+        <h2 className="text-base font-semibold text-foreground">WhatsApp de Suporte</h2>
+      </div>
+      <div className="p-5 space-y-4">
+        <p className="text-sm text-muted-foreground">Configure o número de WhatsApp que será exibido no botão flutuante de suporte para seus usuários.</p>
+        {loading ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <>
+            <input
+              type="text"
+              value={number}
+              onChange={(e) => setNumber(e.target.value)}
+              placeholder="(11) 99999-9999"
+              className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            />
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Salvar
+            </button>
+          </>
+        )}
+      </div>
+    </motion.div>
+  );
+}
 
 const roleLabels: Record<string, string> = {
   admin: "Administrador",
@@ -259,6 +329,9 @@ export default function Configuracoes() {
 
       {/* My Plan */}
       <MyPlanSection />
+
+      {/* WhatsApp Support */}
+      <WhatsAppSupportSection />
 
       {/* Discount Limits */}
       <DiscountLimitsSection />

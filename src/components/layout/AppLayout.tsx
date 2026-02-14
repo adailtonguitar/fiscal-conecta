@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { User } from "lucide-react";
 import { UpdateNoticeModal } from "@/components/UpdateNoticeModal";
 import { SubscriptionBanner } from "./SubscriptionBanner";
+import { WhatsAppFloatingButton } from "./WhatsAppFloatingButton";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -25,6 +26,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </header>
         <main className="flex-1 overflow-auto">{children}</main>
       </div>
+      <WhatsAppFloatingButton />
     </div>
   );
 }

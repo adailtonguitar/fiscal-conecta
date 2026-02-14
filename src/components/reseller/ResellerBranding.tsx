@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Palette, Save, Globe, Upload, Image, Trash2, Loader2 } from "lucide-react";
+import { Palette, Save, Globe, Upload, Image, Trash2, Loader2, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ export function ResellerBranding({ reseller, onUpdate }: Props) {
   const [secondaryColor, setSecondaryColor] = useState(reseller.secondary_color || "#0f766e");
   const [customDomain, setCustomDomain] = useState(reseller.custom_domain || "");
   const [logoUrl, setLogoUrl] = useState(reseller.logo_url || "");
+  const [whatsappSupport, setWhatsappSupport] = useState(reseller.whatsapp_support || "");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -82,6 +83,7 @@ export function ResellerBranding({ reseller, onUpdate }: Props) {
       secondary_color: secondaryColor,
       custom_domain: customDomain || null,
       logo_url: logoUrl || null,
+      whatsapp_support: whatsappSupport || null,
     });
     setSaving(false);
   };
@@ -205,10 +207,36 @@ export function ResellerBranding({ reseller, onUpdate }: Props) {
         </div>
       </motion.div>
 
+      {/* WhatsApp Support */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
+        className="bg-card rounded-xl card-shadow border border-border overflow-hidden"
+      >
+        <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+          <MessageCircle className="w-4 h-4 text-primary" />
+          <h2 className="text-base font-semibold text-foreground">WhatsApp de Suporte</h2>
+        </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">Número do WhatsApp</label>
+            <input
+              type="text"
+              value={whatsappSupport}
+              onChange={(e) => setWhatsappSupport(e.target.value)}
+              placeholder="(11) 99999-9999"
+              className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            />
+            <p className="text-xs text-muted-foreground mt-1.5">Seus clientes verão um botão flutuante de WhatsApp direcionando para este número.</p>
+          </div>
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
         className="bg-card rounded-xl card-shadow border border-border overflow-hidden"
       >
         <div className="px-5 py-4 border-b border-border flex items-center gap-2">
