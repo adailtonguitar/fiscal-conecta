@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { CreditCard, Save, Loader2, CheckCircle, AlertTriangle } from "lucide-react";
+import { CreditCard, Save, Loader2, CheckCircle, AlertTriangle, Search } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useTEFConfig, TEF_PROVIDERS, type TEFProvider } from "@/hooks/useTEFConfig";
 import { usePermissions } from "@/hooks/usePermissions";
+import { MercadoPagoTEFService } from "@/services/MercadoPagoTEFService";
 
 export function TEFConfigSection() {
   const { role } = usePermissions();
@@ -17,6 +18,8 @@ export function TEFConfigSection() {
   const [maxInstallments, setMaxInstallments] = useState(12);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [devices, setDevices] = useState<{ id: string; operating_mode: string }[]>([]);
+  const [loadingDevices, setLoadingDevices] = useState(false);
 
   useEffect(() => {
     if (config) {
@@ -130,15 +133,55 @@ export function TEFConfigSection() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-foreground mb-1 block">Device ID (Maquininha Point)</label>
-                      <input
-                        type="text"
-                        value={terminalId}
-                        onChange={(e) => { setTerminalId(e.target.value); markDirty(); }}
-                        placeholder="Ex: PAX_A910__SERIAL123"
-                        className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary/40"
-                      />
+                      <div className="flex gap-2">
+                        {devices.length > 0 ? (
+                          <select
+                            value={terminalId}
+                            onChange={(e) => { setTerminalId(e.target.value); markDirty(); }}
+                            className="flex-1 px-3 py-2 rounded-lg bg-card border border-border text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary/40"
+                          >
+                            <option value="">Selecione um dispositivo</option>
+                            {devices.map((d) => (
+                              <option key={d.id} value={d.id}>
+                                {d.id} ({d.operating_mode})
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            value={terminalId}
+                            onChange={(e) => { setTerminalId(e.target.value); markDirty(); }}
+                            placeholder="Ex: PAX_A910__SERIAL123"
+                            className="flex-1 px-3 py-2 rounded-lg bg-card border border-border text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary/40"
+                          />
+                        )}
+                        <button
+                          type="button"
+                          disabled={!apiKey || loadingDevices}
+                          onClick={async () => {
+                            setLoadingDevices(true);
+                            try {
+                              const devs = await MercadoPagoTEFService.listDevices(apiKey);
+                              setDevices(devs);
+                              if (devs.length === 0) {
+                                toast.info("Nenhum dispositivo Point encontrado");
+                              } else {
+                                toast.success(`${devs.length} dispositivo(s) encontrado(s)`);
+                              }
+                            } catch (err: any) {
+                              toast.error(err.message || "Erro ao buscar dispositivos");
+                            }
+                            setLoadingDevices(false);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-muted/50 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
+                        >
+                          {loadingDevices ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                          Buscar
+                        </button>
+                      </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        ID do dispositivo Point. Encontre na API ou no painel do Mercado Pago.
+                        Clique em "Buscar" para listar suas maquininhas Point automaticamente.
                       </p>
                     </div>
                   </>
