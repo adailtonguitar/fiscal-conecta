@@ -265,12 +265,11 @@ export default function PDV() {
   }, [showTEF, receipt, showCashRegister, handleCheckout, pdv]);
 
   const checkLowStockAfterSale = useCallback((soldItems: typeof pdv.cartItems) => {
-    // Check each sold product against reorder_point
     const lowStockItems: string[] = [];
     for (const item of soldItems) {
       const product = pdv.products.find((p) => p.id === item.id);
       if (!product) continue;
-      const reorderPoint = (product as any).reorder_point ?? 0;
+      const reorderPoint = product.reorder_point ?? 0;
       if (reorderPoint > 0) {
         const remainingStock = product.stock_quantity - item.quantity;
         if (remainingStock <= reorderPoint) {
