@@ -5,6 +5,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCompany } from "@/hooks/useCompany";
+import { supabase } from "@/integrations/supabase/client";
 import { useSync } from "@/hooks/useSync";
 import { SaleService, CashSessionService } from "@/services";
 import { DataLayer } from "@/lib/local-db";
@@ -61,6 +62,7 @@ export function usePDV() {
     if (!companyId) return;
     setLoadingProducts(true);
     try {
+      // 1. Try local SQLite first (offline-first)
       const result = await DataLayer.raw<PDVProduct>(
         `SELECT id, name, price, category, sku, ncm, unit, stock_quantity, barcode
          FROM products WHERE company_id = ? AND is_active = 1 ORDER BY name`,
@@ -68,14 +70,44 @@ export function usePDV() {
       );
       if (!result.error && result.data.length > 0) {
         setProducts(result.data);
-      } else {
-        // Fallback to sync-queue cache
-        const cached = await getCachedEntities<PDVProduct>("products");
-        setProducts(cached);
+        setLoadingProducts(false);
+        return;
       }
     } catch {
+      // SQLite not available (web browser) — continue to fallbacks
+    }
+
+    try {
+      // 2. Try sync-queue cache (IndexedDB)
       const cached = await getCachedEntities<PDVProduct>("products");
-      setProducts(cached);
+      if (cached.length > 0) {
+        setProducts(cached);
+        setLoadingProducts(false);
+        return;
+      }
+    } catch {
+      // IndexedDB failed — continue
+    }
+
+    try {
+      // 3. Final fallback: load directly from Supabase
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name, price, category, sku, ncm, unit, stock_quantity, barcode")
+        .eq("company_id", companyId)
+        .eq("is_active", true)
+        .order("name");
+
+      if (!error && data && data.length > 0) {
+        setProducts(data as PDVProduct[]);
+        // Cache for next time
+        try {
+          await cacheEntities("products", data);
+        } catch { /* ignore cache errors */ }
+      }
+    } catch {
+      // All sources failed
+      console.error("[PDV] Nenhuma fonte de produtos disponível");
     } finally {
       setLoadingProducts(false);
     }
