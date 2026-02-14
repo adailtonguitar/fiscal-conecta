@@ -141,15 +141,8 @@ export function AppSidebar() {
         collapsed ? "w-[72px]" : "w-[240px]"
       )}
     >
-      <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border">
-        <img src={anthoLogo} alt="AnthoSystem" className="w-10 h-10 rounded-lg object-contain flex-shrink-0" />
-        <AnimatePresence>
-          {!collapsed && (
-            <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }} exit={{ opacity: 0, width: 0 }} className="overflow-hidden">
-              <h1 className="text-sm font-bold text-sidebar-accent-foreground whitespace-nowrap">AnthoSystem</h1>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      <div className="flex items-center justify-center px-3 py-4 border-b border-sidebar-border">
+        <img src={anthoLogo} alt="AnthoSystem" className={cn("object-contain", collapsed ? "w-12 h-12" : "w-full max-h-14")} />
       </div>
 
       <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
