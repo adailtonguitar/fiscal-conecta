@@ -11,6 +11,7 @@ export function LandingNav() {
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
           <a href="#recursos" className="hover:text-foreground transition-colors">Recursos</a>
           <a href="#vantagens" className="hover:text-foreground transition-colors">Vantagens</a>
+          <a href="#revenda" className="hover:text-foreground transition-colors">Revenda</a>
           <a href="#planos" className="hover:text-foreground transition-colors">Planos</a>
           <Link to="/auth" className="hover:text-foreground transition-colors">Entrar</Link>
           <Button asChild size="sm">
