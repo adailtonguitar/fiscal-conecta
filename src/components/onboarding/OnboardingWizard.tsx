@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Building2, Package, CheckCircle2, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
-import anthoLogo from "@/assets/anthosystem-logo.png";
+import anthoLogo from "@/assets/logo-as.png";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
