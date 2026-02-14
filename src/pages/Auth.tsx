@@ -223,7 +223,7 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 py-8">
+    <div className="fixed inset-0 overflow-y-auto flex flex-col items-center justify-center bg-background p-4 py-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
