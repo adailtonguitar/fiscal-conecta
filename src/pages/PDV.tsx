@@ -264,6 +264,28 @@ export default function PDV() {
     return () => window.removeEventListener("keydown", handler);
   }, [showTEF, receipt, showCashRegister, handleCheckout, pdv]);
 
+  const checkLowStockAfterSale = useCallback((soldItems: typeof pdv.cartItems) => {
+    // Check each sold product against reorder_point
+    const lowStockItems: string[] = [];
+    for (const item of soldItems) {
+      const product = pdv.products.find((p) => p.id === item.id);
+      if (!product) continue;
+      const reorderPoint = (product as any).reorder_point ?? 0;
+      if (reorderPoint > 0) {
+        const remainingStock = product.stock_quantity - item.quantity;
+        if (remainingStock <= reorderPoint) {
+          lowStockItems.push(`${product.name} (${remainingStock} ${product.unit})`);
+        }
+      }
+    }
+    if (lowStockItems.length > 0) {
+      toast.warning(
+        `⚠️ Estoque baixo — considere pedido de compra:\n${lowStockItems.join(", ")}`,
+        { duration: 6000 }
+      );
+    }
+  }, [pdv.products]);
+
   const handleTEFComplete = async (tefResults: TEFResult[]) => {
     const allApproved = tefResults.every((r) => r.approved);
     if (allApproved) {
@@ -291,6 +313,8 @@ export default function PDV() {
           nfceNumber: result.nfceNumber,
         });
         setSelectedClient(null);
+        // Check low stock after sale
+        checkLowStockAfterSale(savedItems);
         // Award loyalty points if client was identified
         if (loyaltyActive && savedClient?.id) {
           const pts = await earnPoints(savedClient.id, savedTotal, result.fiscalDocId);
@@ -335,6 +359,8 @@ export default function PDV() {
       });
       toast.success(`Venda a prazo registrada para ${client.name}`);
       setSelectedClient(null);
+      // Check low stock after sale
+      checkLowStockAfterSale(savedItems);
       // Award loyalty points
       if (loyaltyActive && client.id) {
         const pts = await earnPoints(client.id, savedTotal, result.fiscalDocId);
