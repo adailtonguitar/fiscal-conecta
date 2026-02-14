@@ -94,7 +94,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const handleSkipProduct = () => setStep(2);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen overflow-y-auto flex items-center justify-center bg-background p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
