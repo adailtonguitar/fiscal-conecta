@@ -30,6 +30,8 @@ const schema = z.object({
   cost_price: z.coerce.number().min(0).optional(),
   stock_quantity: z.coerce.number().min(0),
   min_stock: z.coerce.number().min(0).optional(),
+  reorder_point: z.coerce.number().min(0).optional(),
+  reorder_quantity: z.coerce.number().min(0).optional(),
   barcode: z.string().trim().max(50).optional(),
   fiscal_category_id: z.string().uuid().optional().or(z.literal("")),
   origem: z.coerce.number().min(0).max(8).optional(),
@@ -105,6 +107,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
       cost_price: product?.cost_price ?? 0,
       stock_quantity: product?.stock_quantity ?? 0,
       min_stock: product?.min_stock ?? 0,
+      reorder_point: (product as any)?.reorder_point ?? 0,
+      reorder_quantity: (product as any)?.reorder_quantity ?? 0,
       barcode: product?.barcode ?? "",
       fiscal_category_id: (product as any)?.fiscal_category_id ?? "",
       origem: (product as any)?.origem ?? 0,
@@ -371,7 +375,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
             {/* Preços e Estoque */}
             <div>
               <h2 className="text-lg font-semibold text-foreground mb-4">Preços e Estoque</h2>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <FormField control={form.control} name="cost_price" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Preço Custo</FormLabel>
@@ -446,6 +450,22 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                   <FormItem>
                     <FormLabel>Estoque Mínimo</FormLabel>
                     <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-2 gap-4 mt-4">
+                <FormField control={form.control} name="reorder_point" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ponto de Reposição</FormLabel>
+                    <FormControl><Input type="number" step="1" placeholder="Qtd que dispara pedido" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="reorder_quantity" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Qtd. Reposição</FormLabel>
+                    <FormControl><Input type="number" step="1" placeholder="Qtd sugerida para compra" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
