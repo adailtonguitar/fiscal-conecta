@@ -1,14 +1,18 @@
 import { useState, useEffect } from "react";
-import { CreditCard, Save, Loader2, CheckCircle, AlertTriangle, Search } from "lucide-react";
+import { CreditCard, Save, Loader2, CheckCircle, AlertTriangle, Search, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useTEFConfig, TEF_PROVIDERS, type TEFProvider } from "@/hooks/useTEFConfig";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useCompany } from "@/hooks/useCompany";
 import { MercadoPagoTEFService } from "@/services/MercadoPagoTEFService";
+import { supabase } from "@/integrations/supabase/client";
 
 export function TEFConfigSection() {
   const { role } = usePermissions();
+  const { companyId } = useCompany();
   const { config, loading, saveConfig } = useTEFConfig();
+  const [testingPix, setTestingPix] = useState(false);
   const [provider, setProvider] = useState<TEFProvider>("simulado");
   const [apiKey, setApiKey] = useState("");
   const [apiSecret, setApiSecret] = useState("");
@@ -179,7 +183,56 @@ export function TEFConfigSection() {
                           {loadingDevices ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                           Buscar
                         </button>
-                      </div>
+                    </div>
+
+                    {/* Test PIX connection button */}
+                    <div className="pt-2 border-t border-border">
+                      <button
+                        type="button"
+                        disabled={!apiKey || testingPix || !companyId}
+                        onClick={async () => {
+                          setTestingPix(true);
+                          try {
+                            const { data: sessionData } = await supabase.auth.getSession();
+                            const token = sessionData?.session?.access_token;
+                            if (!token) throw new Error("Usuário não autenticado");
+
+                            const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pix-create`;
+                            const resp = await fetch(url, {
+                              method: "POST",
+                              headers: {
+                                Authorization: `Bearer ${token}`,
+                                "Content-Type": "application/json",
+                                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                              },
+                              body: JSON.stringify({
+                                amount: 0.01,
+                                description: "Teste de conexão PIX",
+                                company_id: companyId,
+                              }),
+                            });
+                            const data = await resp.json();
+                            if (!resp.ok) throw new Error(data.error || `Erro ${resp.status}`);
+
+                            if (data.qr_code) {
+                              toast.success("✅ Conexão PIX OK! QR Code gerado com sucesso.");
+                            } else {
+                              toast.warning("Resposta recebida, mas sem QR Code. Verifique as credenciais.");
+                            }
+                          } catch (err: any) {
+                            toast.error(`Falha no teste: ${err.message}`);
+                          }
+                          setTestingPix(false);
+                        }}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/30 bg-primary/5 text-sm font-medium text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+                      >
+                        {testingPix ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                        Testar Conexão PIX
+                      </button>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Gera um PIX de R$ 0,01 para validar que a integração está funcionando.
+                      </p>
+                    </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         Clique em "Buscar" para listar suas maquininhas Point automaticamente.
                       </p>
