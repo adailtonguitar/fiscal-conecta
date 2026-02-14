@@ -163,6 +163,46 @@ Deno.serve(async (req) => {
       });
     }
 
+    // === ACTION: refund_payment ===
+    if (action === "refund_payment") {
+      const { paymentId, refundAmount } = body;
+      if (!paymentId) {
+        return new Response(
+          JSON.stringify({ error: "paymentId é obrigatório" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const refundPayload: Record<string, unknown> = {};
+      if (refundAmount) {
+        refundPayload.amount = refundAmount;
+      }
+
+      const resp = await fetch(
+        `${MP_API_BASE}/v1/payments/${paymentId}/refunds`,
+        {
+          method: "POST",
+          headers: mpHeaders,
+          body: JSON.stringify(refundPayload),
+        }
+      );
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        console.error("[TEF-MP] Erro ao estornar pagamento:", JSON.stringify(data));
+        return new Response(
+          JSON.stringify({ error: data.message || "Erro ao estornar", details: data }),
+          { status: resp.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(JSON.stringify({ success: true, data }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(
       JSON.stringify({ error: `Ação desconhecida: ${action}` }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
