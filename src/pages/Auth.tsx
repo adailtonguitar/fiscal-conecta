@@ -223,7 +223,7 @@ export default function Auth() {
   }
 
   return (
-    <div className="h-screen overflow-y-auto flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 py-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -231,7 +231,7 @@ export default function Auth() {
       >
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <img src={anthoLogo} alt="AnthoSystem" className="h-24 object-contain mb-4" />
+          <img src={anthoLogo} alt="AnthoSystem" className="h-20 object-contain" />
         </div>
 
         {/* Form card */}
