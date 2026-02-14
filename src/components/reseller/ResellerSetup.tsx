@@ -17,7 +17,7 @@ export function ResellerSetup({ onCreate }: Props) {
     seller_name: "",
     seller_phone: "",
     seller_email: "",
-    brand_name: "PDV Fiscal",
+    brand_name: "AnthoSystem",
   });
   const [creating, setCreating] = useState(false);
 
@@ -37,7 +37,7 @@ export function ResellerSetup({ onCreate }: Props) {
       email: form.email.trim(),
       phone: form.phone.trim(),
       trade_name: form.trade_name.trim() || null as any,
-      brand_name: form.brand_name.trim() || "PDV Fiscal",
+      brand_name: form.brand_name.trim() || "AnthoSystem",
     });
     setCreating(false);
   };

@@ -1,5 +1,5 @@
 /**
- * Transactional email HTML templates for PDV Fiscal.
+ * Transactional email HTML templates for AnthoSystem.
  */
 
 const baseStyle = `
@@ -23,12 +23,12 @@ const btnStyle = `
 
 export function welcomeEmail(userName: string): { subject: string; html: string } {
   return {
-    subject: "Bem-vindo ao PDV Fiscal! 🎉",
+    subject: "Bem-vindo ao AnthoSystem! 🎉",
     html: `
       <div style="${baseStyle}">
         <h1 style="color: #1a1a2e; font-size: 24px; margin-bottom: 8px;">Bem-vindo, ${userName}!</h1>
         <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
-          Sua conta no PDV Fiscal foi criada com sucesso. Você já pode começar a configurar sua empresa e registrar vendas.
+          Sua conta no AnthoSystem foi criada com sucesso. Você já pode começar a configurar sua empresa e registrar vendas.
         </p>
         <div style="margin: 32px 0;">
           <h3 style="color: #1a1a2e; font-size: 16px;">Próximos passos:</h3>
@@ -40,7 +40,7 @@ export function welcomeEmail(userName: string): { subject: string; html: string 
           </ul>
         </div>
         <p style="color: #9ca3af; font-size: 12px; margin-top: 40px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
-          PDV Fiscal — Sistema de Vendas e Gestão Comercial
+          AnthoSystem — Sistema de Vendas e Gestão Comercial
         </p>
       </div>
     `,
@@ -49,7 +49,7 @@ export function welcomeEmail(userName: string): { subject: string; html: string 
 
 export function passwordRecoveryEmail(resetLink: string): { subject: string; html: string } {
   return {
-    subject: "Recuperação de Senha — PDV Fiscal",
+    subject: "Recuperação de Senha — AnthoSystem",
     html: `
       <div style="${baseStyle}">
         <h1 style="color: #1a1a2e; font-size: 24px; margin-bottom: 8px;">Recuperação de Senha</h1>
@@ -63,7 +63,7 @@ export function passwordRecoveryEmail(resetLink: string): { subject: string; htm
           Se você não solicitou esta alteração, ignore este e-mail. O link expira em 1 hora.
         </p>
         <p style="color: #9ca3af; font-size: 12px; margin-top: 40px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
-          PDV Fiscal — Sistema de Vendas e Gestão Comercial
+          AnthoSystem — Sistema de Vendas e Gestão Comercial
         </p>
       </div>
     `,
@@ -77,7 +77,7 @@ export function inviteEmail(inviterName: string, companyName: string, inviteLink
       <div style="${baseStyle}">
         <h1 style="color: #1a1a2e; font-size: 24px; margin-bottom: 8px;">Convite para ${companyName}</h1>
         <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
-          <strong>${inviterName}</strong> convidou você para acessar o sistema PDV Fiscal da empresa <strong>${companyName}</strong>.
+          <strong>${inviterName}</strong> convidou você para acessar o AnthoSystem da empresa <strong>${companyName}</strong>.
         </p>
         <div style="text-align: center; margin: 32px 0;">
           <a href="${inviteLink}" style="${btnStyle}">Aceitar Convite</a>
@@ -86,7 +86,7 @@ export function inviteEmail(inviterName: string, companyName: string, inviteLink
           Ao clicar, você será direcionado para criar sua senha de acesso.
         </p>
         <p style="color: #9ca3af; font-size: 12px; margin-top: 40px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
-          PDV Fiscal — Sistema de Vendas e Gestão Comercial
+          AnthoSystem — Sistema de Vendas e Gestão Comercial
         </p>
       </div>
     `,

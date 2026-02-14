@@ -228,7 +228,7 @@ export default function Auth() {
           <div className="w-14 h-14 rounded-2xl brand-gradient flex items-center justify-center mb-4 glow">
             <Store className="w-7 h-7 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">PDV Fiscal</h1>
+          <h1 className="text-2xl font-bold text-foreground">AnthoSystem</h1>
           <p className="text-sm text-muted-foreground mt-1">Sistema de Vendas</p>
         </div>
 

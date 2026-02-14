@@ -53,8 +53,8 @@ export default function Instalar() {
     <div className="h-screen bg-background overflow-y-auto">
       <div className="max-w-lg w-full mx-auto space-y-6 p-4 pb-12">
         <div className="text-center space-y-2">
-          <img src="/pwa-icon-192.png" alt="PDV Fiscal" className="w-20 h-20 mx-auto rounded-2xl shadow-lg" />
-          <h1 className="text-3xl font-bold text-foreground">PDV Fiscal</h1>
+          <img src="/pwa-icon-192.png" alt="AnthoSystem" className="w-20 h-20 mx-auto rounded-2xl shadow-lg" />
+          <h1 className="text-3xl font-bold text-foreground">AnthoSystem</h1>
           <p className="text-muted-foreground">Sistema de vendas com operação offline</p>
         </div>
 
@@ -65,7 +65,7 @@ export default function Instalar() {
                 <CheckCircle className="h-12 w-12" />
                 <p className="text-lg font-semibold">App já instalado!</p>
                 <p className="text-sm text-muted-foreground text-center">
-                  O PDV Fiscal já está instalado no seu dispositivo. Procure o ícone na sua tela inicial.
+                  O AnthoSystem já está instalado no seu dispositivo. Procure o ícone na sua tela inicial.
                 </p>
               </div>
             </CardContent>

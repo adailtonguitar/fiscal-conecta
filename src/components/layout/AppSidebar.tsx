@@ -147,7 +147,7 @@ export function AppSidebar() {
         <AnimatePresence>
           {!collapsed && (
             <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }} exit={{ opacity: 0, width: 0 }} className="overflow-hidden">
-              <h1 className="text-sm font-bold text-sidebar-accent-foreground whitespace-nowrap">PDV Fiscal</h1>
+              <h1 className="text-sm font-bold text-sidebar-accent-foreground whitespace-nowrap">AnthoSystem</h1>
               <p className="text-[10px] text-sidebar-foreground whitespace-nowrap">Sistema de Vendas</p>
             </motion.div>
           )}

@@ -114,7 +114,7 @@ export function useReseller() {
         cnpj: data.cnpj || null,
         phone: data.phone || null,
         trade_name: data.trade_name || null,
-        brand_name: data.brand_name || "PDV Fiscal",
+        brand_name: data.brand_name || "AnthoSystem",
         primary_color: data.primary_color || "#1a9e7a",
       });
       if (error) throw error;
