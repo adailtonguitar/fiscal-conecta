@@ -15,25 +15,46 @@ let initialized = false;
  * On web, loads jeep-sqlite web component.
  * On native, uses the Capacitor plugin directly.
  */
-export async function initLocalDB(): Promise<SQLiteDBConnection> {
+export async function initLocalDB(): Promise<SQLiteDBConnection | null> {
   if (db && initialized) return db;
-
-  sqlite = new SQLiteConnection(CapacitorSQLite);
 
   const platform = Capacitor.getPlatform();
 
-  // Web platform needs jeep-sqlite web component
+  // On web, jeep-sqlite WASM can fail or be very slow — use a timeout
   if (platform === "web") {
-    const jeepEl = document.querySelector("jeep-sqlite");
-    if (!jeepEl) {
-      const { defineCustomElements } = await import("jeep-sqlite/loader");
-      await defineCustomElements(window);
-      const el = document.createElement("jeep-sqlite");
-      document.body.appendChild(el);
-      await customElements.whenDefined("jeep-sqlite");
+    try {
+      const result = await Promise.race([
+        initWebDB(),
+        new Promise<null>((_, reject) => setTimeout(() => reject(new Error("SQLite web init timeout")), 5000)),
+      ]);
+      return result;
+    } catch (err) {
+      console.warn("[LocalDB] Web init failed/timed out, running without local DB:", err);
+      return null;
     }
-    await sqlite.initWebStore();
   }
+
+  // Native platforms
+  try {
+    return await initNativeDB();
+  } catch (err) {
+    console.warn("[LocalDB] Native init failed:", err);
+    return null;
+  }
+}
+
+async function initWebDB(): Promise<SQLiteDBConnection> {
+  sqlite = new SQLiteConnection(CapacitorSQLite);
+
+  const jeepEl = document.querySelector("jeep-sqlite");
+  if (!jeepEl) {
+    const { defineCustomElements } = await import("jeep-sqlite/loader");
+    await defineCustomElements(window);
+    const el = document.createElement("jeep-sqlite");
+    document.body.appendChild(el);
+    await customElements.whenDefined("jeep-sqlite");
+  }
+  await sqlite.initWebStore();
 
   const ret = await sqlite.checkConnectionsConsistency();
   const isConn = (await sqlite.isConnection(DB_NAME, false)).result;
@@ -45,20 +66,37 @@ export async function initLocalDB(): Promise<SQLiteDBConnection> {
   }
 
   await db.open();
-
-  // Run schema creation
   await db.execute(SCHEMA_SQL);
 
   initialized = true;
-  console.log(`[LocalDB] Initialized on ${platform}`);
+  console.log("[LocalDB] Initialized on web");
+  return db;
+}
 
+async function initNativeDB(): Promise<SQLiteDBConnection> {
+  sqlite = new SQLiteConnection(CapacitorSQLite);
+
+  const ret = await sqlite.checkConnectionsConsistency();
+  const isConn = (await sqlite.isConnection(DB_NAME, false)).result;
+
+  if (ret.result && isConn) {
+    db = await sqlite.retrieveConnection(DB_NAME, false);
+  } else {
+    db = await sqlite.createConnection(DB_NAME, false, "no-encryption", DB_VERSION, false);
+  }
+
+  await db.open();
+  await db.execute(SCHEMA_SQL);
+
+  initialized = true;
+  console.log("[LocalDB] Initialized on native");
   return db;
 }
 
 /**
  * Get the current database connection. Initializes if needed.
  */
-export async function getDB(): Promise<SQLiteDBConnection> {
+export async function getDB(): Promise<SQLiteDBConnection | null> {
   if (!db || !initialized) {
     return initLocalDB();
   }
