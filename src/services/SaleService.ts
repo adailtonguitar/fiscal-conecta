@@ -94,6 +94,26 @@ export class SaleService {
     if (paymentResults) {
       for (const pr of paymentResults) {
         if (pr.method === "prazo" && pr.credit_client_id) {
+          // Validate credit limit before proceeding
+          const { data: clientData } = await supabase
+            .from("clients")
+            .select("credit_balance, credit_limit")
+            .eq("id", pr.credit_client_id)
+            .single();
+
+          if (clientData) {
+            const currentBalance = Number(clientData.credit_balance || 0);
+            const limit = Number(clientData.credit_limit || 0);
+            if (limit > 0 && currentBalance + pr.amount > limit) {
+              throw new Error(
+                `Limite de crédito excedido para este cliente. ` +
+                `Saldo atual: R$ ${currentBalance.toFixed(2)}, ` +
+                `Limite: R$ ${limit.toFixed(2)}, ` +
+                `Valor da venda: R$ ${pr.amount.toFixed(2)}`
+              );
+            }
+          }
+
           const installmentCount = pr.credit_installments || 1;
           const installmentAmount = Math.round((pr.amount / installmentCount) * 100) / 100;
 
