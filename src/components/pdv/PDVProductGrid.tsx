@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, X, Package } from "lucide-react";
+import { Search, X } from "lucide-react";
 import type { PDVProduct } from "@/hooks/usePDV";
 
 const formatCurrency = (value: number) =>
@@ -98,43 +98,29 @@ export function PDVProductGrid({ products, loading, onAddToCart, companyName, lo
             <p className="text-xs text-muted-foreground">Nenhum produto encontrado</p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5">
             {filtered.map((product) => (
               <button
                 key={product.id}
                 onClick={() => onAddToCart(product)}
-                className="group flex flex-col bg-card border border-border rounded-lg overflow-hidden hover:border-primary/50 hover:shadow-md transition-all active:scale-[0.97] text-left"
+                className={`group flex items-center gap-2 bg-card border border-border rounded-lg px-2.5 py-2 hover:border-primary/50 hover:shadow-md transition-all active:scale-[0.97] text-left ${
+                  product.stock_quantity <= 0 ? "opacity-50" : ""
+                }`}
               >
-                {/* Product image */}
-                <div className="aspect-square bg-muted/50 flex items-center justify-center overflow-hidden relative">
-                  {product.image_url ? (
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <Package className="w-8 h-8 text-muted-foreground/40" />
-                  )}
-                  {product.stock_quantity <= 0 && (
-                    <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
-                      <span className="text-[10px] font-bold text-destructive uppercase">Sem estoque</span>
-                    </div>
-                  )}
-                  {product.stock_quantity > 0 && product.stock_quantity <= 5 && (
-                    <div className="absolute top-1 right-1 bg-warning/90 text-warning-foreground text-[8px] font-bold px-1 py-0.5 rounded">
-                      {product.stock_quantity} {product.unit}
-                    </div>
-                  )}
-                </div>
-                {/* Product info */}
-                <div className="p-2 flex-1 flex flex-col gap-0.5">
-                  <p className="text-[11px] font-medium text-foreground leading-tight line-clamp-2 min-h-[28px]">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-medium text-foreground leading-tight truncate">
                     {product.name}
                   </p>
                   <p className="text-[9px] text-muted-foreground font-mono">{product.sku}</p>
-                  <p className="text-sm font-bold text-primary mt-auto">{formatCurrency(product.price)}</p>
+                </div>
+                <div className="flex flex-col items-end flex-shrink-0">
+                  <p className="text-sm font-bold text-primary">{formatCurrency(product.price)}</p>
+                  {product.stock_quantity <= 0 && (
+                    <span className="text-[8px] font-bold text-destructive uppercase">Sem estoque</span>
+                  )}
+                  {product.stock_quantity > 0 && product.stock_quantity <= 5 && (
+                    <span className="text-[8px] font-bold text-warning uppercase">{product.stock_quantity} {product.unit}</span>
+                  )}
                 </div>
               </button>
             ))}
