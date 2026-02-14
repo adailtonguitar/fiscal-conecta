@@ -2391,8 +2391,10 @@ export type Database = {
           api_secret: string | null
           auto_confirm: boolean
           company_id: string
+          connection_type: string | null
           created_at: string
           environment: string
+          hardware_model: string | null
           id: string
           is_active: boolean
           max_installments: number
@@ -2407,8 +2409,10 @@ export type Database = {
           api_secret?: string | null
           auto_confirm?: boolean
           company_id: string
+          connection_type?: string | null
           created_at?: string
           environment?: string
+          hardware_model?: string | null
           id?: string
           is_active?: boolean
           max_installments?: number
@@ -2423,8 +2427,10 @@ export type Database = {
           api_secret?: string | null
           auto_confirm?: boolean
           company_id?: string
+          connection_type?: string | null
           created_at?: string
           environment?: string
+          hardware_model?: string | null
           id?: string
           is_active?: boolean
           max_installments?: number
