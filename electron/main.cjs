@@ -19,7 +19,7 @@ function createWindow() {
       nodeIntegration: false,
     },
     autoHideMenuBar: true,
-    title: 'Sistema PDV',
+    title: 'AnthoSystem',
   });
 
   const publishedURL = 'https://cloud-ponto-magico.lovable.app';

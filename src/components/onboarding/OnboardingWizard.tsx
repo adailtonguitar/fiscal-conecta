@@ -104,7 +104,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           <div className="w-14 h-14 rounded-2xl brand-gradient flex items-center justify-center mb-4 glow">
             <Store className="w-7 h-7 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Bem-vindo ao PDV Fiscal</h1>
+          <h1 className="text-2xl font-bold text-foreground">Bem-vindo ao AnthoSystem</h1>
           <p className="text-sm text-muted-foreground mt-1">Vamos configurar tudo em poucos passos</p>
         </div>
 

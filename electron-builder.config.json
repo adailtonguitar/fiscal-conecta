@@ -6,7 +6,7 @@
     "type": "commonjs"
   },
   "afterPack": "./electron/afterPack.cjs",
-  "productName": "Sistema PDV",
+  "productName": "AnthoSystem",
   "directories": {
     "output": "release"
   },
@@ -25,7 +25,7 @@
     "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "Sistema PDV"
+    "shortcutName": "AnthoSystem"
   },
   "linux": {
     "target": ["AppImage"],

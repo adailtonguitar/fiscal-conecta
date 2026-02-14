@@ -123,7 +123,7 @@ export default function LandingPage() {
               <span className="text-primary">Online e offline.</span>
             </h1>
             <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              PDV fiscal, estoque, financeiro e emissão de notas em uma única plataforma.
+              AnthoSystem — Estoque, financeiro e emissão de notas em uma única plataforma.
               Funciona mesmo sem internet. Pronto para vender em minutos.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
