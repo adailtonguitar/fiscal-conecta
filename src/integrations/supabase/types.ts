@@ -519,6 +519,7 @@ export type Database = {
           tax_regime: string | null
           trade_name: string | null
           updated_at: string
+          whatsapp_support: string | null
         }
         Insert: {
           address_city?: string | null
@@ -548,6 +549,7 @@ export type Database = {
           tax_regime?: string | null
           trade_name?: string | null
           updated_at?: string
+          whatsapp_support?: string | null
         }
         Update: {
           address_city?: string | null
@@ -577,6 +579,7 @@ export type Database = {
           tax_regime?: string | null
           trade_name?: string | null
           updated_at?: string
+          whatsapp_support?: string | null
         }
         Relationships: []
       }
@@ -2158,6 +2161,7 @@ export type Database = {
           secondary_color: string | null
           trade_name: string | null
           updated_at: string
+          whatsapp_support: string | null
         }
         Insert: {
           brand_name?: string
@@ -2176,6 +2180,7 @@ export type Database = {
           secondary_color?: string | null
           trade_name?: string | null
           updated_at?: string
+          whatsapp_support?: string | null
         }
         Update: {
           brand_name?: string
@@ -2194,6 +2199,7 @@ export type Database = {
           secondary_color?: string | null
           trade_name?: string | null
           updated_at?: string
+          whatsapp_support?: string | null
         }
         Relationships: []
       }

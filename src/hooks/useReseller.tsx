@@ -17,6 +17,7 @@ export interface Reseller {
   secondary_color: string;
   custom_domain: string | null;
   markup_percentage: number;
+  whatsapp_support: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
