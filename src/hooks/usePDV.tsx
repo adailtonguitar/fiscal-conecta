@@ -11,6 +11,7 @@ import { SaleService, CashSessionService } from "@/services";
 import { DataLayer } from "@/lib/local-db";
 import { cacheEntities, getCachedEntities } from "@/lib/sync-queue";
 import { isScaleBarcode, parseScaleBarcode } from "@/lib/scale-barcode";
+import { isNativePlatform } from "@/lib/platform";
 import type { SaleItem, PaymentResult } from "@/services/types";
 import { toast } from "sonner";
 
@@ -61,36 +62,26 @@ export function usePDV() {
   const loadProducts = useCallback(async () => {
     if (!companyId) return;
     setLoadingProducts(true);
-    try {
-      // 1. Try local SQLite first (offline-first)
-      const result = await DataLayer.raw<PDVProduct>(
-        `SELECT id, name, price, category, sku, ncm, unit, stock_quantity, barcode
-         FROM products WHERE company_id = ? AND is_active = 1 ORDER BY name`,
-        [companyId]
-      );
-      if (!result.error && result.data.length > 0) {
-        setProducts(result.data);
-        setLoadingProducts(false);
-        return;
+    // 1. Try local SQLite first (only on native platforms)
+    if (isNativePlatform()) {
+      try {
+        const result = await DataLayer.raw<PDVProduct>(
+          `SELECT id, name, price, category, sku, ncm, unit, stock_quantity, barcode
+           FROM products WHERE company_id = ? AND is_active = 1 ORDER BY name`,
+          [companyId]
+        );
+        if (!result.error && result.data.length > 0) {
+          setProducts(result.data);
+          setLoadingProducts(false);
+          return;
+        }
+      } catch {
+        // SQLite failed — continue to fallbacks
       }
-    } catch {
-      // SQLite not available (web browser) — continue to fallbacks
     }
 
+    // 2. Load from Supabase (primary source for web)
     try {
-      // 2. Try sync-queue cache (IndexedDB)
-      const cached = await getCachedEntities<PDVProduct>("products");
-      if (cached.length > 0) {
-        setProducts(cached);
-        setLoadingProducts(false);
-        return;
-      }
-    } catch {
-      // IndexedDB failed — continue
-    }
-
-    try {
-      // 3. Final fallback: load directly from Supabase
       const { data, error } = await supabase
         .from("products")
         .select("id, name, price, category, sku, ncm, unit, stock_quantity, barcode")
@@ -98,16 +89,13 @@ export function usePDV() {
         .eq("is_active", true)
         .order("name");
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         setProducts(data as PDVProduct[]);
-        // Cache for next time
-        try {
-          await cacheEntities("products", data);
-        } catch { /* ignore cache errors */ }
+      } else {
+        console.error("[PDV] Erro ao carregar produtos:", error?.message);
       }
-    } catch {
-      // All sources failed
-      console.error("[PDV] Nenhuma fonte de produtos disponível");
+    } catch (err) {
+      console.error("[PDV] Nenhuma fonte de produtos disponível", err);
     } finally {
       setLoadingProducts(false);
     }
