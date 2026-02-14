@@ -172,10 +172,10 @@ function MyPlanSection() {
                 </button>
               )}
               <button
-                onClick={() => openCustomerPortal().catch(() => toast.error("Erro ao abrir portal"))}
+                onClick={() => window.open("/trial-expirado", "_self")}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-90 transition-all"
               >
-                Gerenciar assinatura
+                Ver planos
               </button>
             </div>
           </>
