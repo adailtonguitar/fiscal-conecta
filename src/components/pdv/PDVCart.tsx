@@ -1,4 +1,5 @@
-import { Trash2, ShoppingCart, Percent } from "lucide-react";
+import { Trash2, ShoppingCart, Percent, Tag } from "lucide-react";
+import type { AppliedPromo } from "@/services/PromotionEngine";
 import { AnimatePresence, motion } from "framer-motion";
 import type { PDVCartItem } from "@/hooks/usePDV";
 import { useState, useEffect } from "react";
@@ -24,6 +25,8 @@ interface PDVCartProps {
   onSetGlobalDiscount: (percent: number) => void;
   subtotal: number;
   globalDiscountValue: number;
+  appliedPromos?: AppliedPromo[];
+  promoSavings?: number;
 }
 
 function LiveClock() {
@@ -39,8 +42,8 @@ function LiveClock() {
   );
 }
 
-export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, onCheckout, selectedItemId, onSelectItem, companyName, logoUrl, maxDiscountPercent, itemDiscounts, onSetItemDiscount, globalDiscountPercent, onSetGlobalDiscount, subtotal, globalDiscountValue }: PDVCartProps) {
-  const totalFinal = Math.max(0, subtotal - globalDiscountValue);
+export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, onCheckout, selectedItemId, onSelectItem, companyName, logoUrl, maxDiscountPercent, itemDiscounts, onSetItemDiscount, globalDiscountPercent, onSetGlobalDiscount, subtotal, globalDiscountValue, appliedPromos = [], promoSavings = 0 }: PDVCartProps) {
+  const totalFinal = Math.max(0, subtotal - globalDiscountValue - promoSavings);
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
   const totalQuantity = items.reduce((acc, item) => acc + item.quantity, 0);
   const selectedItem = selectedItemId ? items.find((i) => i.id === selectedItemId) || null : (items.length > 0 ? items[items.length - 1] : null);
@@ -233,7 +236,15 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
                       >
                         <td className="px-3 py-2 font-bold text-muted-foreground">{idx + 1}</td>
                         <td className="px-3 py-2 font-mono text-muted-foreground">{item.sku}</td>
-                        <td className="px-3 py-2 text-foreground font-medium">{item.name}</td>
+                        <td className="px-3 py-2 text-foreground font-medium">
+                          <span>{item.name}</span>
+                          {appliedPromos.find((p) => p.productId === item.id) && (
+                            <span className="ml-1.5 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-primary/15 text-primary text-[9px] font-bold">
+                              <Tag className="w-2.5 h-2.5" />
+                              {appliedPromos.find((p) => p.productId === item.id)!.promotionName}
+                            </span>
+                          )}
+                        </td>
                         <td className="px-3 py-2 text-center">
                           <div className="flex items-center justify-center gap-1">
                             {Number.isInteger(item.quantity) ? (
@@ -338,6 +349,12 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
                   {globalDiscountValue > 0 && (
                     <span className="text-xs text-destructive font-mono">(-{formatCurrency(globalDiscountValue)})</span>
                   )}
+                </div>
+              )}
+              {promoSavings > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <Tag className="w-3 h-3 text-primary" />
+                  <span className="text-xs font-bold text-primary">Promoções: -{formatCurrency(promoSavings)}</span>
                 </div>
               )}
             </div>

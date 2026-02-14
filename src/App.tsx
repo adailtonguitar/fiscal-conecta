@@ -60,6 +60,7 @@ const Perdas = lazy(() => import("./pages/Perdas"));
 const Fidelidade = lazy(() => import("./pages/Fidelidade"));
 const RelatoriosIA = lazy(() => import("./pages/RelatoriosIA"));
 const Orcamentos = lazy(() => import("./pages/Orcamentos"));
+const Promocoes = lazy(() => import("./pages/Promocoes"));
 const Terminais = lazy(() => import("./pages/Terminais"));
 const Admin = lazy(() => import("./pages/Admin"));
 
@@ -238,6 +239,7 @@ function AppRoutes() {
                     <Route path="/relatorios-ia" element={<PlanGate feature="hasAiReports" featureName="Relatórios com IA"><RelatoriosIA /></PlanGate>} />
                     <Route path="/etiquetas" element={<Etiquetas />} />
                     <Route path="/orcamentos" element={<PlanGate feature="hasQuotes" featureName="Orçamentos"><Orcamentos /></PlanGate>} />
+                    <Route path="/promocoes" element={<Promocoes />} />
                     <Route path="/terminais" element={<Terminais />} />
                     <Route path="/admin" element={<Admin />} />
                     <Route path="*" element={<NotFound />} />

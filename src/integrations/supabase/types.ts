@@ -1860,6 +1860,126 @@ export type Database = {
         }
         Relationships: []
       }
+      promotion_items: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          product_id: string
+          promotion_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+          promotion_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          promotion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_items_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_items_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotions: {
+        Row: {
+          active_days: number[] | null
+          buy_quantity: number | null
+          category_name: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          discount_percent: number | null
+          ends_at: string | null
+          fixed_price: number | null
+          id: string
+          is_active: boolean
+          min_quantity: number | null
+          name: string
+          pay_quantity: number | null
+          promo_type: string
+          scope: string
+          starts_at: string
+          updated_at: string
+        }
+        Insert: {
+          active_days?: number[] | null
+          buy_quantity?: number | null
+          category_name?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_percent?: number | null
+          ends_at?: string | null
+          fixed_price?: number | null
+          id?: string
+          is_active?: boolean
+          min_quantity?: number | null
+          name: string
+          pay_quantity?: number | null
+          promo_type?: string
+          scope?: string
+          starts_at?: string
+          updated_at?: string
+        }
+        Update: {
+          active_days?: number[] | null
+          buy_quantity?: number | null
+          category_name?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_percent?: number | null
+          ends_at?: string | null
+          fixed_price?: number | null
+          id?: string
+          is_active?: boolean
+          min_quantity?: number | null
+          name?: string
+          pay_quantity?: number | null
+          promo_type?: string
+          scope?: string
+          starts_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotes: {
         Row: {
           client_id: string | null

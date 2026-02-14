@@ -2,17 +2,20 @@
  * usePDV — self-contained PDV state management hook.
  * Consumes services and sync queue, fully offline-first.
  */
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCompany } from "@/hooks/useCompany";
 import { supabase } from "@/integrations/supabase/client";
 import { useSync } from "@/hooks/useSync";
+import { usePromotions } from "@/hooks/usePromotions";
 import { SaleService, CashSessionService } from "@/services";
+import { PromotionEngine } from "@/services/PromotionEngine";
 import { DataLayer } from "@/lib/local-db";
 import { cacheEntities, getCachedEntities } from "@/lib/sync-queue";
 import { isScaleBarcode, parseScaleBarcode } from "@/lib/scale-barcode";
 import { isNativePlatform } from "@/lib/platform";
 import type { SaleItem, PaymentResult } from "@/services/types";
+import type { AppliedPromo } from "@/services/PromotionEngine";
 import { toast } from "sonner";
 
 export interface PDVProduct {
@@ -36,6 +39,7 @@ export function usePDV() {
   const { user } = useAuth();
   const { companyId } = useCompany();
   const sync = useSync();
+  const { activePromotions } = usePromotions();
 
   const [products, setProducts] = useState<PDVProduct[]>([]);
   const [cartItems, setCartItems] = useState<PDVCartItem[]>([]);
@@ -57,7 +61,26 @@ export function usePDV() {
   }, 0);
 
   const globalDiscountValue = subtotal * (globalDiscountPercent / 100);
-  const total = Math.max(0, subtotal - globalDiscountValue);
+
+  // Apply promotion engine
+  const appliedPromos = useMemo(() => {
+    if (activePromotions.length === 0 || cartItems.length === 0) return [];
+    return PromotionEngine.apply(
+      activePromotions,
+      cartItems.map((item) => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        category: item.category,
+      }))
+    );
+  }, [activePromotions, cartItems]);
+
+  // Total promotion savings
+  const promoSavings = appliedPromos.reduce((acc, p) => acc + p.totalSavings, 0);
+
+  const total = Math.max(0, subtotal - globalDiscountValue - promoSavings);
 
   // Load products from local SQLite (offline-first)
   const loadProducts = useCallback(async () => {
@@ -340,6 +363,10 @@ export function usePDV() {
     globalDiscountPercent,
     setGlobalDiscountPercent,
     globalDiscountValue,
+
+    // Promotions
+    appliedPromos,
+    promoSavings,
 
     // Sale
     finalizeSale,
