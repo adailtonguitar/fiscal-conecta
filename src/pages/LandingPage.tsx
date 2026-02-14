@@ -40,7 +40,7 @@ const plans = [
     features: [
       "1 terminal PDV",
       "Até 500 produtos",
-      "NFC-e ilimitada",
+      "Até 200 NFC-e/mês",
       "Controle de estoque",
       "Financeiro básico",
       "Relatórios de vendas",
@@ -111,7 +111,7 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
           <span className="text-xl font-extrabold tracking-tight text-primary">
-            PDV<span className="text-foreground">Fiscal</span>
+            Antho<span className="text-foreground">System</span>
           </span>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">Recursos</a>
@@ -295,7 +295,7 @@ export default function LandingPage() {
       <footer className="border-t border-border py-10">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <span className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} PDVFiscal. Todos os direitos reservados.
+            © {new Date().getFullYear()} AnthoSystem. Todos os direitos reservados.
           </span>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <Link to="/termos" className="hover:text-foreground transition-colors">Termos de Uso</Link>
