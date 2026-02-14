@@ -15,7 +15,7 @@ const plans = [
     features: [
       "1 terminal PDV",
       "Até 500 produtos",
-      "Até 80 notas/mês",
+      "Até 200 notas/mês",
       "Controle de estoque",
       "Financeiro básico",
       "Relatórios de vendas",
