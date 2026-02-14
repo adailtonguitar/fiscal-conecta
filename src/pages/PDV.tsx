@@ -16,6 +16,7 @@ import { usePDV, type PDVProduct } from "@/hooks/usePDV";
 import { useQuotes } from "@/hooks/useQuotes";
 import { useCompany } from "@/hooks/useCompany";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
+import { useTEFConfig } from "@/hooks/useTEFConfig";
 import { AnimatePresence, motion } from "framer-motion";
 import { Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard, ArrowLeft, Maximize, ScanBarcode, DollarSign, PackageX, PackagePlus, LockOpen, User, X, GraduationCap, Search, Repeat, Monitor, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -26,7 +27,8 @@ import { openCashDrawer } from "@/lib/escpos";
 export default function PDV() {
   const pdv = usePDV();
   const navigate = useNavigate();
-  const { companyName, logoUrl, slogan, pixKey, pixKeyType, pixCity } = useCompany();
+  const { companyName, companyId, logoUrl, slogan, pixKey, pixKeyType, pixCity } = useCompany();
+  const { config: tefConfigData } = useTEFConfig();
   const { maxDiscountPercent } = usePermissions();
   const { earnPoints, isActive: loyaltyActive } = useLoyalty();
   const { createQuote } = useQuotes();
@@ -567,7 +569,7 @@ export default function PDV() {
       {/* ===== OVERLAYS ===== */}
       <AnimatePresence>
         {showTEF && (
-          <TEFProcessor total={pdv.total} onComplete={handleTEFComplete} onCancel={() => setShowTEF(false)} onPrazoRequested={handlePrazoRequested} pixConfig={pixKey ? { pixKey, pixKeyType: pixKeyType || undefined, merchantName: companyName || "LOJA", merchantCity: pixCity || "SAO PAULO" } : null} />
+          <TEFProcessor total={pdv.total} onComplete={handleTEFComplete} onCancel={() => setShowTEF(false)} onPrazoRequested={handlePrazoRequested} pixConfig={pixKey ? { pixKey, pixKeyType: pixKeyType || undefined, merchantName: companyName || "LOJA", merchantCity: pixCity || "SAO PAULO" } : null} tefConfig={tefConfigData ? { provider: tefConfigData.provider, apiKey: tefConfigData.api_key, terminalId: tefConfigData.terminal_id, merchantId: tefConfigData.merchant_id, companyId: companyId || undefined } : null} />
         )}
       </AnimatePresence>
 

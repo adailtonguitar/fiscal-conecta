@@ -12,6 +12,7 @@ export function TEFConfigSection() {
   const [apiKey, setApiKey] = useState("");
   const [apiSecret, setApiSecret] = useState("");
   const [merchantId, setMerchantId] = useState("");
+  const [terminalId, setTerminalId] = useState("01");
   const [environment, setEnvironment] = useState<"sandbox" | "production">("sandbox");
   const [maxInstallments, setMaxInstallments] = useState(12);
   const [saving, setSaving] = useState(false);
@@ -23,6 +24,7 @@ export function TEFConfigSection() {
       setApiKey(config.api_key || "");
       setApiSecret(config.api_secret || "");
       setMerchantId(config.merchant_id || "");
+      setTerminalId(config.terminal_id || "01");
       setEnvironment(config.environment);
       setMaxInstallments(config.max_installments);
       setDirty(false);
@@ -40,6 +42,7 @@ export function TEFConfigSection() {
       api_key: apiKey || null,
       api_secret: apiSecret || null,
       merchant_id: merchantId || null,
+      terminal_id: terminalId || "01",
       environment,
       max_installments: maxInstallments,
     });
@@ -110,38 +113,69 @@ export function TEFConfigSection() {
                   </span>
                 </div>
 
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1 block">API Key / Client ID</label>
-                  <input
-                    type="password"
-                    value={apiKey}
-                    onChange={(e) => { setApiKey(e.target.value); markDirty(); }}
-                    placeholder="Cole sua API Key aqui..."
-                    className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1 block">API Secret / Client Secret</label>
-                  <input
-                    type="password"
-                    value={apiSecret}
-                    onChange={(e) => { setApiSecret(e.target.value); markDirty(); }}
-                    placeholder="Cole seu Secret aqui..."
-                    className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-1 block">Merchant ID / Terminal</label>
-                  <input
-                    type="text"
-                    value={merchantId}
-                    onChange={(e) => { setMerchantId(e.target.value); markDirty(); }}
-                    placeholder="ID do estabelecimento (opcional)"
-                    className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
-                  />
-                </div>
+                {provider === "mercadopago" ? (
+                  <>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1 block">Access Token (Mercado Pago)</label>
+                      <input
+                        type="password"
+                        value={apiKey}
+                        onChange={(e) => { setApiKey(e.target.value); markDirty(); }}
+                        placeholder="APP_USR-..."
+                        className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Encontre em: Mercado Pago → Seu negócio → Configurações → Credenciais de produção
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1 block">Device ID (Maquininha Point)</label>
+                      <input
+                        type="text"
+                        value={terminalId}
+                        onChange={(e) => { setTerminalId(e.target.value); markDirty(); }}
+                        placeholder="Ex: PAX_A910__SERIAL123"
+                        className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        ID do dispositivo Point. Encontre na API ou no painel do Mercado Pago.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1 block">API Key / Client ID</label>
+                      <input
+                        type="password"
+                        value={apiKey}
+                        onChange={(e) => { setApiKey(e.target.value); markDirty(); }}
+                        placeholder="Cole sua API Key aqui..."
+                        className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1 block">API Secret / Client Secret</label>
+                      <input
+                        type="password"
+                        value={apiSecret}
+                        onChange={(e) => { setApiSecret(e.target.value); markDirty(); }}
+                        placeholder="Cole seu Secret aqui..."
+                        className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1 block">Merchant ID / Terminal</label>
+                      <input
+                        type="text"
+                        value={merchantId}
+                        onChange={(e) => { setMerchantId(e.target.value); markDirty(); }}
+                        placeholder="ID do estabelecimento (opcional)"
+                        className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
