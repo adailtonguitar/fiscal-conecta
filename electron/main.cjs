@@ -24,13 +24,9 @@ function createWindow() {
 
   const publishedURL = 'https://cloud-ponto-magico.lovable.app';
 
-  // Clear ALL caches before loading to prevent stale SW/cache issues
+  // Only clear service workers to prevent stale SW issues, keep regular cache for speed
   const ses = mainWindow.webContents.session;
-  ses.clearCache().then(() => {
-    return ses.clearStorageData({
-      storages: ['serviceworkers', 'cachestorage'],
-    });
-  }).then(() => {
+  ses.clearStorageData({ storages: ['serviceworkers'] }).then(() => {
     loadApp();
   }).catch(() => {
     loadApp();
