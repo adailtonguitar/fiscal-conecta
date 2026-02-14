@@ -5,7 +5,7 @@ import {
   ShoppingCart, LayoutDashboard, Package, FileText, Settings,
   Wifi, WifiOff, RefreshCw, ChevronLeft, ChevronRight, ChevronDown,
   Store, Receipt, Shield, ScrollText, LogOut, DollarSign, Landmark,
-  Users, Building2, ClipboardList, UserCheck, Factory, Truck, Tags, BarChart3, ArrowUpDown,
+  Users, Building2, ClipboardList, UserCheck, Factory, Truck, Tags, BarChart3, ArrowUpDown, User,
   Download, Tag, TrendingUp, AlertTriangle as AlertTriangleIcon, FileSpreadsheet, GitGraph,
   Percent, ArrowRightLeft, TrendingDown, Gift, Brain, Monitor, ShieldCheck,
 } from "lucide-react";
@@ -105,7 +105,7 @@ export function AppSidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const { isOnline, pendingCount, syncing, syncAll } = useSync();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const { isReseller } = useIsReseller();
   const { isSuperAdmin } = useAdminRole();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
@@ -230,7 +230,14 @@ export function AppSidebar() {
         })}
       </nav>
 
-      <div className="px-3 pb-3 space-y-2">
+      <div className="px-3 pb-3 space-y-2 border-t border-sidebar-border pt-3">
+        {/* User info */}
+        <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg", collapsed && "justify-center")}>
+          <User className="w-4 h-4 text-sidebar-foreground flex-shrink-0" />
+          {!collapsed && (
+            <span className="text-xs text-sidebar-foreground font-medium truncate">{user?.email}</span>
+          )}
+        </div>
         {pendingCount > 0 && (
           <button
             onClick={syncAll}
