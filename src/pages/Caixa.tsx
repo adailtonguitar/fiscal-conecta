@@ -4,9 +4,8 @@ import { formatCurrency } from "@/lib/mock-data";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCompany } from "@/hooks/useCompany";
 import { CashRegister } from "@/components/pos/CashRegister";
-import { DataLayer } from "@/lib/local-db";
+import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { LocalCashSession } from "@/hooks/useLocalCash";
 
 export default function Caixa() {
   const { companyId } = useCompany();
@@ -14,23 +13,24 @@ export default function Caixa() {
   const [showCashRegister, setShowCashRegister] = useState(false);
 
   const { data: sessions = [], isLoading: loading } = useQuery({
-    queryKey: ["local-cash-sessions-history", companyId],
+    queryKey: ["cash-sessions-history", companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const result = await DataLayer.select<LocalCashSession>("cash_sessions", {
-        where: { company_id: companyId },
-        orderBy: "opened_at DESC",
-        limit: 20,
-      });
-      if (result.error) throw new Error(result.error);
-      return result.data;
+      const { data, error } = await supabase
+        .from("cash_sessions")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("opened_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data;
     },
     enabled: !!companyId,
   });
 
   const handleCashRegisterClose = () => {
     setShowCashRegister(false);
-    qc.invalidateQueries({ queryKey: ["local-cash-sessions-history"] });
+    qc.invalidateQueries({ queryKey: ["cash-sessions-history"] });
   };
 
   return (
@@ -42,7 +42,7 @@ export default function Caixa() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => qc.invalidateQueries({ queryKey: ["local-cash-sessions-history"] })}
+            onClick={() => qc.invalidateQueries({ queryKey: ["cash-sessions-history"] })}
             disabled={loading}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-90 transition-all"
           >
