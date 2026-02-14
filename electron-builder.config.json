@@ -1,6 +1,6 @@
 {
   "appId": "app.lovable.pdv",
-  "asar": false,
+  "asar": true,
   "extraMetadata": {
     "main": "electron/main.cjs",
     "type": "commonjs"
