@@ -55,6 +55,7 @@ const navItems: NavEntry[] = [
     children: [
       { icon: FileText, label: "Histórico", path: "/vendas" },
       { icon: ScrollText, label: "Orçamentos", path: "/orcamentos" },
+      { icon: Tag, label: "Promoções", path: "/promocoes" },
     ],
   },
   {

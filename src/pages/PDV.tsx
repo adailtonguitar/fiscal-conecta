@@ -544,6 +544,8 @@ export default function PDV() {
             onSetGlobalDiscount={pdv.setGlobalDiscountPercent}
             subtotal={pdv.subtotal}
             globalDiscountValue={pdv.globalDiscountValue}
+            appliedPromos={pdv.appliedPromos}
+            promoSavings={pdv.promoSavings}
           />
         </div>
 
