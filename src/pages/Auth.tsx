@@ -226,7 +226,7 @@ export default function Auth() {
       >
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <img src={anthoLogo} alt="AnthoSystem" className="h-14 object-contain mb-4" />
+          <img src={anthoLogo} alt="AnthoSystem" className="h-24 object-contain mb-4" />
         </div>
 
         {/* Form card */}

@@ -142,7 +142,7 @@ export function AppSidebar() {
       )}
     >
       <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border">
-        <img src={anthoLogo} alt="AnthoSystem" className="w-9 h-9 rounded-lg object-contain flex-shrink-0" />
+        <img src={anthoLogo} alt="AnthoSystem" className="w-10 h-10 rounded-lg object-contain flex-shrink-0" />
         <AnimatePresence>
           {!collapsed && (
             <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }} exit={{ opacity: 0, width: 0 }} className="overflow-hidden">

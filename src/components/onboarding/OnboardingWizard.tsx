@@ -102,7 +102,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       >
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
-          <img src={anthoLogo} alt="AnthoSystem" className="h-14 object-contain mb-4" />
+          <img src={anthoLogo} alt="AnthoSystem" className="h-24 object-contain mb-4" />
           <h1 className="text-2xl font-bold text-foreground">Bem-vindo ao AnthoSystem</h1>
           <p className="text-sm text-muted-foreground mt-1">Vamos configurar tudo em poucos passos</p>
         </div>
