@@ -1,11 +1,11 @@
-import { AlertTriangle, Clock, X } from "lucide-react";
+import { AlertTriangle, Clock, Crown, X } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export function SubscriptionBanner() {
-  const { subscribed, daysUntilExpiry, gracePeriodActive, graceDaysLeft, trialActive, trialDaysLeft } = useSubscription();
+  const { subscribed, planKey, daysUntilExpiry, gracePeriodActive, graceDaysLeft, trialActive, trialDaysLeft } = useSubscription();
   const { isSuperAdmin, loading: adminLoading } = useAdminRole();
   const [dismissed, setDismissed] = useState(false);
   const navigate = useNavigate();
@@ -62,6 +62,26 @@ export function SubscriptionBanner() {
         </div>
         <button onClick={() => setDismissed(true)} className="text-muted-foreground hover:text-foreground">
           <X className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
+
+  // Show subtle upgrade banner for Essencial plan users
+  if (subscribed && planKey === "essencial") {
+    return (
+      <div className="bg-primary/5 border-b border-primary/20 px-4 py-1.5 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm">
+          <Crown className="w-3.5 h-3.5 text-primary shrink-0" />
+          <span className="text-primary/80 text-xs font-medium">
+            Desbloqueie relatórios IA, fidelidade e mais.{" "}
+            <button onClick={() => navigate("/configuracoes")} className="underline font-bold text-primary">
+              Fazer upgrade
+            </button>
+          </span>
+        </div>
+        <button onClick={() => setDismissed(true)} className="text-muted-foreground hover:text-foreground">
+          <X className="w-3.5 h-3.5" />
         </button>
       </div>
     );
