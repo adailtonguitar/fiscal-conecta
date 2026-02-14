@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.tef-mercadopago]
 verify_jwt = false
+
+[functions.pix-create]
+verify_jwt = false

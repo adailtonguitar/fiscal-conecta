@@ -1507,6 +1507,65 @@ export type Database = {
         }
         Relationships: []
       }
+      pix_payments: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          external_reference: string
+          id: string
+          mp_payment_id: string | null
+          paid_at: string | null
+          qr_code: string | null
+          qr_code_base64: string | null
+          status: string
+          ticket_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          external_reference: string
+          id?: string
+          mp_payment_id?: string | null
+          paid_at?: string | null
+          qr_code?: string | null
+          qr_code_base64?: string | null
+          status?: string
+          ticket_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          external_reference?: string
+          id?: string
+          mp_payment_id?: string | null
+          paid_at?: string | null
+          qr_code?: string | null
+          qr_code_base64?: string | null
+          status?: string
+          ticket_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pix_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_categories: {
         Row: {
           company_id: string

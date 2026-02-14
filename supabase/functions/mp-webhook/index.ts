@@ -65,8 +65,42 @@ serve(async (req) => {
       payment_type: payment.payment_type_id,
     });
 
-    // Parse external_reference: "userId|planKey"
     const extRef = payment.external_reference || "";
+
+    // ─── PIX SALE PAYMENT (external_reference starts with "pix_sale|") ───
+    if (extRef.startsWith("pix_sale|")) {
+      logStep("Processing PIX sale payment", { extRef, status: payment.status });
+
+      const newStatus = payment.status === "approved" ? "approved"
+        : payment.status === "rejected" ? "rejected"
+        : payment.status === "cancelled" ? "cancelled"
+        : payment.status;
+
+      const updateData: Record<string, unknown> = {
+        status: newStatus,
+        mp_payment_id: String(paymentId),
+        updated_at: new Date().toISOString(),
+      };
+
+      if (payment.status === "approved") {
+        updateData.paid_at = new Date().toISOString();
+      }
+
+      const { error: updateError } = await supabase
+        .from("pix_payments")
+        .update(updateData)
+        .eq("external_reference", extRef);
+
+      if (updateError) {
+        logStep("Error updating pix_payments", { error: updateError.message });
+      } else {
+        logStep("pix_payments updated successfully", { status: newStatus });
+      }
+
+      return new Response("OK", { status: 200 });
+    }
+
+    // ─── SUBSCRIPTION PAYMENT (original flow: "userId|planKey") ───
     const parts = extRef.split("|");
     if (parts.length < 2) {
       logStep("Invalid external_reference, skipping");

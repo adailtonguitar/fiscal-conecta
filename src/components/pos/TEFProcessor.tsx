@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   CreditCard,
   Banknote,
@@ -14,6 +14,7 @@ import {
   Split,
   Copy,
   Check,
+  Clock,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/mock-data";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,6 +22,7 @@ import { generatePixPayload } from "@/lib/pix-brcode";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { MercadoPagoTEFService } from "@/services/MercadoPagoTEFService";
+import { supabase } from "@/integrations/supabase/client";
 
 type PaymentStep = "select" | "amount" | "details" | "processing" | "result" | "summary";
 type PaymentMethodType = "dinheiro" | "debito" | "credito" | "pix" | "voucher" | "outros" | "prazo";
@@ -105,12 +107,23 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, pi
   const [qrPattern] = useState(() => generateQrPattern());
   const [pixCopied, setPixCopied] = useState(false);
 
+  // Dynamic PIX state
+  const [dynamicPixQr, setDynamicPixQr] = useState<string | null>(null);
+  const [dynamicPixQrBase64, setDynamicPixQrBase64] = useState<string | null>(null);
+  const [dynamicPixExternalRef, setDynamicPixExternalRef] = useState<string | null>(null);
+  const [dynamicPixLoading, setDynamicPixLoading] = useState(false);
+  const [dynamicPixStatus, setDynamicPixStatus] = useState<string>("pending");
+  const pixPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const hasDynamicPix = !!tefConfig?.apiKey; // MP is configured → use dynamic PIX
+
   const paidSoFar = completedPayments.reduce((s, p) => s + p.amount, 0);
   const remaining = Math.max(0, Number((total - paidSoFar).toFixed(2)));
   const paymentAmount = isSplit && currentAmount ? Number(currentAmount) : remaining;
 
-  // Generate PIX payload for the current amount
+  // Generate static PIX payload (fallback when no MP configured)
   const pixPayloadStr = useMemo(() => {
+    if (hasDynamicPix) return null; // Skip static when dynamic is available
     if (!pixConfig?.pixKey) return null;
     const amt = isSplit && currentAmount ? Number(currentAmount) : remaining;
     if (amt <= 0) return null;
@@ -122,7 +135,88 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, pi
       amount: amt,
       txId: generatePixTxId().substring(0, 25),
     });
-  }, [pixConfig, remaining, currentAmount, isSplit]);
+  }, [pixConfig, remaining, currentAmount, isSplit, hasDynamicPix]);
+
+  // Create dynamic PIX payment via edge function
+  const createDynamicPix = useCallback(async (amt: number) => {
+    setDynamicPixLoading(true);
+    setDynamicPixQr(null);
+    setDynamicPixQrBase64(null);
+    setDynamicPixStatus("pending");
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) throw new Error("Não autenticado");
+
+      const res = await supabase.functions.invoke("pix-create", {
+        body: {
+          amount: amt,
+          description: `Venda PDV - ${formatCurrency(amt)}`,
+          company_id: tefConfig?.companyId,
+        },
+      });
+
+      if (res.error) throw new Error(res.error.message || "Erro ao criar PIX");
+      const data = res.data;
+
+      setDynamicPixQr(data.qr_code || null);
+      setDynamicPixQrBase64(data.qr_code_base64 || null);
+      setDynamicPixExternalRef(data.external_reference || null);
+      setDynamicPixStatus(data.status || "pending");
+
+      // Start polling for payment status
+      startPixPolling(data.external_reference);
+    } catch (err: any) {
+      console.error("[PIX-DYNAMIC]", err);
+      toast.error(`Erro ao gerar PIX: ${err.message}`);
+      // Fallback to static PIX if available
+      setDynamicPixLoading(false);
+    } finally {
+      setDynamicPixLoading(false);
+    }
+  }, [tefConfig]);
+
+  const startPixPolling = useCallback((extRef: string) => {
+    if (pixPollingRef.current) clearInterval(pixPollingRef.current);
+    pixPollingRef.current = setInterval(async () => {
+      try {
+        const { data, error } = await supabase
+          .from("pix_payments")
+          .select("status")
+          .eq("external_reference", extRef)
+          .single();
+
+        if (!error && data) {
+          setDynamicPixStatus(data.status);
+          if (data.status === "approved") {
+            if (pixPollingRef.current) clearInterval(pixPollingRef.current);
+            const amt = isSplit && currentAmount ? Number(currentAmount) : remaining;
+            const tefResult: TEFResult = {
+              method: "pix",
+              approved: true,
+              amount: amt,
+              pixTxId: extRef,
+              nsu: generateNSU(),
+            };
+            setCurrentResult(tefResult);
+            setStep("result");
+            toast.success("✅ PIX recebido com sucesso!");
+          } else if (data.status === "rejected" || data.status === "cancelled") {
+            if (pixPollingRef.current) clearInterval(pixPollingRef.current);
+            toast.error("PIX cancelado ou rejeitado");
+            setStep("select");
+          }
+        }
+      } catch { /* ignore polling errors */ }
+    }, 3000); // Poll every 3 seconds
+  }, [isSplit, currentAmount, remaining]);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pixPollingRef.current) clearInterval(pixPollingRef.current);
+    };
+  }, []);
 
   const changeAmount = method === "dinheiro" && cashReceived ? Number(cashReceived) - paymentAmount : 0;
 
@@ -220,9 +314,9 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, pi
     } else {
       if (m === "dinheiro" || m === "credito") {
         setStep("details");
-      } else if (m === "pix" && pixConfig?.pixKey) {
-        // Show real PIX QR code
+      } else if (m === "pix" && (hasDynamicPix || pixConfig?.pixKey)) {
         setStep("details");
+        if (hasDynamicPix) createDynamicPix(remaining);
       } else if (m === "voucher" || m === "outros") {
         const tefResult: TEFResult = { method: m, approved: true, amount: remaining, nsu: generateNSU() };
         setCurrentResult(tefResult);
@@ -239,8 +333,9 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, pi
 
     if (method === "dinheiro" || method === "credito") {
       setStep("details");
-    } else if (method === "pix" && pixConfig?.pixKey) {
+    } else if (method === "pix" && (hasDynamicPix || pixConfig?.pixKey)) {
       setStep("details");
+      if (hasDynamicPix) createDynamicPix(amt);
     } else if (method === "voucher" || method === "outros") {
       const tefResult: TEFResult = { method: method!, approved: true, amount: amt, nsu: generateNSU() };
       setCurrentResult(tefResult);
@@ -264,8 +359,19 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, pi
       };
       setCurrentResult(tefResult);
       setStep("result");
-    } else if (method === "pix" && pixConfig?.pixKey) {
-      // PIX confirmed manually by operator
+    } else if (method === "pix" && hasDynamicPix && dynamicPixStatus === "approved") {
+      // Dynamic PIX already confirmed via polling
+      const tefResult: TEFResult = {
+        method: "pix",
+        approved: true,
+        amount: amt,
+        pixTxId: dynamicPixExternalRef || generatePixTxId(),
+        nsu: generateNSU(),
+      };
+      setCurrentResult(tefResult);
+      setStep("result");
+    } else if (method === "pix" && !hasDynamicPix && pixConfig?.pixKey) {
+      // Static PIX confirmed manually by operator
       const tefResult: TEFResult = {
         method: "pix",
         approved: true,
@@ -547,13 +653,66 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, pi
                 </>
               )}
 
-              {method === "pix" && pixConfig?.pixKey && (
+              {method === "pix" && (hasDynamicPix || pixConfig?.pixKey) && (
                 <>
                   <div className="text-center mb-2">
                     <span className="text-sm text-pos-text-muted">Valor PIX:</span>
                     <span className="pos-price text-lg ml-2">{formatCurrency(paymentAmount)}</span>
                   </div>
-                  {pixPayloadStr && (
+
+                  {/* Dynamic PIX (Mercado Pago) */}
+                  {hasDynamicPix && (
+                    <div className="flex flex-col items-center gap-3">
+                      {dynamicPixLoading && (
+                        <div className="flex flex-col items-center gap-2 py-6">
+                          <Loader2 className="w-8 h-8 text-pos-accent animate-spin" />
+                          <p className="text-sm text-pos-text-muted">Gerando QR Code PIX...</p>
+                        </div>
+                      )}
+                      {!dynamicPixLoading && dynamicPixQr && (
+                        <>
+                          <div className="bg-white p-3 rounded-xl">
+                            <QRCodeSVG value={dynamicPixQr} size={200} level="M" />
+                          </div>
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-pos-bg text-xs">
+                            <Clock className="w-3.5 h-3.5 text-pos-accent animate-pulse" />
+                            <span className="text-pos-text-muted">
+                              {dynamicPixStatus === "approved" ? "✅ Pago!" : "Aguardando pagamento..."}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(dynamicPixQr);
+                              setPixCopied(true);
+                              toast.success("Código PIX copiado!");
+                              setTimeout(() => setPixCopied(false), 3000);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-pos-bg text-pos-text text-xs font-medium hover:bg-pos-surface-hover transition-all"
+                          >
+                            {pixCopied ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
+                            {pixCopied ? "Copiado!" : "Copiar Pix Copia e Cola"}
+                          </button>
+                          <p className="text-xs text-pos-text-muted text-center">
+                            O pagamento será confirmado automaticamente
+                          </p>
+                        </>
+                      )}
+                      {!dynamicPixLoading && !dynamicPixQr && (
+                        <div className="text-center py-4">
+                          <p className="text-sm text-destructive">Erro ao gerar QR Code</p>
+                          <button
+                            onClick={() => createDynamicPix(paymentAmount)}
+                            className="mt-2 text-xs text-pos-accent hover:underline"
+                          >
+                            Tentar novamente
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Static PIX (fallback) */}
+                  {!hasDynamicPix && pixPayloadStr && (
                     <div className="flex flex-col items-center gap-3">
                       <div className="bg-white p-3 rounded-xl">
                         <QRCodeSVG value={pixPayloadStr} size={200} level="M" />
@@ -580,10 +739,20 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, pi
 
               <button
                 onClick={handleConfirmDetails}
-                disabled={method === "dinheiro" && (!cashReceived || Number(cashReceived) < paymentAmount)}
+                disabled={
+                  (method === "dinheiro" && (!cashReceived || Number(cashReceived) < paymentAmount)) ||
+                  (method === "pix" && hasDynamicPix && dynamicPixStatus !== "approved" && !dynamicPixLoading)
+                }
                 className="w-full py-3 rounded-xl bg-pos-accent text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all disabled:opacity-50"
               >
-                {method === "dinheiro" ? "Confirmar Pagamento" : method === "pix" && pixConfig?.pixKey ? "✓ Confirmar Recebimento PIX" : "Processar TEF"}
+                {method === "dinheiro"
+                  ? "Confirmar Pagamento"
+                  : method === "pix" && hasDynamicPix
+                    ? dynamicPixStatus === "approved" ? "✓ PIX Confirmado — Finalizar" : "Aguardando PIX..."
+                    : method === "pix" && pixConfig?.pixKey
+                      ? "✓ Confirmar Recebimento PIX"
+                      : "Processar TEF"
+                }
               </button>
             </motion.div>
           )}
