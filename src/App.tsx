@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { PlanGate } from "@/components/PlanGate";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -169,8 +170,8 @@ function AppRoutes() {
             <AppLayout>
               <Routes>
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/painel-lucro" element={<PainelLucro />} />
-                <Route path="/alertas" element={<AlertaFinanceiro />} />
+                <Route path="/painel-lucro" element={<PlanGate feature="hasProfitPanel" featureName="Painel de Lucro"><PainelLucro /></PlanGate>} />
+                <Route path="/alertas" element={<PlanGate feature="hasFinancialAlerts" featureName="Alertas Financeiros"><AlertaFinanceiro /></PlanGate>} />
                 <Route path="/produtos" element={<Produtos />} />
                 <Route path="/vendas" element={<Vendas />} />
                 <Route path="/relatorio-vendas" element={<RelatorioVendas />} />
@@ -181,11 +182,11 @@ function AppRoutes() {
                 <Route path="/fiscal/assinador" element={<AssinadorDownload />} />
                 <Route path="/fiscal/auditoria" element={<AuditLogs />} />
                 <Route path="/financeiro" element={<Financeiro />} />
-                <Route path="/dre" element={<DRE />} />
-                <Route path="/fluxo-caixa" element={<FluxoCaixaProjetado />} />
-                <Route path="/centro-custo" element={<CentroCusto />} />
-                <Route path="/comissoes" element={<Comissoes />} />
-                <Route path="/conciliacao" element={<ConciliacaoBancaria />} />
+                <Route path="/dre" element={<PlanGate feature="hasDre" featureName="DRE"><DRE /></PlanGate>} />
+                <Route path="/fluxo-caixa" element={<PlanGate feature="hasCashFlow" featureName="Fluxo de Caixa Projetado"><FluxoCaixaProjetado /></PlanGate>} />
+                <Route path="/centro-custo" element={<PlanGate feature="hasCostCenter" featureName="Centro de Custo"><CentroCusto /></PlanGate>} />
+                <Route path="/comissoes" element={<PlanGate feature="hasCommissions" featureName="Comissões"><Comissoes /></PlanGate>} />
+                <Route path="/conciliacao" element={<PlanGate feature="hasBankReconciliation" featureName="Conciliação Bancária"><ConciliacaoBancaria /></PlanGate>} />
                 <Route path="/configuracoes" element={<Configuracoes />} />
                 <Route path="/usuarios" element={<Usuarios />} />
                 <Route path="/revendas" element={<Revendas />} />
@@ -197,13 +198,13 @@ function AppRoutes() {
                 <Route path="/cadastro/categorias" element={<Categorias />} />
                 <Route path="/estoque/movimentacoes" element={<Movimentacoes />} />
                 <Route path="/estoque/inventario" element={<Inventario />} />
-                <Route path="/estoque/curva-abc" element={<CurvaABC />} />
+                <Route path="/estoque/curva-abc" element={<PlanGate feature="hasAbcCurve" featureName="Curva ABC"><CurvaABC /></PlanGate>} />
                 <Route path="/estoque/lotes" element={<Lotes />} />
                 <Route path="/estoque/perdas" element={<Perdas />} />
-                <Route path="/fidelidade" element={<Fidelidade />} />
-                <Route path="/relatorios-ia" element={<RelatoriosIA />} />
+                <Route path="/fidelidade" element={<PlanGate feature="hasLoyalty" featureName="Programa de Fidelidade"><Fidelidade /></PlanGate>} />
+                <Route path="/relatorios-ia" element={<PlanGate feature="hasAiReports" featureName="Relatórios com IA"><RelatoriosIA /></PlanGate>} />
                 <Route path="/etiquetas" element={<Etiquetas />} />
-                <Route path="/orcamentos" element={<Orcamentos />} />
+                <Route path="/orcamentos" element={<PlanGate feature="hasQuotes" featureName="Orçamentos"><Orcamentos /></PlanGate>} />
                 <Route path="/terminais" element={<Terminais />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="*" element={<NotFound />} />
