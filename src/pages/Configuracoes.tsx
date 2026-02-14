@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Download, Clock, HardDrive, Percent, Save, Loader2, Crown, Check, ArrowRight, MessageCircle } from "lucide-react";
+import { Download, Clock, HardDrive, Percent, Save, Loader2, Crown, Check, ArrowRight, MessageCircle, Pencil } from "lucide-react";
 import { TEFConfigSection } from "@/components/settings/TEFConfigSection";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,18 +12,25 @@ function WhatsAppSupportSection() {
   const { role } = usePermissions();
   const { companyId } = useCompany();
   const [number, setNumber] = useState("");
+  const [savedNumber, setSavedNumber] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     if (!companyId) return;
     const load = async () => {
       const { data } = await supabase.from("companies").select("whatsapp_support").eq("id", companyId).single();
-      if (data?.whatsapp_support) setNumber(data.whatsapp_support);
+      if (data?.whatsapp_support) {
+        setNumber(data.whatsapp_support);
+        setSavedNumber(data.whatsapp_support);
+      }
       setLoading(false);
     };
     load();
   }, [companyId]);
+
+  const hasSaved = !!savedNumber;
 
   const handleSave = async () => {
     if (!companyId) return;
@@ -31,6 +38,8 @@ function WhatsAppSupportSection() {
     try {
       const { error } = await supabase.from("companies").update({ whatsapp_support: number || null }).eq("id", companyId);
       if (error) throw error;
+      setSavedNumber(number);
+      setEditing(false);
       toast.success("WhatsApp de suporte salvo!");
     } catch {
       toast.error("Erro ao salvar");
@@ -39,7 +48,18 @@ function WhatsAppSupportSection() {
     }
   };
 
+  const handleEdit = () => {
+    setEditing(true);
+  };
+
+  const handleCancel = () => {
+    setNumber(savedNumber);
+    setEditing(false);
+  };
+
   if (role !== "admin") return null;
+
+  const isReadOnly = hasSaved && !editing;
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden">
@@ -60,16 +80,39 @@ function WhatsAppSupportSection() {
               value={number}
               onChange={(e) => setNumber(e.target.value)}
               placeholder="(11) 99999-9999"
-              className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              disabled={isReadOnly}
+              className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             />
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Salvar
-            </button>
+            <div className="flex gap-3">
+              {isReadOnly ? (
+                <button
+                  onClick={handleEdit}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-90 transition-all"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Editar
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Salvar
+                  </button>
+                  {hasSaved && (
+                    <button
+                      onClick={handleCancel}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-muted text-muted-foreground text-sm font-medium hover:opacity-90 transition-all"
+                    >
+                      Cancelar
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           </>
         )}
       </div>
