@@ -7,7 +7,7 @@ import {
   Store, Receipt, Shield, ScrollText, LogOut, DollarSign, Landmark,
   Users, Building2, ClipboardList, UserCheck, Factory, Truck, Tags, BarChart3, ArrowUpDown, User,
   Download, Tag, TrendingUp, AlertTriangle as AlertTriangleIcon, FileSpreadsheet, GitGraph,
-  Percent, ArrowRightLeft, TrendingDown, Gift, Brain, Monitor, ShieldCheck,
+  Percent, ArrowRightLeft, TrendingDown, Gift, Brain, Monitor, ShieldCheck, CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -56,6 +56,7 @@ const navItems: NavEntry[] = [
       { icon: FileText, label: "Histórico", path: "/vendas" },
       { icon: ScrollText, label: "Orçamentos", path: "/orcamentos" },
       { icon: Tag, label: "Promoções", path: "/promocoes" },
+      { icon: CreditCard, label: "Fiado", path: "/fiado" },
     ],
   },
   {

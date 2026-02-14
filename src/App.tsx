@@ -61,6 +61,7 @@ const Fidelidade = lazy(() => import("./pages/Fidelidade"));
 const RelatoriosIA = lazy(() => import("./pages/RelatoriosIA"));
 const Orcamentos = lazy(() => import("./pages/Orcamentos"));
 const Promocoes = lazy(() => import("./pages/Promocoes"));
+const Fiado = lazy(() => import("./pages/Fiado"));
 const Terminais = lazy(() => import("./pages/Terminais"));
 const Admin = lazy(() => import("./pages/Admin"));
 
@@ -240,6 +241,7 @@ function AppRoutes() {
                     <Route path="/etiquetas" element={<Etiquetas />} />
                     <Route path="/orcamentos" element={<PlanGate feature="hasQuotes" featureName="Orçamentos"><Orcamentos /></PlanGate>} />
                     <Route path="/promocoes" element={<Promocoes />} />
+                    <Route path="/fiado" element={<Fiado />} />
                     <Route path="/terminais" element={<Terminais />} />
                     <Route path="/admin" element={<Admin />} />
                     <Route path="*" element={<NotFound />} />
