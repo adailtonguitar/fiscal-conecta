@@ -141,8 +141,9 @@ export function AppSidebar() {
         collapsed ? "w-[72px]" : "w-[240px]"
       )}
     >
-      <div className="flex items-center justify-center px-2 py-2 overflow-visible">
-        <img src={anthoLogo} alt="AnthoSystem" className={cn("object-contain", collapsed ? "w-8 h-8" : "h-20 w-full -my-4 mt--2 mb--6")} style={collapsed ? undefined : { marginTop: '0px', marginBottom: '-12px' }} />
+      <div className="flex flex-col items-center justify-center px-2 py-2 overflow-visible">
+        <img src={anthoLogo} alt="AnthoSystem" className={cn("object-contain", collapsed ? "w-8 h-8" : "h-20 w-full -mb-3")} style={collapsed ? undefined : { marginTop: '0px', marginBottom: '-12px' }} />
+        {!collapsed && <span className="text-[10px] font-semibold text-sidebar-foreground tracking-wider uppercase -mt-1">AnthoSystem</span>}
       </div>
 
       <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
