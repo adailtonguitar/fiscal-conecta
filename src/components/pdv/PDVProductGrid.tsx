@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X, Package } from "lucide-react";
 import type { PDVProduct } from "@/hooks/usePDV";
 
 const formatCurrency = (value: number) =>
@@ -9,15 +9,14 @@ interface ProductGridProps {
   products: PDVProduct[];
   loading?: boolean;
   onAddToCart: (product: PDVProduct) => void;
+  companyName?: string | null;
+  logoUrl?: string | null;
 }
 
-export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridProps) {
+export function PDVProductGrid({ products, loading, onAddToCart, companyName, logoUrl }: ProductGridProps) {
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [search, setSearch] = useState("");
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [highlightIdx, setHighlightIdx] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
-  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   const categories = ["Todos", ...Array.from(new Set(products.map((p) => p.category).filter(Boolean))) as string[]];
 
@@ -32,68 +31,19 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
     return matchCategory && matchSearch;
   });
 
-  const suggestions = search.length >= 1
-    ? products.filter((p) =>
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.sku.toLowerCase().includes(search.toLowerCase()) ||
-        p.barcode?.includes(search) ||
-        (p.ncm && p.ncm.includes(search))
-      ).slice(0, 8)
-    : [];
-
-  useEffect(() => { setHighlightIdx(-1); }, [search]);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (
-        suggestionsRef.current &&
-        !suggestionsRef.current.contains(e.target as Node) &&
-        inputRef.current &&
-        !inputRef.current.contains(e.target as Node)
-      ) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const selectProduct = (product: PDVProduct) => {
-    onAddToCart(product);
-    setSearch("");
-    setShowSuggestions(false);
-    inputRef.current?.focus();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showSuggestions || suggestions.length === 0) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setHighlightIdx((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setHighlightIdx((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
-    } else if (e.key === "Enter" && highlightIdx >= 0) {
-      e.preventDefault();
-      e.stopPropagation();
-      selectProduct(suggestions[highlightIdx]);
-    } else if (e.key === "Escape") {
-      setShowSuggestions(false);
-    }
-  };
-
-  useEffect(() => {
-    if (highlightIdx >= 0 && suggestionsRef.current) {
-      const items = suggestionsRef.current.querySelectorAll("[data-suggestion]");
-      items[highlightIdx]?.scrollIntoView({ block: "nearest" });
-    }
-  }, [highlightIdx]);
-
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-sidebar-background">
-        <h2 className="text-xs font-bold text-sidebar-foreground uppercase tracking-wider">Lista de Produtos</h2>
+      {/* Header with company logo */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-sidebar-background">
+        <div className="flex items-center gap-3">
+          {logoUrl && (
+            <img src={logoUrl} alt={companyName || "Logo"} className="h-8 max-w-[120px] object-contain" />
+          )}
+          <h2 className="text-sm font-bold text-sidebar-foreground uppercase tracking-wider">
+            {companyName || "Produtos"}
+          </h2>
+        </div>
+        <span className="text-xs text-muted-foreground font-mono">{filtered.length} produtos</span>
       </div>
 
       {/* Search */}
@@ -105,52 +55,17 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
             type="text"
             placeholder="Buscar produto... (F3)"
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setShowSuggestions(e.target.value.length >= 1);
-            }}
-            onFocus={() => { if (search.length >= 1) setShowSuggestions(true); }}
-            onKeyDown={handleKeyDown}
+            onChange={(e) => setSearch(e.target.value)}
             data-pdv-search
             className="w-full pl-8 pr-8 py-2 rounded-md bg-card border border-border text-foreground placeholder:text-muted-foreground text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary transition-all"
           />
           {search && (
             <button
-              onClick={() => { setSearch(""); setShowSuggestions(false); inputRef.current?.focus(); }}
+              onClick={() => { setSearch(""); inputRef.current?.focus(); }}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>
-          )}
-
-          {showSuggestions && suggestions.length > 0 && (
-            <div
-              ref={suggestionsRef}
-              className="absolute top-full left-0 right-0 mt-1 z-50 bg-card border border-border rounded-lg shadow-xl overflow-hidden max-h-64 overflow-y-auto"
-            >
-              {suggestions.map((product, idx) => (
-                <button
-                  key={product.id}
-                  data-suggestion
-                  onClick={() => selectProduct(product)}
-                  onMouseEnter={() => setHighlightIdx(idx)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors text-xs ${
-                    idx === highlightIdx ? "bg-primary/10" : "hover:bg-muted/50"
-                  } ${idx > 0 ? "border-t border-border/50" : ""}`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-foreground truncate">{product.name}</div>
-                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                      <span className="font-mono">{product.sku}</span>
-                      {product.barcode && <span>· {product.barcode}</span>}
-                    </div>
-                  </div>
-                  <span className="font-semibold text-primary whitespace-nowrap">
-                    {formatCurrency(product.price)}
-                  </span>
-                </button>
-              ))}
-            </div>
           )}
         </div>
       </div>
@@ -172,8 +87,8 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
         ))}
       </div>
 
-      {/* Product list */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Product grid with photos */}
+      <div className="flex-1 overflow-y-auto p-2">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -183,34 +98,47 @@ export function PDVProductGrid({ products, loading, onAddToCart }: ProductGridPr
             <p className="text-xs text-muted-foreground">Nenhum produto encontrado</p>
           </div>
         ) : (
-          <table className="w-full text-xs">
-            <thead className="sticky top-0 bg-sidebar-background">
-              <tr className="text-sidebar-foreground text-left">
-                <th className="px-2 py-1.5 font-medium">Código</th>
-                <th className="px-2 py-1.5 font-medium">NCM</th>
-                <th className="px-2 py-1.5 font-medium">Descrição</th>
-                <th className="px-2 py-1.5 font-medium text-right">Preço</th>
-                <th className="px-2 py-1.5 font-medium text-right">Estoque</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((product, i) => (
-                <tr
-                  key={product.id}
-                  onClick={() => onAddToCart(product)}
-                  className={`cursor-pointer transition-colors hover:bg-accent active:bg-primary/10 ${
-                    i % 2 === 0 ? "bg-muted/30" : ""
-                  }`}
-                >
-                  <td className="px-2 py-1.5 font-mono text-muted-foreground">{product.sku}</td>
-                  <td className="px-2 py-1.5 font-mono text-muted-foreground">{product.ncm || "—"}</td>
-                  <td className="px-2 py-1.5 text-foreground">{product.name}</td>
-                  <td className="px-2 py-1.5 text-right font-mono font-semibold text-primary">{formatCurrency(product.price)}</td>
-                  <td className="px-2 py-1.5 text-right text-muted-foreground">{product.stock_quantity} {product.unit}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2">
+            {filtered.map((product) => (
+              <button
+                key={product.id}
+                onClick={() => onAddToCart(product)}
+                className="group flex flex-col bg-card border border-border rounded-lg overflow-hidden hover:border-primary/50 hover:shadow-md transition-all active:scale-[0.97] text-left"
+              >
+                {/* Product image */}
+                <div className="aspect-square bg-muted/50 flex items-center justify-center overflow-hidden relative">
+                  {product.image_url ? (
+                    <img
+                      src={product.image_url}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <Package className="w-8 h-8 text-muted-foreground/40" />
+                  )}
+                  {product.stock_quantity <= 0 && (
+                    <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-destructive uppercase">Sem estoque</span>
+                    </div>
+                  )}
+                  {product.stock_quantity > 0 && product.stock_quantity <= 5 && (
+                    <div className="absolute top-1 right-1 bg-warning/90 text-warning-foreground text-[8px] font-bold px-1 py-0.5 rounded">
+                      {product.stock_quantity} {product.unit}
+                    </div>
+                  )}
+                </div>
+                {/* Product info */}
+                <div className="p-2 flex-1 flex flex-col gap-0.5">
+                  <p className="text-[11px] font-medium text-foreground leading-tight line-clamp-2 min-h-[28px]">
+                    {product.name}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground font-mono">{product.sku}</p>
+                  <p className="text-sm font-bold text-primary mt-auto">{formatCurrency(product.price)}</p>
+                </div>
+              </button>
+            ))}
+          </div>
         )}
       </div>
     </div>

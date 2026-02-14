@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,8 +9,11 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateLocalProduct, useUpdateLocalProduct, type LocalProduct } from "@/hooks/useLocalProducts";
 import { useFiscalCategories } from "@/hooks/useFiscalCategories";
-import { Check, Search } from "lucide-react";
+import { useCompany } from "@/hooks/useCompany";
+import { supabase } from "@/integrations/supabase/client";
+import { Check, Search, Upload, X, Package } from "lucide-react";
 import { NCM_TABLE } from "@/lib/ncm-table";
+import { toast } from "sonner";
 
 interface NCMSuggestion {
   ncm: string;
@@ -57,6 +60,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
   const { data: fiscalCategories = [] } = useFiscalCategories();
   const createProduct = useCreateLocalProduct();
   const updateProduct = useUpdateLocalProduct();
+  const { companyId } = useCompany();
   const isEditing = !!product;
   const initialMargin = product && product.cost_price && product.cost_price > 0
     ? ((product.price - product.cost_price) / product.cost_price) * 100
@@ -64,6 +68,10 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
   const [marginStr, setMarginStr] = useState<string>(initialMargin !== null ? initialMargin.toFixed(1) : "");
   const [ncmSearchText, setNcmSearchText] = useState("");
   const [showNcmSuggestions, setShowNcmSuggestions] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>((product as any)?.image_url || null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const ncmFiltered = useMemo(() => {
     const q = ncmSearchText.trim().toLowerCase();
@@ -113,21 +121,61 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
     },
   });
 
+  const uploadImage = async (productId: string): Promise<string | null> => {
+    if (!imageFile || !companyId) return imagePreview;
+    setUploadingImage(true);
+    try {
+      const ext = imageFile.name.split(".").pop() || "jpg";
+      const path = `${companyId}/${productId}.${ext}`;
+      const { error: uploadErr } = await supabase.storage
+        .from("product-images")
+        .upload(path, imageFile, { upsert: true });
+      if (uploadErr) throw uploadErr;
+      const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
+      return urlData.publicUrl;
+    } catch (err: any) {
+      toast.error(`Erro ao enviar imagem: ${err.message}`);
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const onSubmit = async (data: FormData) => {
     const payload = {
       ...data,
       fiscal_category_id: data.fiscal_category_id || null,
     };
+    let savedProduct: any;
     if (isEditing && product) {
-      await updateProduct.mutateAsync({ id: product.id, ...payload } as any);
+      savedProduct = await updateProduct.mutateAsync({ id: product.id, ...payload } as any);
     } else {
-      await createProduct.mutateAsync({ name: payload.name, sku: payload.sku, ...payload } as any);
+      savedProduct = await createProduct.mutateAsync({ name: payload.name, sku: payload.sku, ...payload } as any);
+    }
+    // Upload image if selected
+    const productId = savedProduct?.id || product?.id;
+    if (imageFile && productId && companyId) {
+      const imageUrl = await uploadImage(productId);
+      if (imageUrl) {
+        await supabase.from("products").update({ image_url: imageUrl }).eq("id", productId);
+      }
     }
     onOpenChange(false);
     form.reset();
   };
 
-  const isPending = createProduct.isPending || updateProduct.isPending;
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Imagem deve ter no máximo 5MB");
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const isPending = createProduct.isPending || updateProduct.isPending || uploadingImage;
 
   if (!open) return null;
 
@@ -146,6 +194,49 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
             {/* Dados Básicos */}
             <div>
               <h2 className="text-lg font-semibold text-foreground mb-4">Dados Básicos</h2>
+              
+              {/* Product Image Upload */}
+              <div className="mb-4 flex items-center gap-4">
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-24 h-24 rounded-xl border-2 border-dashed border-border bg-muted/50 flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors overflow-hidden relative group"
+                >
+                  {imagePreview ? (
+                    <>
+                      <img src={imagePreview} alt="Produto" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Upload className="w-5 h-5 text-white" />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                      <Package className="w-6 h-6" />
+                      <span className="text-[9px]">Foto</span>
+                    </div>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>Clique para adicionar uma foto do produto</p>
+                  <p>Formatos: JPG, PNG, WebP • Máx: 5MB</p>
+                  {imagePreview && (
+                    <button 
+                      type="button"
+                      onClick={() => { setImageFile(null); setImagePreview(null); }}
+                      className="text-destructive hover:underline flex items-center gap-1"
+                    >
+                      <X className="w-3 h-3" /> Remover foto
+                    </button>
+                  )}
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem>
