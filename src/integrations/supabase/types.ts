@@ -1744,6 +1744,7 @@ export type Database = {
           fiscal_category_id: string | null
           gtin_tributavel: string | null
           id: string
+          image_url: string | null
           is_active: boolean
           min_stock: number | null
           name: string
@@ -1773,6 +1774,7 @@ export type Database = {
           fiscal_category_id?: string | null
           gtin_tributavel?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           min_stock?: number | null
           name: string
@@ -1802,6 +1804,7 @@ export type Database = {
           fiscal_category_id?: string | null
           gtin_tributavel?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           min_stock?: number | null
           name?: string
