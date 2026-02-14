@@ -35,8 +35,13 @@ export default function Auth() {
         sessionStorage.setItem("needs-password-setup", "true");
         return "set-password";
       }
+      // Has hash with tokens - show processing while we resolve
+      if (hash.includes("access_token")) {
+        return "processing";
+      }
     }
-    return "processing";
+    // No special hash, no pending password setup - show login immediately
+    return "login";
   });
   const navigate = useNavigate();
 
