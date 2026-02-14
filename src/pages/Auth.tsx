@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Store, Mail, Lock, ArrowRight, KeyRound } from "lucide-react";
+import { Mail, Lock, ArrowRight, KeyRound } from "lucide-react";
+import anthoLogo from "@/assets/anthosystem-logo.png";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
@@ -225,11 +226,7 @@ export default function Auth() {
       >
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-2xl brand-gradient flex items-center justify-center mb-4 glow">
-            <Store className="w-7 h-7 text-primary-foreground" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">AnthoSystem</h1>
-          <p className="text-sm text-muted-foreground mt-1">Sistema de Vendas</p>
+          <img src={anthoLogo} alt="AnthoSystem" className="h-14 object-contain mb-4" />
         </div>
 
         {/* Form card */}
