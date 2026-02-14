@@ -79,22 +79,38 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const hasSignedOut = useRef(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [companyCheckDone, setCompanyCheckDone] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
+
+  // Safety timeout: if loading takes more than 12s, force completion
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTimedOut(true);
+      console.warn("[ProtectedRoute] Loading timeout reached", {
+        loading, companyLoading, subLoading, adminLoading, companyId, companyCheckDone
+      });
+    }, 12000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!loading && !companyLoading && user && companyId === null && !hasSignedOut.current) {
       const checkCompany = async () => {
-        const { data } = await (await import("@/integrations/supabase/client")).supabase
-          .from("company_users")
-          .select("id")
-          .eq("user_id", user.id)
-          .limit(1);
-        
-        if (!data || data.length === 0) {
-          setShowOnboarding(true);
-        } else if (!companyId) {
-          hasSignedOut.current = true;
-          toast.error("Sua conta foi desativada. Entre em contato com o administrador.");
-          signOut();
+        try {
+          const { data } = await (await import("@/integrations/supabase/client")).supabase
+            .from("company_users")
+            .select("id")
+            .eq("user_id", user.id)
+            .limit(1);
+          
+          if (!data || data.length === 0) {
+            setShowOnboarding(true);
+          } else if (!companyId) {
+            hasSignedOut.current = true;
+            toast.error("Sua conta foi desativada. Entre em contato com o administrador.");
+            signOut();
+          }
+        } catch (err) {
+          console.error("[ProtectedRoute] Company check failed:", err);
         }
         setCompanyCheckDone(true);
       };
@@ -112,7 +128,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
-  if (loading || companyLoading || subLoading || adminLoading || (!companyId && !companyCheckDone)) {
+  const isStillLoading = loading || companyLoading || subLoading || adminLoading || (!companyId && !companyCheckDone);
+
+  if (isStillLoading && !timedOut) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -126,7 +144,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <OnboardingWizard onComplete={() => window.location.reload()} />;
   }
 
-  if (!companyId) return <Navigate to="/" replace />;
+  if (!companyId && !showOnboarding) return <Navigate to="/" replace />;
 
   // Kill switch or subscription block (super_admin bypasses)
   if (!isSuperAdmin && (blocked || (trialExpired && !subscribed) || subscriptionOverdue)) {
