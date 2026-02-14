@@ -25,6 +25,7 @@ export interface PDVProduct {
   unit: string;
   stock_quantity: number;
   barcode: string | null;
+  image_url: string | null;
 }
 
 export interface PDVCartItem extends PDVProduct {
@@ -66,7 +67,7 @@ export function usePDV() {
     if (isNativePlatform()) {
       try {
         const result = await DataLayer.raw<PDVProduct>(
-          `SELECT id, name, price, category, sku, ncm, unit, stock_quantity, barcode
+          `SELECT id, name, price, category, sku, ncm, unit, stock_quantity, barcode, image_url
            FROM products WHERE company_id = ? AND is_active = 1 ORDER BY name`,
           [companyId]
         );
@@ -84,7 +85,7 @@ export function usePDV() {
     try {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, price, category, sku, ncm, unit, stock_quantity, barcode")
+        .select("id, name, price, category, sku, ncm, unit, stock_quantity, barcode, image_url")
         .eq("company_id", companyId)
         .eq("is_active", true)
         .order("name");

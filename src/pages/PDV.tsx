@@ -358,7 +358,11 @@ export default function PDV() {
             Sair
           </button>
           <div className="h-4 w-px bg-border" />
-          <span className="text-sm font-bold text-sidebar-foreground tracking-wide">PDV</span>
+          {logoUrl ? (
+            <img src={logoUrl} alt={companyName || "Logo"} className="h-6 max-w-[80px] object-contain" />
+          ) : (
+            <span className="text-sm font-bold text-sidebar-foreground tracking-wide">PDV</span>
+          )}
           <div className="h-4 w-px bg-border" />
           {/* Terminal ID */}
           <button
@@ -556,6 +560,8 @@ export default function PDV() {
               <PDVProductGrid
                 products={pdv.products}
                 loading={pdv.loadingProducts}
+                companyName={companyName}
+                logoUrl={logoUrl}
                 onAddToCart={(product) => {
                   handleAddToCart(product);
                   setShowProductList(false);
