@@ -28,22 +28,20 @@ export function UpdateNoticeModal() {
     setOpen(false);
   };
 
-  const handleUpdate = async () => {
-    try {
-      // Unregister all service workers and clear caches
-      if ("serviceWorker" in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map((r) => r.unregister()));
-      }
-      if ("caches" in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map((k) => caches.delete(k)));
-      }
-    } catch (e) {
-      console.warn("Cache cleanup error:", e);
-    }
-    // Mark as dismissed and force reload
+  const handleUpdate = () => {
     localStorage.setItem(STORAGE_KEY, APP_VERSION);
+    // Fire-and-forget: clean up in background, reload immediately
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations().then(regs =>
+        regs.forEach(r => r.unregister())
+      ).catch(() => {});
+    }
+    if ("caches" in window) {
+      caches.keys().then(keys =>
+        keys.forEach(k => caches.delete(k))
+      ).catch(() => {});
+    }
+    // Reload immediately without waiting for cleanup
     window.location.reload();
   };
 
