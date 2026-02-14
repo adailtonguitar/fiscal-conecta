@@ -1,10 +1,11 @@
-import { TrendingUp, ShoppingBag, DollarSign, AlertTriangle, ArrowUpRight, ArrowDownRight, Clock, Shield, Heart, Target, ShoppingCart, Package, FileText, CreditCard, Users } from "lucide-react";
+import { TrendingUp, ShoppingBag, DollarSign, AlertTriangle, Clock, Shield, Heart, Target } from "lucide-react";
 import { formatCurrency } from "@/lib/mock-data";
 import { motion } from "framer-motion";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { Link } from "react-router-dom";
+import { QuickAccessCards } from "@/components/dashboard/QuickAccessCards";
 
 export default function Dashboard() {
   const { trialActive, trialDaysLeft, subscribed } = useSubscription();
@@ -43,32 +44,7 @@ export default function Dashboard() {
         <p className="text-sm text-muted-foreground mt-1">Resumo inteligente da sua empresa</p>
       </div>
 
-      {/* Quick Access Shortcuts */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-        {[
-          { icon: ShoppingCart, label: "PDV", path: "/pdv", color: "text-primary" },
-          { icon: Package, label: "Produtos", path: "/produtos", color: "text-emerald-500" },
-          { icon: DollarSign, label: "Financeiro", path: "/financeiro", color: "text-amber-500" },
-          { icon: FileText, label: "Vendas", path: "/vendas", color: "text-blue-500" },
-          { icon: CreditCard, label: "Caixa", path: "/caixa", color: "text-violet-500" },
-          { icon: Users, label: "Clientes", path: "/cadastro/clientes", color: "text-rose-500" },
-        ].map((item, i) => (
-          <motion.div
-            key={item.label}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.03 }}
-          >
-            <Link
-              to={item.path}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all duration-200 group"
-            >
-              <item.icon className={`w-6 h-6 ${item.color} group-hover:scale-110 transition-transform`} />
-              <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">{item.label}</span>
-            </Link>
-          </motion.div>
-        ))}
-      </div>
+      <QuickAccessCards />
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
