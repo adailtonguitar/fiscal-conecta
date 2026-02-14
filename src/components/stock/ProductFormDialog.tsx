@@ -7,7 +7,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateLocalProduct, useUpdateLocalProduct, type LocalProduct } from "@/hooks/useLocalProducts";
+import { useCreateProduct, useUpdateProduct, type Product } from "@/hooks/useProducts";
+import type { LocalProduct } from "@/hooks/useLocalProducts";
 import { useFiscalCategories } from "@/hooks/useFiscalCategories";
 import { useCompany } from "@/hooks/useCompany";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,8 +61,8 @@ const units = ["UN", "KG", "LT", "MT", "CX", "PCT"];
 
 export function ProductFormDialog({ open, onOpenChange, product }: Props) {
   const { data: fiscalCategories = [] } = useFiscalCategories();
-  const createProduct = useCreateLocalProduct();
-  const updateProduct = useUpdateLocalProduct();
+  const createProduct = useCreateProduct();
+  const updateProduct = useUpdateProduct();
   const { companyId } = useCompany();
   const isEditing = !!product;
   const initialMargin = product && product.cost_price && product.cost_price > 0
