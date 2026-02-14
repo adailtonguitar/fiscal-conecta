@@ -10,12 +10,12 @@ export const PLANS = {
   essencial: {
     key: "essencial",
     name: "Essencial",
-    price: 150,
+    price: 149.90,
   },
   profissional: {
     key: "profissional",
     name: "Profissional",
-    price: 200,
+    price: 199.90,
   },
 } as const;
 
