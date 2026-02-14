@@ -989,30 +989,31 @@ export default function PDV() {
         )}
       </AnimatePresence>
 
-      <div className="flex items-center justify-center gap-2 px-4 py-2.5 bg-sidebar-background border-t border-border flex-shrink-0 flex-wrap">
+      <div className="flex items-center gap-1 px-2 py-1 bg-sidebar-background border-t border-border flex-shrink-0 overflow-x-auto">
         {[
-          { key: "F1", label: "Atalhos", action: () => setShowShortcuts((p) => !p) },
+          { key: "F1", label: "Atalhos" },
           { key: "F2", label: "Pagamento", action: handleCheckout },
           { key: "F3", label: "Buscar", action: () => setShowProductList((p) => !p) },
           { key: "F4", label: "Caixa", action: () => setShowCashRegister(true) },
           { key: "F5", label: "Cadastrar", action: () => { setQuickProductBarcode(""); setShowQuickProduct(true); } },
           { key: "F6", label: "Limpar", action: () => { if (pdv.cartItems.length > 0) { pdv.clearCart(); setSelectedClient(null); toast.info("Carrinho limpo"); } } },
           { key: "F7", label: "Gaveta", action: () => { openCashDrawer(); toast.info("Gaveta aberta"); } },
-          { key: "F8", label: "Receber Fiado", action: () => setShowReceiveCredit(true) },
-          { key: "F9", label: "Sincronizar", action: () => { if (pdv.pendingCount > 0 && pdv.isOnline) pdv.syncAll(); } },
-          { key: "F10", label: "Consultar Preço", action: () => { setShowPriceLookup(true); setPriceLookupQuery(""); } },
-          { key: "F11", label: "Repetir Venda", action: () => pdv.repeatLastSale() },
-          { key: "F12", label: "Treinamento", action: () => { pdv.setTrainingMode(!pdv.trainingMode); toast.info(pdv.trainingMode ? "Modo treinamento DESATIVADO" : "🎓 Modo treinamento ATIVADO"); } },
+          { key: "F8", label: "Receber", action: () => setShowReceiveCredit(true) },
+          { key: "F9", label: "Sync", action: () => { if (pdv.pendingCount > 0 && pdv.isOnline) pdv.syncAll(); } },
+          { key: "F10", label: "Preço", action: () => { setShowPriceLookup(true); setPriceLookupQuery(""); } },
+          { key: "F11", label: "Repetir", action: () => pdv.repeatLastSale() },
+          { key: "F12", label: "Treino", action: () => { pdv.setTrainingMode(!pdv.trainingMode); toast.info(pdv.trainingMode ? "Modo treinamento DESATIVADO" : "🎓 Modo treinamento ATIVADO"); } },
           { key: "Del", label: "Remover", action: () => { if (pdv.cartItems.length > 0) { const last = pdv.cartItems[pdv.cartItems.length - 1]; pdv.removeItem(last.id); toast.info(`${last.name} removido`); } } },
-          { key: "ESC", label: "Fechar", action: () => setShowShortcuts(false) },
-          { key: "ORC", label: "Orçamento", action: () => { if (pdv.cartItems.length > 0) setShowSaveQuote(true); else toast.warning("Carrinho vazio"); } },
+          { key: "Orc", label: "Orçamento", action: () => { if (pdv.cartItems.length > 0) setShowSaveQuote(true); else toast.warning("Carrinho vazio"); } },
         ].map(({ key, label, action }) => (
           <button
             key={key}
             onClick={action}
-            className="flex items-center gap-2 px-4 py-2 rounded bg-white/90 hover:bg-white active:bg-white/80 transition-all cursor-pointer shadow-sm border border-white/20"
+            title={`${label} [${key}]`}
+            className="flex items-center gap-1 px-2 py-1 rounded bg-muted border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all text-[10px] font-bold uppercase whitespace-nowrap"
           >
-            <span className="text-xs font-bold text-[hsl(218,50%,18%)] uppercase tracking-wide">{label} [{key}]</span>
+            <span className="text-[9px] font-mono text-primary">{key}</span>
+            <span>{label}</span>
           </button>
         ))}
       </div>
