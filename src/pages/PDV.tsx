@@ -249,7 +249,7 @@ export default function PDV() {
         case "F11": e.preventDefault(); pdv.repeatLastSale(); break;
         case "F12": e.preventDefault(); pdv.setTrainingMode(!pdv.trainingMode); toast.info(pdv.trainingMode ? "Modo treinamento DESATIVADO" : "🎓 Modo treinamento ATIVADO"); break;
         case "F1": e.preventDefault(); setShowShortcuts((prev) => !prev); break;
-        case "Escape": e.preventDefault(); setShowShortcuts(false); setShowPriceLookup(false); break;
+        case "Escape": e.preventDefault(); setShowShortcuts(false); setShowPriceLookup(false); setShowProductList(false); break;
         case "Delete":
           e.preventDefault();
           if (pdv.cartItems.length > 0) {
@@ -555,18 +555,31 @@ export default function PDV() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="absolute inset-0 z-30 bg-background"
+              className="absolute inset-0 z-30 bg-background flex flex-col"
             >
-              <PDVProductGrid
-                products={pdv.products}
-                loading={pdv.loadingProducts}
-                companyName={companyName}
-                logoUrl={logoUrl}
-                onAddToCart={(product) => {
-                  handleAddToCart(product);
-                  setShowProductList(false);
-                }}
-              />
+              {/* Close bar */}
+              <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-sidebar-background flex-shrink-0">
+                <span className="text-xs font-bold text-muted-foreground uppercase">Buscar Produtos (F3)</span>
+                <button
+                  onClick={() => setShowProductList(false)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-muted border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all text-xs font-medium"
+                >
+                  <X className="w-3 h-3" />
+                  Fechar (Esc)
+                </button>
+              </div>
+              <div className="flex-1 min-h-0">
+                <PDVProductGrid
+                  products={pdv.products}
+                  loading={pdv.loadingProducts}
+                  companyName={companyName}
+                  logoUrl={logoUrl}
+                  onAddToCart={(product) => {
+                    handleAddToCart(product);
+                    setShowProductList(false);
+                  }}
+                />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
