@@ -167,7 +167,7 @@ export default function Fiado() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
+    <div className="flex flex-col min-h-full">
       {/* Header */}
       <div className="px-6 py-5 border-b border-border">
         <h1 className="text-2xl font-bold text-foreground">Contas a Receber (Fiado)</h1>
@@ -213,9 +213,9 @@ export default function Fiado() {
         </Card>
       </div>
 
-      <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-4 p-6">
+      <div className="min-h-0 flex flex-col lg:flex-row gap-4 p-6 flex-1">
         {/* Client list */}
-        <div className="lg:w-1/3 flex flex-col border border-border rounded-xl bg-card overflow-hidden">
+        <div className="lg:w-1/3 flex flex-col border border-border rounded-xl bg-card overflow-hidden min-h-[300px] max-h-[60vh]">
           <div className="p-3 border-b border-border">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -277,7 +277,7 @@ export default function Fiado() {
         </div>
 
         {/* Client detail */}
-        <div className="flex-1 flex flex-col border border-border rounded-xl bg-card overflow-hidden">
+        <div className="flex-1 flex flex-col border border-border rounded-xl bg-card overflow-hidden min-h-[300px]">
           {!selectedClient ? (
             <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
               <CreditCard className="w-12 h-12 mb-3 opacity-30" />
