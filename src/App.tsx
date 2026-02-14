@@ -70,6 +70,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isSuperAdmin, loading: adminLoading } = useAdminRole();
   const hasSignedOut = useRef(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [companyCheckDone, setCompanyCheckDone] = useState(false);
 
   useEffect(() => {
     if (!loading && !companyLoading && user && companyId === null && !hasSignedOut.current) {
@@ -87,8 +88,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
           toast.error("Sua conta foi desativada. Entre em contato com o administrador.");
           signOut();
         }
+        setCompanyCheckDone(true);
       };
       checkCompany();
+    } else if (companyId) {
+      setCompanyCheckDone(true);
     }
   }, [loading, companyLoading, user, companyId, signOut]);
 
@@ -96,10 +100,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     if (!user) {
       hasSignedOut.current = false;
       setShowOnboarding(false);
+      setCompanyCheckDone(false);
     }
   }, [user]);
 
-  if (loading || companyLoading || subLoading || adminLoading) {
+  if (loading || companyLoading || subLoading || adminLoading || (!companyId && !companyCheckDone)) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
