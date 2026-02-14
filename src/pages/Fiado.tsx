@@ -167,7 +167,7 @@ export default function Fiado() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-y-auto">
       {/* Header */}
       <div className="px-6 py-5 border-b border-border">
         <h1 className="text-2xl font-bold text-foreground">Contas a Receber (Fiado)</h1>
