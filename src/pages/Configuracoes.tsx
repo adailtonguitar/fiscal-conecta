@@ -105,7 +105,7 @@ function DiscountLimitsSection() {
 }
 
 const planFeatures: Record<string, string[]> = {
-  essencial: ["1 terminal PDV", "Até 500 produtos", "Até 80 notas/mês", "Controle de estoque", "Financeiro básico", "Relatórios de vendas", "Suporte por e-mail"],
+  essencial: ["1 terminal PDV", "Até 500 produtos", "Até 200 notas/mês", "Controle de estoque", "Financeiro básico", "Relatórios de vendas", "Suporte por e-mail"],
   profissional: ["Até 5 terminais PDV", "Produtos ilimitados", "NF-e + NFC-e", "Relatórios avançados com IA", "Programa de fidelidade", "Multi-usuários e permissões", "Orçamentos e cotações", "Curva ABC e painel de lucro", "Suporte prioritário"],
 };
 
