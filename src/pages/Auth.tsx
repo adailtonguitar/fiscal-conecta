@@ -211,14 +211,14 @@ export default function Auth() {
 
   if (mode === "processing") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="h-screen overflow-y-auto flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="h-screen overflow-y-auto flex items-center justify-center bg-background p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
