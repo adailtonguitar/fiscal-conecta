@@ -1,4 +1,5 @@
 import { useState } from "react";
+import anthoLogo from "@/assets/anthosystem-logo.png";
 import { Link, useLocation } from "react-router-dom";
 import {
   ShoppingCart, LayoutDashboard, Package, FileText, Settings,
@@ -141,9 +142,7 @@ export function AppSidebar() {
       )}
     >
       <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border">
-        <div className="w-9 h-9 rounded-lg brand-gradient flex items-center justify-center flex-shrink-0">
-          <Store className="w-5 h-5 text-primary-foreground" />
-        </div>
+        <img src={anthoLogo} alt="AnthoSystem" className="w-9 h-9 rounded-lg object-contain flex-shrink-0" />
         <AnimatePresence>
           {!collapsed && (
             <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }} exit={{ opacity: 0, width: 0 }} className="overflow-hidden">

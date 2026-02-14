@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Building2, Package, CheckCircle2, ArrowRight, ArrowLeft, Store, Loader2 } from "lucide-react";
+import { Building2, Package, CheckCircle2, ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
+import anthoLogo from "@/assets/anthosystem-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -101,9 +102,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       >
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-2xl brand-gradient flex items-center justify-center mb-4 glow">
-            <Store className="w-7 h-7 text-primary-foreground" />
-          </div>
+          <img src={anthoLogo} alt="AnthoSystem" className="h-14 object-contain mb-4" />
           <h1 className="text-2xl font-bold text-foreground">Bem-vindo ao AnthoSystem</h1>
           <p className="text-sm text-muted-foreground mt-1">Vamos configurar tudo em poucos passos</p>
         </div>
