@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Mail, Lock, ArrowRight, KeyRound } from "lucide-react";
-import anthoLogo from "@/assets/anthosystem-logo.png";
+import anthoLogo from "@/assets/logo-as.png";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 

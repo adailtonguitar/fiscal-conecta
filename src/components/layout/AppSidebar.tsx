@@ -1,5 +1,5 @@
 import { useState } from "react";
-import anthoLogo from "@/assets/anthosystem-logo.png";
+import anthoLogo from "@/assets/logo-as.png";
 import { Link, useLocation } from "react-router-dom";
 import {
   ShoppingCart, LayoutDashboard, Package, FileText, Settings,
