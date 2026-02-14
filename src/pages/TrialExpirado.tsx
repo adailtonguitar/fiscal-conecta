@@ -186,7 +186,13 @@ export default function TrialExpirado() {
         Pagamento seguro via Mercado Pago • PIX, cartão de crédito, boleto ou saldo MP
       </p>
 
-      <div className="mt-4 text-center">
+      <div className="mt-4 text-center space-x-4">
+        <button
+          onClick={() => window.location.href = "/dashboard"}
+          className="text-sm text-primary hover:text-primary/80 transition-colors underline"
+        >
+          Voltar ao sistema
+        </button>
         <button
           onClick={signOut}
           className="text-sm text-muted-foreground hover:text-foreground transition-colors underline"
