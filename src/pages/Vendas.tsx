@@ -1,7 +1,7 @@
 import { FileText, Download, Eye, RefreshCw } from "lucide-react";
 import { formatCurrency } from "@/lib/mock-data";
 import { motion } from "framer-motion";
-import { useLocalSales, type LocalSale } from "@/hooks/useLocalSales";
+import { useSales, type Sale } from "@/hooks/useSales";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const paymentLabels: Record<string, string> = {
@@ -15,7 +15,7 @@ const paymentLabels: Record<string, string> = {
 };
 
 export default function Vendas() {
-  const { data: sales = [], isLoading, refetch } = useLocalSales(100);
+  const { data: sales = [], isLoading, refetch } = useSales(100);
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -54,7 +54,7 @@ export default function Vendas() {
       ) : (
         <div className="space-y-3">
           {sales.map((sale, i) => {
-            const items = sale.items_json ? JSON.parse(sale.items_json) : [];
+            const items = Array.isArray(sale.items_json) ? sale.items_json : sale.items_json ? JSON.parse(String(sale.items_json)) : [];
             const isSynced = !!sale.synced_at;
 
             return (
