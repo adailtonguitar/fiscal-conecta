@@ -24,13 +24,9 @@ function createWindow() {
 
   const publishedURL = 'https://cloud-ponto-magico.lovable.app';
 
-  // Only clear service workers to prevent stale SW issues, keep regular cache for speed
-  const ses = mainWindow.webContents.session;
-  ses.clearStorageData({ storages: ['serviceworkers'] }).then(() => {
-    loadApp();
-  }).catch(() => {
-    loadApp();
-  });
+  // Remove only service workers via JS after load instead of clearStorageData
+  // clearStorageData can wipe localStorage (auth session) on some Electron versions
+  loadApp();
 
   function loadApp() {
     if (app.isPackaged) {
