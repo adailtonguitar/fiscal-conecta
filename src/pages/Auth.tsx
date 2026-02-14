@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Mail, Lock, ArrowRight, KeyRound } from "lucide-react";
 import anthoLogo from "@/assets/logo-as.png";
@@ -425,6 +425,13 @@ export default function Auth() {
             </>
           )}
         </div>
+
+        {/* Link para planos */}
+        <p className="text-center text-sm text-muted-foreground mt-4">
+          <Link to="/" className="text-primary hover:underline font-medium">
+            Ver planos e preços
+          </Link>
+        </p>
       </motion.div>
     </div>
   );
