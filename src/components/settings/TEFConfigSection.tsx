@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { CreditCard, Save, Loader2, CheckCircle, AlertTriangle, Search, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { useTEFConfig, TEF_PROVIDERS, type TEFProvider } from "@/hooks/useTEFConfig";
+import { useTEFConfig, TEF_PROVIDERS, HARDWARE_MODELS, CONNECTION_TYPE_LABELS, FEATURE_LABELS, type TEFProvider } from "@/hooks/useTEFConfig";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useCompany } from "@/hooks/useCompany";
 import { MercadoPagoTEFService } from "@/services/MercadoPagoTEFService";
@@ -20,6 +20,8 @@ export function TEFConfigSection() {
   const [terminalId, setTerminalId] = useState("01");
   const [environment, setEnvironment] = useState<"sandbox" | "production">("sandbox");
   const [maxInstallments, setMaxInstallments] = useState(12);
+  const [hardwareModel, setHardwareModel] = useState<string>("");
+  const [connectionType, setConnectionType] = useState<string>("usb");
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [devices, setDevices] = useState<{ id: string; operating_mode: string }[]>([]);
@@ -34,6 +36,8 @@ export function TEFConfigSection() {
       setTerminalId(config.terminal_id || "01");
       setEnvironment(config.environment);
       setMaxInstallments(config.max_installments);
+      setHardwareModel(config.hardware_model || "");
+      setConnectionType(config.connection_type || "usb");
       setDirty(false);
     }
   }, [config]);
@@ -52,6 +56,8 @@ export function TEFConfigSection() {
       terminal_id: terminalId || "01",
       environment,
       max_installments: maxInstallments,
+      hardware_model: hardwareModel || null,
+      connection_type: connectionType,
     });
     if (error) {
       toast.error("Erro ao salvar configuração TEF");
@@ -272,6 +278,84 @@ export function TEFConfigSection() {
                     </div>
                   </>
                 )}
+              </div>
+            )}
+
+            {/* Hardware Model selection */}
+            {provider !== "simulado" && (
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">Modelo da Maquininha</label>
+                {(() => {
+                  const models = HARDWARE_MODELS.filter((m) => m.provider === provider);
+                  if (models.length === 0) return null;
+                  return (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {models.map((m) => {
+                          const isSelected = hardwareModel === m.id;
+                          return (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => {
+                                setHardwareModel(m.id);
+                                // Auto-set first available connection type
+                                if (m.connectionTypes.length > 0 && !m.connectionTypes.includes(connectionType)) {
+                                  setConnectionType(m.connectionTypes[0]);
+                                }
+                                markDirty();
+                              }}
+                              className={`flex flex-col items-start p-3 rounded-lg border transition-all text-left ${
+                                isSelected
+                                  ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                                  : "border-border hover:border-primary/30 hover:bg-muted/50"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                {isSelected && <CheckCircle className="w-3.5 h-3.5 text-primary" />}
+                                <span className="text-sm font-medium text-foreground">{m.label}</span>
+                              </div>
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {m.features.map((f) => (
+                                  <span key={f} className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted border border-border text-muted-foreground">
+                                    {FEATURE_LABELS[f] || f}
+                                  </span>
+                                ))}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Connection type for selected model */}
+                      {hardwareModel && (() => {
+                        const selectedModel = models.find((m) => m.id === hardwareModel);
+                        if (!selectedModel) return null;
+                        return (
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-foreground">Tipo de Conexão</label>
+                            <div className="flex flex-wrap gap-2">
+                              {selectedModel.connectionTypes.map((ct) => (
+                                <button
+                                  key={ct}
+                                  type="button"
+                                  onClick={() => { setConnectionType(ct); markDirty(); }}
+                                  className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
+                                    connectionType === ct
+                                      ? "border-primary bg-primary/10 text-primary"
+                                      : "border-border text-muted-foreground hover:border-primary/30"
+                                  }`}
+                                >
+                                  {CONNECTION_TYPE_LABELS[ct] || ct}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </>
+                  );
+                })()}
               </div>
             )}
 

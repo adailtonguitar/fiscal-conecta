@@ -17,6 +17,16 @@ export interface TEFConfig {
   max_installments: number;
   accepted_brands: string[];
   is_active: boolean;
+  hardware_model: string | null;
+  connection_type: string;
+}
+
+export interface HardwareModel {
+  id: string;
+  label: string;
+  provider: TEFProvider;
+  connectionTypes: string[];
+  features: string[];
 }
 
 const defaultConfig: Omit<TEFConfig, "id" | "company_id"> = {
@@ -30,6 +40,8 @@ const defaultConfig: Omit<TEFConfig, "id" | "company_id"> = {
   max_installments: 12,
   accepted_brands: ["visa", "mastercard", "elo", "amex", "hipercard"],
   is_active: true,
+  hardware_model: null,
+  connection_type: "usb",
 };
 
 export function useTEFConfig() {
@@ -125,3 +137,44 @@ export const TEF_PROVIDERS: { id: TEFProvider; label: string; description: strin
   { id: "pagseguro", label: "PagSeguro", description: "Integração via API REST do PagSeguro", requiresKey: true },
   { id: "mercadopago", label: "Mercado Pago", description: "Integração com maquininha Point via API", requiresKey: true },
 ];
+
+export const HARDWARE_MODELS: HardwareModel[] = [
+  // Stone
+  { id: "stone_t1", label: "Stone T1", provider: "stone", connectionTypes: ["bluetooth", "wifi"], features: ["credito", "debito", "pix", "voucher", "nfc"] },
+  { id: "stone_t2", label: "Stone T2", provider: "stone", connectionTypes: ["bluetooth", "wifi", "4g"], features: ["credito", "debito", "pix", "voucher", "nfc", "impressora"] },
+  { id: "stone_t3", label: "Stone T3", provider: "stone", connectionTypes: ["bluetooth", "wifi", "4g"], features: ["credito", "debito", "pix", "voucher", "nfc", "impressora", "camera"] },
+  // Cielo
+  { id: "cielo_lio_v2", label: "Cielo LIO V2", provider: "cielo", connectionTypes: ["wifi", "4g"], features: ["credito", "debito", "pix", "voucher", "nfc", "impressora", "camera"] },
+  { id: "cielo_lio_v3", label: "Cielo LIO V3", provider: "cielo", connectionTypes: ["wifi", "4g"], features: ["credito", "debito", "pix", "voucher", "nfc", "impressora", "camera"] },
+  { id: "cielo_flash", label: "Cielo Flash", provider: "cielo", connectionTypes: ["bluetooth"], features: ["credito", "debito", "nfc"] },
+  { id: "cielo_zip", label: "Cielo Zip", provider: "cielo", connectionTypes: ["bluetooth", "wifi"], features: ["credito", "debito", "pix", "nfc"] },
+  // Rede
+  { id: "rede_pop", label: "Rede Pop", provider: "rede", connectionTypes: ["bluetooth", "wifi"], features: ["credito", "debito", "pix", "nfc"] },
+  { id: "rede_smart", label: "Rede Smart", provider: "rede", connectionTypes: ["wifi", "4g"], features: ["credito", "debito", "pix", "voucher", "nfc", "impressora"] },
+  // PagSeguro
+  { id: "pag_minizinha", label: "Minizinha", provider: "pagseguro", connectionTypes: ["bluetooth"], features: ["credito", "debito", "nfc"] },
+  { id: "pag_moderninha_pro", label: "Moderninha Pro 2", provider: "pagseguro", connectionTypes: ["wifi", "4g"], features: ["credito", "debito", "pix", "nfc", "impressora"] },
+  { id: "pag_smart", label: "Moderninha Smart 2", provider: "pagseguro", connectionTypes: ["wifi", "4g"], features: ["credito", "debito", "pix", "voucher", "nfc", "impressora", "camera"] },
+  // Mercado Pago
+  { id: "mp_point_pro2", label: "Point Pro 2", provider: "mercadopago", connectionTypes: ["wifi", "4g"], features: ["credito", "debito", "pix", "voucher", "nfc", "impressora"] },
+  { id: "mp_point_smart", label: "Point Smart", provider: "mercadopago", connectionTypes: ["wifi", "4g"], features: ["credito", "debito", "pix", "voucher", "nfc", "impressora", "camera"] },
+  { id: "mp_point_mini", label: "Point Mini NFC", provider: "mercadopago", connectionTypes: ["bluetooth"], features: ["credito", "debito", "nfc"] },
+];
+
+export const CONNECTION_TYPE_LABELS: Record<string, string> = {
+  usb: "USB",
+  bluetooth: "Bluetooth",
+  wifi: "Wi-Fi",
+  "4g": "4G/Chip",
+  serial: "Serial",
+};
+
+export const FEATURE_LABELS: Record<string, string> = {
+  credito: "Crédito",
+  debito: "Débito",
+  pix: "PIX",
+  voucher: "Voucher",
+  nfc: "NFC/Contactless",
+  impressora: "Impressora",
+  camera: "Câmera",
+};
