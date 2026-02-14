@@ -47,6 +47,7 @@ const navItems: NavEntry[] = [
       { icon: BarChart3, label: "Curva ABC", path: "/estoque/curva-abc" },
       { icon: Tags, label: "Lotes & Validade", path: "/estoque/lotes" },
       { icon: TrendingDown, label: "Perdas", path: "/estoque/perdas" },
+      { icon: ShoppingCart, label: "Pedidos Compra", path: "/pedidos-compra" },
     ],
   },
   {
