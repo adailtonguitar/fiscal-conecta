@@ -989,22 +989,15 @@ export default function PDV() {
         )}
       </AnimatePresence>
 
-      <div className="flex items-center gap-1 px-2 py-1 bg-sidebar-background border-t border-border flex-shrink-0 overflow-x-auto">
+      {/* Compact bottom shortcut bar — only essentials */}
+      <div className="flex items-center gap-1 px-2 py-1 bg-sidebar-background border-t border-border flex-shrink-0">
         {[
-          { key: "F1", label: "Atalhos" },
+          { key: "F1", label: "Atalhos", action: () => setShowShortcuts((p) => !p) },
           { key: "F2", label: "Pagamento", action: handleCheckout },
           { key: "F3", label: "Buscar", action: () => setShowProductList((p) => !p) },
           { key: "F4", label: "Caixa", action: () => setShowCashRegister(true) },
-          { key: "F5", label: "Cadastrar", action: () => { setQuickProductBarcode(""); setShowQuickProduct(true); } },
           { key: "F6", label: "Limpar", action: () => { if (pdv.cartItems.length > 0) { pdv.clearCart(); setSelectedClient(null); toast.info("Carrinho limpo"); } } },
-          { key: "F7", label: "Gaveta", action: () => { openCashDrawer(); toast.info("Gaveta aberta"); } },
-          { key: "F8", label: "Receber", action: () => setShowReceiveCredit(true) },
-          { key: "F9", label: "Sync", action: () => { if (pdv.pendingCount > 0 && pdv.isOnline) pdv.syncAll(); } },
-          { key: "F10", label: "Preço", action: () => { setShowPriceLookup(true); setPriceLookupQuery(""); } },
-          { key: "F11", label: "Repetir", action: () => pdv.repeatLastSale() },
-          { key: "F12", label: "Treino", action: () => { pdv.setTrainingMode(!pdv.trainingMode); toast.info(pdv.trainingMode ? "Modo treinamento DESATIVADO" : "🎓 Modo treinamento ATIVADO"); } },
           { key: "Del", label: "Remover", action: () => { if (pdv.cartItems.length > 0) { const last = pdv.cartItems[pdv.cartItems.length - 1]; pdv.removeItem(last.id); toast.info(`${last.name} removido`); } } },
-          { key: "Orc", label: "Orçamento", action: () => { if (pdv.cartItems.length > 0) setShowSaveQuote(true); else toast.warning("Carrinho vazio"); } },
         ].map(({ key, label, action }) => (
           <button
             key={key}
@@ -1017,6 +1010,70 @@ export default function PDV() {
           </button>
         ))}
       </div>
+
+      {/* F1 — All shortcuts modal */}
+      <AnimatePresence>
+        {showShortcuts && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowShortcuts(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-2xl mx-4 overflow-hidden"
+            >
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <Keyboard className="w-5 h-5 text-primary" />
+                  Todos os Atalhos
+                </h2>
+                <button onClick={() => setShowShortcuts(false)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                  <X className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </div>
+              <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {[
+                  { key: "F1", label: "Atalhos", desc: "Mostra este painel" },
+                  { key: "F2", label: "Pagamento", desc: "Finalizar venda", action: () => { setShowShortcuts(false); handleCheckout(); } },
+                  { key: "F3", label: "Buscar Produtos", desc: "Abrir grade de produtos", action: () => { setShowShortcuts(false); setShowProductList((p) => !p); } },
+                  { key: "F4", label: "Caixa", desc: "Abrir/fechar caixa", action: () => { setShowShortcuts(false); setShowCashRegister(true); } },
+                  { key: "F5", label: "Cadastrar Produto", desc: "Cadastro rápido", action: () => { setShowShortcuts(false); setQuickProductBarcode(""); setShowQuickProduct(true); } },
+                  { key: "F6", label: "Limpar Carrinho", desc: "Remove todos os itens", action: () => { setShowShortcuts(false); if (pdv.cartItems.length > 0) { pdv.clearCart(); setSelectedClient(null); toast.info("Carrinho limpo"); } } },
+                  { key: "F7", label: "Abrir Gaveta", desc: "Gaveta de dinheiro", action: () => { setShowShortcuts(false); openCashDrawer(); toast.info("Gaveta aberta"); } },
+                  { key: "F8", label: "Receber Fiado", desc: "Receber débitos de clientes", action: () => { setShowShortcuts(false); setShowReceiveCredit(true); } },
+                  { key: "F9", label: "Sincronizar", desc: "Enviar vendas pendentes", action: () => { setShowShortcuts(false); if (pdv.pendingCount > 0 && pdv.isOnline) pdv.syncAll(); } },
+                  { key: "F10", label: "Consultar Preço", desc: "Busca por preço e estoque", action: () => { setShowShortcuts(false); setShowPriceLookup(true); setPriceLookupQuery(""); } },
+                  { key: "F11", label: "Repetir Venda", desc: "Recarrega última venda", action: () => { setShowShortcuts(false); pdv.repeatLastSale(); } },
+                  { key: "F12", label: "Treinamento", desc: "Modo sandbox sem salvar", action: () => { setShowShortcuts(false); pdv.setTrainingMode(!pdv.trainingMode); toast.info(pdv.trainingMode ? "Modo treinamento DESATIVADO" : "🎓 Modo treinamento ATIVADO"); } },
+                  { key: "Del", label: "Remover Último", desc: "Remove último item do carrinho", action: () => { setShowShortcuts(false); if (pdv.cartItems.length > 0) { const last = pdv.cartItems[pdv.cartItems.length - 1]; pdv.removeItem(last.id); toast.info(`${last.name} removido`); } } },
+                  { key: "Esc", label: "Fechar", desc: "Fecha painéis e modais" },
+                  { key: "Orc", label: "Orçamento", desc: "Salvar carrinho como orçamento", action: () => { setShowShortcuts(false); if (pdv.cartItems.length > 0) setShowSaveQuote(true); else toast.warning("Carrinho vazio"); } },
+                ].map(({ key, label, desc, action }) => (
+                  <button
+                    key={key}
+                    onClick={action || (() => setShowShortcuts(false))}
+                    className="flex items-start gap-3 p-3 rounded-xl bg-muted/50 border border-border hover:bg-accent hover:border-primary/30 transition-all text-left group"
+                  >
+                    <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-1 rounded mt-0.5 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                      {key}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-foreground">{label}</p>
+                      <p className="text-[10px] text-muted-foreground leading-tight">{desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
