@@ -167,6 +167,33 @@ export class MercadoPagoTEFService {
   }
 
   /**
+   * Refund a completed payment (full or partial).
+   */
+  static async refundPayment(params: {
+    accessToken: string;
+    paymentId: string;
+    amount?: number; // optional: partial refund amount
+  }): Promise<{ success: boolean; refundId?: string; errorMessage?: string }> {
+    try {
+      const resp = await callTefFunction({
+        action: "refund_payment",
+        accessToken: params.accessToken,
+        paymentId: params.paymentId,
+        refundAmount: params.amount ? Math.round(params.amount * 100) : undefined,
+      });
+      return {
+        success: true,
+        refundId: resp.data?.id?.toString(),
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        errorMessage: err.message || "Erro ao estornar pagamento",
+      };
+    }
+  }
+
+  /**
    * List available Point devices.
    */
   static async listDevices(accessToken: string) {
