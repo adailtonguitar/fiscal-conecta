@@ -58,7 +58,7 @@ export default function Dashboard() {
               className={`rounded-xl p-5 border card-shadow ${stats.fiscalProtected ? "bg-success/10 border-success/30" : "bg-destructive/10 border-destructive/30"}`}
             >
               <div className="flex items-center gap-3">
-                <div className={`w-11 h-11 rounded-lg flex items-center justify-center ${stats.fiscalProtected ? "bg-success/20" : "bg-destructive/20"}`}>
+                <div className={`flex items-center justify-center ${stats.fiscalProtected ? "" : ""}`}>
                   <Shield className={`w-6 h-6 ${stats.fiscalProtected ? "text-success" : "text-destructive"}`} />
                 </div>
                 <div>
@@ -80,7 +80,7 @@ export default function Dashboard() {
               className="bg-card rounded-xl p-5 border border-border card-shadow"
             >
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-11 h-11 rounded-lg bg-accent flex items-center justify-center">
+                <div className="flex items-center justify-center">
                   <Heart className={`w-6 h-6 ${healthColor(stats.healthScore)}`} />
                 </div>
                 <div>
@@ -101,7 +101,7 @@ export default function Dashboard() {
               className="bg-card rounded-xl p-5 border border-border card-shadow"
             >
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-11 h-11 rounded-lg bg-accent flex items-center justify-center">
+                <div className="flex items-center justify-center">
                   <Target className="w-6 h-6 text-primary" />
                 </div>
                 <p className="text-sm font-medium text-foreground">Resumo Rápido</p>
@@ -140,8 +140,8 @@ export default function Dashboard() {
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm text-muted-foreground">{stat.title}</span>
-                  <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center">
-                    <stat.icon className="w-4 h-4 text-accent-foreground" />
+                   <div className="flex items-center justify-center">
+                    <stat.icon className="w-5 h-5 text-muted-foreground" />
                   </div>
                 </div>
                 <span className="text-2xl font-bold font-mono text-foreground">{stat.value}</span>
