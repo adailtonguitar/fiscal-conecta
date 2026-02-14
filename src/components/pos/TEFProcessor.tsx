@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { generatePixPayload } from "@/lib/pix-brcode";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
+import { MercadoPagoTEFService } from "@/services/MercadoPagoTEFService";
 
 type PaymentStep = "select" | "amount" | "details" | "processing" | "result" | "summary";
 type PaymentMethodType = "dinheiro" | "debito" | "credito" | "pix" | "voucher" | "outros" | "prazo";
@@ -34,6 +35,13 @@ interface TEFProcessorProps {
     pixKeyType?: string;
     merchantName: string;
     merchantCity: string;
+  } | null;
+  tefConfig?: {
+    provider: string;
+    apiKey?: string | null;
+    terminalId?: string;
+    merchantId?: string | null;
+    companyId?: string;
   } | null;
 }
 
@@ -83,7 +91,7 @@ const generateAuthCode = () => String(Math.floor(Math.random() * 999999)).padSta
 const generatePixTxId = () => `E${String(Math.floor(Math.random() * 99999999999)).padStart(32, "0")}`;
 const generateQrPattern = () => Array.from({ length: 25 }, () => Math.random() > 0.4);
 
-export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, pixConfig }: TEFProcessorProps) {
+export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, pixConfig, tefConfig }: TEFProcessorProps) {
   const [step, setStep] = useState<PaymentStep>("select");
   const [method, setMethod] = useState<PaymentMethodType | null>(null);
   const [isSplit, setIsSplit] = useState(false);
@@ -122,6 +130,52 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, pi
     if (!method) return;
     setStep("processing");
 
+    // === Real Mercado Pago Point integration ===
+    if (tefConfig?.provider === "mercadopago" && tefConfig?.apiKey && tefConfig?.terminalId) {
+      try {
+        const result = await MercadoPagoTEFService.processPayment({
+          accessToken: tefConfig.apiKey,
+          deviceId: tefConfig.terminalId,
+          companyId: tefConfig.companyId || "",
+          amount: amt,
+          description: "Venda PDV",
+          installments: method === "credito" ? installments : 1,
+          onStatusChange: (status) => setProcessingStatus(status),
+        });
+
+        const tefResult: TEFResult = {
+          method,
+          approved: result.approved,
+          amount: amt,
+          nsu: result.nsu,
+          authCode: result.authCode,
+          cardBrand: result.cardBrand,
+          cardLastDigits: result.cardLastDigits,
+          installments: method === "credito" ? installments : undefined,
+        };
+
+        setCurrentResult(tefResult);
+        setStep("result");
+
+        if (!result.approved) {
+          toast.error(result.errorMessage || "Pagamento não aprovado");
+        }
+        return;
+      } catch (err: any) {
+        console.error("[TEF-MP] Erro:", err);
+        toast.error(`Erro TEF: ${err.message}`);
+        const tefResult: TEFResult = {
+          method,
+          approved: false,
+          amount: amt,
+        };
+        setCurrentResult(tefResult);
+        setStep("result");
+        return;
+      }
+    }
+
+    // === Simulated flow (fallback) ===
     const steps = method === "pix" ? pixSteps : method === "dinheiro" ? [] : tefSteps;
 
     for (let i = 0; i < steps.length; i++) {
@@ -148,7 +202,7 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, pi
 
     setCurrentResult(tefResult);
     setStep("result");
-  }, [method, installments, cashReceived]);
+  }, [method, installments, cashReceived, tefConfig]);
 
   const handleSelectMethod = (m: PaymentMethodType) => {
     // "A Prazo" triggers external client selector
