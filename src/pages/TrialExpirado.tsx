@@ -9,7 +9,7 @@ import { toast } from "sonner";
 const plans = [
   {
     name: "Essencial",
-    price: "150",
+    price: "149,90",
     desc: "Para pequenos comércios",
     features: ["1 terminal PDV", "100 produtos", "NFC-e ilimitada", "Suporte por e-mail"],
     highlighted: false,
@@ -17,7 +17,7 @@ const plans = [
   },
   {
     name: "Profissional",
-    price: "200",
+    price: "199,90",
     desc: "Para negócios em crescimento",
     features: ["3 terminais PDV", "Produtos ilimitados", "NF-e + NFC-e", "Relatórios avançados", "Suporte prioritário"],
     highlighted: true,
