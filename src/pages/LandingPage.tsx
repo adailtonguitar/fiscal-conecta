@@ -105,7 +105,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="h-screen overflow-y-auto bg-background text-foreground">
       <UpdateNoticeModal />
       {/* Nav */}
       <nav className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border">
