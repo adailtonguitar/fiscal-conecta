@@ -403,7 +403,7 @@ export default function PDV() {
   const totalFinal = pdv.total;
 
   return (
-    <div className={`flex flex-col h-screen bg-background text-foreground overflow-hidden select-none ${pdv.trainingMode ? "ring-4 ring-warning/60 ring-inset" : ""}`}>
+    <div className={`pdv-theme flex flex-col h-screen bg-background text-foreground overflow-hidden select-none ${pdv.trainingMode ? "ring-4 ring-warning/60 ring-inset" : ""}`}>
 
       {/* ════════ TOP BAR ════════ */}
       <div className="flex items-center justify-between px-3 h-9 bg-primary text-primary-foreground flex-shrink-0 text-xs">
@@ -691,10 +691,10 @@ export default function PDV() {
           </div>
 
           {/* TOTAL — BIG DISPLAY */}
-          <div className="p-6 mt-auto border-t-4" style={{ backgroundColor: "#1b7a3d", borderTopColor: "#25a854" }}>
+          <div className="p-6 mt-auto bg-primary border-t-4 border-primary/70">
             <div className="text-center">
-              <span className="text-xs font-bold uppercase tracking-[0.25em] block mb-2" style={{ color: "rgba(255,255,255,0.7)" }}>TOTAL DA VENDA</span>
-              <span className="text-6xl font-black font-mono tracking-tight block" style={{ color: "#ffffff", textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
+              <span className="text-xs font-bold text-primary-foreground/70 uppercase tracking-[0.25em] block mb-2">TOTAL DA VENDA</span>
+              <span className="text-6xl font-black text-primary-foreground font-mono tracking-tight block drop-shadow-lg">
                 {formatCurrency(totalFinal)}
               </span>
             </div>
