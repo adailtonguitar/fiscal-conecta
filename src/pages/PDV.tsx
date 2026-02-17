@@ -691,10 +691,10 @@ export default function PDV() {
           </div>
 
           {/* TOTAL — BIG DISPLAY */}
-          <div className="p-4 bg-primary">
+          <div className="p-6 bg-[hsl(142,72%,29%)] border-t-4 border-[hsl(142,72%,40%)]">
             <div className="text-center">
-              <span className="text-sm font-bold text-primary-foreground/80 uppercase tracking-widest block mb-1">Total da Venda</span>
-              <span className="text-5xl font-black text-primary-foreground font-mono tracking-tight block">
+              <span className="text-xs font-bold text-white/70 uppercase tracking-[0.25em] block mb-2">Total da Venda</span>
+              <span className="text-6xl font-black text-white font-mono tracking-tight block drop-shadow-lg">
                 {formatCurrency(totalFinal)}
               </span>
             </div>
