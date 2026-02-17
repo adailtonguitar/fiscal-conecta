@@ -265,7 +265,7 @@ export default function PDV() {
       }
 
       switch (e.key) {
-        case "F1": e.preventDefault(); setShowShortcuts((p) => !p); break;
+        case "F1": e.preventDefault(); break;
         case "F2": e.preventDefault(); handleCheckout(); break;
         case "F3": e.preventDefault(); setShowProductList((p) => !p); break;
         case "F4": e.preventDefault(); openCashDrawer(); toast.info("Sangria/Gaveta aberta"); break;
@@ -727,7 +727,6 @@ export default function PDV() {
       {/* ════════ BOTTOM SHORTCUT BAR ════════ */}
       <div className="flex items-center gap-1 px-2 py-1 bg-muted border-t border-border flex-shrink-0">
         {[
-          { key: "F1", label: "Atalhos" },
           { key: "F2", label: "Pagamento" },
           { key: "F3", label: "Buscar" },
           { key: "F4", label: "Sangria" },
@@ -997,43 +996,6 @@ export default function PDV() {
         </div>
       )}
 
-      {/* F1 — All shortcuts modal */}
-      {showShortcuts && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowShortcuts(false)}>
-          <div onClick={(e) => e.stopPropagation()} className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-2xl mx-4 overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><Keyboard className="w-5 h-5 text-primary" /> Atalhos do PDV</h2>
-              <button onClick={() => setShowShortcuts(false)} className="p-1.5 rounded-lg hover:bg-muted"><X className="w-5 h-5 text-muted-foreground" /></button>
-            </div>
-            <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {[
-                { key: "F1", label: "Atalhos", desc: "Mostra este painel" },
-                { key: "F2", label: "Pagamento", desc: "Abrir tela de pagamento" },
-                { key: "F3", label: "Buscar Produto", desc: "Busca na grade" },
-                { key: "F4", label: "Sangria/Gaveta", desc: "Abrir gaveta de dinheiro" },
-                { key: "F5", label: "Cliente", desc: "Identificar cliente" },
-                { key: "F6", label: "Limpar Venda", desc: "Remove todos os itens" },
-                { key: "F7", label: "Desconto Item", desc: "Desconto no último item" },
-                { key: "F8", label: "Desconto Total", desc: "Desconto geral na venda" },
-                { key: "F9", label: "Alterar Qtd", desc: "Altera quantidade do último item" },
-                { key: "F10", label: "Consultar Preço", desc: "Busca preço e estoque" },
-                { key: "F11", label: "Repetir Venda", desc: "Recarrega última venda" },
-                { key: "F12", label: "Finalizar", desc: "Finalizar venda (= F2)" },
-                { key: "DEL", label: "Remover Último", desc: "Remove último item" },
-                { key: "ESC", label: "Cancelar", desc: "Cancela venda / fecha modal" },
-              ].map(({ key, label, desc }) => (
-                <div key={key} className="flex items-start gap-3 p-3 rounded-xl bg-muted/50 border border-border text-left">
-                  <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-1 rounded mt-0.5">{key}</span>
-                  <div>
-                    <p className="text-sm font-bold text-foreground">{label}</p>
-                    <p className="text-[10px] text-muted-foreground">{desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
