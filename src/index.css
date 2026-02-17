@@ -197,4 +197,14 @@
   .status-offline {
     color: hsl(var(--warning));
   }
+
+  @keyframes pdv-flash {
+    0% { background-color: hsl(var(--primary) / 0.4); }
+    100% { background-color: hsl(var(--primary) / 0.1); }
+  }
+
+  .animate-pdv-flash {
+    animation: pdv-flash 0.6s ease-out forwards;
+    font-weight: 700;
+  }
 }
