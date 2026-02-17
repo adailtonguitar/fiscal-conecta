@@ -522,8 +522,21 @@ export default function PDV() {
               <tbody>
                 {pdv.cartItems.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-20 text-muted-foreground text-sm">
-                      Aguardando leitura de código de barras...
+                    <td colSpan={6} className="text-center py-0">
+                      <div className="flex flex-col items-center justify-center py-16 gap-4 animate-fade-in">
+                        {logoUrl ? (
+                          <img src={logoUrl} alt={companyName || "Logo"} className="h-24 object-contain opacity-60" />
+                        ) : (
+                          <img src="/logo-as.png" alt="AnthoSystem" className="h-20 object-contain opacity-50" />
+                        )}
+                        {companyName && (
+                          <span className="text-lg font-bold text-foreground/60">{companyName}</span>
+                        )}
+                        {slogan && (
+                          <span className="text-sm text-muted-foreground italic">{slogan}</span>
+                        )}
+                        <span className="text-xs text-muted-foreground/50 mt-2">Aguardando leitura de código de barras...</span>
+                      </div>
                     </td>
                   </tr>
                 ) : (
