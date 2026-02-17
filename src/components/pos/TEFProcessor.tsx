@@ -33,6 +33,7 @@ interface TEFProcessorProps {
   onComplete: (results: TEFResult[]) => void;
   onCancel: () => void;
   onPrazoRequested?: () => void;
+  defaultMethod?: PaymentMethodType | null;
   pixConfig?: {
     pixKey: string;
     pixKeyType?: string;
@@ -96,7 +97,7 @@ const generateAuthCode = () => String(Math.floor(Math.random() * 999999)).padSta
 const generatePixTxId = () => `E${String(Math.floor(Math.random() * 99999999999)).padStart(32, "0")}`;
 const generateQrPattern = () => Array.from({ length: 25 }, () => Math.random() > 0.4);
 
-export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, pixConfig, tefConfig }: TEFProcessorProps) {
+export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, defaultMethod, pixConfig, tefConfig }: TEFProcessorProps) {
   const [step, setStep] = useState<PaymentStep>("select");
   const [method, setMethod] = useState<PaymentMethodType | null>(null);
   const [isSplit, setIsSplit] = useState(false);
@@ -119,6 +120,9 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, pi
   const pixPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const hasDynamicPix = !!tefConfig?.apiKey; // MP is configured → use dynamic PIX
+
+  // Auto-select default method — ref to track
+  const defaultMethodApplied = useRef(false);
 
   const paidSoFar = completedPayments.reduce((s, p) => s + p.amount, 0);
   const remaining = Math.max(0, Number((total - paidSoFar).toFixed(2)));
@@ -378,6 +382,14 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, pi
       }
     }
   };
+
+  // Auto-select default method when provided
+  useEffect(() => {
+    if (defaultMethod && !defaultMethodApplied.current) {
+      defaultMethodApplied.current = true;
+      setTimeout(() => handleSelectMethod(defaultMethod), 50);
+    }
+  }, [defaultMethod]);
 
   const handleConfirmAmount = () => {
     const amt = Number(currentAmount);

@@ -16,7 +16,7 @@ import { useQuotes } from "@/hooks/useQuotes";
 import { useCompany } from "@/hooks/useCompany";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { useTEFConfig } from "@/hooks/useTEFConfig";
-import { Wifi, WifiOff, Keyboard, X, Search, Monitor, FileText, User, PackageX, PackagePlus, Maximize, Minimize } from "lucide-react";
+import { Wifi, WifiOff, Keyboard, X, Search, Monitor, FileText, User, PackageX, PackagePlus, Maximize, Minimize, Banknote, CreditCard, QrCode, Smartphone, Ticket, MoreHorizontal, Clock as ClockIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { PaymentResult } from "@/services/types";
@@ -37,6 +37,7 @@ export default function PDV() {
   const [showSaveQuote, setShowSaveQuote] = useState(false);
   const [quoteNotes, setQuoteNotes] = useState("");
   const [showTEF, setShowTEF] = useState(false);
+  const [tefDefaultMethod, setTefDefaultMethod] = useState<string | null>(null);
   const [showCashRegister, setShowCashRegister] = useState(false);
   const [receipt, setReceipt] = useState<{
     items: typeof pdv.cartItems;
@@ -161,8 +162,23 @@ export default function PDV() {
     }
   };
 
-  const handleCheckout = useCallback(() => {
-    if (pdv.cartItems.length > 0) setShowTEF(true);
+  const handleCheckout = useCallback((defaultMethod?: string) => {
+    if (pdv.cartItems.length > 0) {
+      setTefDefaultMethod(defaultMethod || null);
+      setShowTEF(true);
+    }
+  }, [pdv.cartItems.length]);
+
+  const handleDirectPayment = useCallback((method: string) => {
+    if (pdv.cartItems.length === 0) {
+      toast.warning("Adicione itens ao carrinho primeiro");
+      return;
+    }
+    if (method === "prazo") {
+      handlePrazoRequested();
+      return;
+    }
+    handleCheckout(method);
   }, [pdv.cartItems.length]);
 
   // Barcode manual input with multiplication support (e.g. 5*789123456789)
@@ -379,10 +395,12 @@ export default function PDV() {
       }
     }
     setShowTEF(false);
+    setTefDefaultMethod(null);
   };
 
   const handlePrazoRequested = () => {
     setShowTEF(false);
+    setTefDefaultMethod(null);
     setShowClientSelector(true);
   };
 
@@ -753,29 +771,48 @@ export default function PDV() {
         </div>
       </div>
 
-      {/* ════════ BOTTOM SHORTCUT BAR ════════ */}
-      <div className="flex items-center justify-center flex-wrap gap-2 px-3 py-2 bg-muted border-t-2 border-border flex-shrink-0 overflow-x-auto">
-        {[
-          { key: "F2", label: "Pagamento" },
-          { key: "F3", label: "Buscar" },
-          { key: "F4", label: "Sangria" },
-          { key: "F5", label: "Cliente" },
-          { key: "F6", label: "Limpar" },
-          { key: "F7", label: "Desc.Item" },
-          { key: "F8", label: "Desc.Total" },
-          { key: "F9", label: "Qtd" },
-          { key: "DEL", label: "Remover" },
-          { key: "ESC", label: "Cancelar" },
-          { key: "F12", label: "Finalizar" },
-        ].map(({ key, label }) => (
-          <div
-            key={key}
-            className="flex items-center gap-1 px-2 py-1.5 text-xs font-bold whitespace-nowrap"
-          >
-            <span className="font-mono text-[11px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-black shadow-sm">{key}</span>
-            <span className="text-muted-foreground">{label}</span>
-          </div>
-        ))}
+      {/* ════════ BOTTOM PAYMENT BAR ════════ */}
+      <div className="flex flex-col flex-shrink-0 border-t-2 border-border bg-card">
+        {/* Payment method buttons */}
+        <div className="flex items-stretch gap-1.5 px-3 py-2">
+          {[
+            { id: "dinheiro", label: "Dinheiro", icon: Banknote, shortcut: "F2", colorClass: "bg-emerald-600 hover:bg-emerald-700 text-white" },
+            { id: "debito", label: "Débito", icon: CreditCard, shortcut: "", colorClass: "bg-blue-600 hover:bg-blue-700 text-white" },
+            { id: "credito", label: "Crédito", icon: CreditCard, shortcut: "", colorClass: "bg-purple-600 hover:bg-purple-700 text-white" },
+            { id: "pix", label: "PIX", icon: QrCode, shortcut: "", colorClass: "bg-teal-600 hover:bg-teal-700 text-white" },
+            { id: "voucher", label: "Voucher", icon: Ticket, shortcut: "", colorClass: "bg-amber-600 hover:bg-amber-700 text-white" },
+            { id: "prazo", label: "A Prazo", icon: ClockIcon, shortcut: "", colorClass: "bg-orange-600 hover:bg-orange-700 text-white" },
+            { id: "outros", label: "Outros", icon: MoreHorizontal, shortcut: "", colorClass: "bg-secondary hover:bg-secondary/80 text-secondary-foreground" },
+          ].map(({ id, label, icon: Icon, shortcut, colorClass }) => (
+            <button
+              key={id}
+              onClick={() => handleDirectPayment(id)}
+              disabled={pdv.cartItems.length === 0}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 rounded-xl text-xs font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${colorClass}`}
+            >
+              <Icon className="w-5 h-5" />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+        {/* Shortcut hints row */}
+        <div className="flex items-center justify-center gap-3 px-3 py-1 bg-muted/50 border-t border-border text-[10px]">
+          {[
+            { key: "F3", label: "Buscar" },
+            { key: "F5", label: "Cliente" },
+            { key: "F6", label: "Limpar" },
+            { key: "F7", label: "Desc.Item" },
+            { key: "F8", label: "Desc.Total" },
+            { key: "F9", label: "Qtd" },
+            { key: "DEL", label: "Remover" },
+            { key: "ESC", label: "Cancelar" },
+          ].map(({ key, label }) => (
+            <span key={key} className="flex items-center gap-0.5 text-muted-foreground">
+              <span className="font-mono font-black bg-muted px-1 py-0.5 rounded text-[9px]">{key}</span>
+              {label}
+            </span>
+          ))}
+        </div>
       </div>
 
       {/* ════════ OVERLAYS ════════ */}
@@ -809,7 +846,7 @@ export default function PDV() {
 
       {/* TEF */}
       {showTEF && (
-        <TEFProcessor total={pdv.total} onComplete={handleTEFComplete} onCancel={() => setShowTEF(false)} onPrazoRequested={handlePrazoRequested} pixConfig={pixKey ? { pixKey, pixKeyType: pixKeyType || undefined, merchantName: companyName || "LOJA", merchantCity: pixCity || "SAO PAULO" } : null} tefConfig={tefConfigData ? { provider: tefConfigData.provider, apiKey: tefConfigData.api_key, apiSecret: tefConfigData.api_secret, terminalId: tefConfigData.terminal_id, merchantId: tefConfigData.merchant_id, companyId: companyId || undefined, environment: tefConfigData.environment } : null} />
+        <TEFProcessor total={pdv.total} onComplete={handleTEFComplete} onCancel={() => { setShowTEF(false); setTefDefaultMethod(null); }} onPrazoRequested={handlePrazoRequested} defaultMethod={tefDefaultMethod as any} pixConfig={pixKey ? { pixKey, pixKeyType: pixKeyType || undefined, merchantName: companyName || "LOJA", merchantCity: pixCity || "SAO PAULO" } : null} tefConfig={tefConfigData ? { provider: tefConfigData.provider, apiKey: tefConfigData.api_key, apiSecret: tefConfigData.api_secret, terminalId: tefConfigData.terminal_id, merchantId: tefConfigData.merchant_id, companyId: companyId || undefined, environment: tefConfigData.environment } : null} />
       )}
 
       {/* Client selector for credit sales */}
