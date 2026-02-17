@@ -523,11 +523,11 @@ export default function PDV() {
                 {pdv.cartItems.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="text-center py-0">
-                      <div className="flex flex-col items-center justify-center py-16 gap-4 animate-fade-in">
+                      <div className="flex flex-col items-center justify-center py-12 gap-5 animate-fade-in">
                         {logoUrl ? (
-                          <img src={logoUrl} alt={companyName || "Logo"} className="h-24 object-contain opacity-60" />
+                          <img src={logoUrl} alt={companyName || "Logo"} className="h-44 object-contain" />
                         ) : (
-                          <img src="/logo-as.png" alt="AnthoSystem" className="h-20 object-contain opacity-50" />
+                          <img src="/logo-as.png" alt="AnthoSystem" className="h-36 object-contain opacity-70" />
                         )}
                         {companyName && (
                           <span className="text-lg font-bold text-foreground/60">{companyName}</span>
