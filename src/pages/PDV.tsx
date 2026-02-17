@@ -68,6 +68,8 @@ export default function PDV() {
   const tableEndRef = useRef<HTMLTableRowElement>(null);
   const [saleNumber, setSaleNumber] = useState(() => Number(localStorage.getItem("pdv_sale_number") || "1"));
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [flashItemId, setFlashItemId] = useState<string | null>(null);
+  const flashTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -105,9 +107,13 @@ export default function PDV() {
     }
   }, [showTEF, receipt, showCashRegister, showProductList, showShortcuts, showPriceLookup, showLoyaltyClientSelector, showQuickProduct, showSaveQuote, showTerminalPicker, showClientSelector, showReceiveCredit, zeroStockProduct, editingQtyItemId, editingItemDiscountId, editingGlobalDiscount]);
 
-  // Auto-scroll to last item
+  // Auto-scroll to last item + flash effect
   useEffect(() => {
     if (pdv.cartItems.length > 0) {
+      const lastItem = pdv.cartItems[pdv.cartItems.length - 1];
+      setFlashItemId(lastItem.id);
+      if (flashTimeout.current) clearTimeout(flashTimeout.current);
+      flashTimeout.current = setTimeout(() => setFlashItemId(null), 600);
       tableEndRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
     }
   }, [pdv.cartItems.length]);
@@ -533,7 +539,9 @@ export default function PDV() {
                         key={item.id}
                         ref={isLast ? tableEndRef : undefined}
                         className={`border-b border-border transition-colors ${
-                          isLast
+                          flashItemId === item.id
+                            ? "animate-pdv-flash"
+                            : isLast
                             ? "bg-primary/10 font-bold"
                             : idx % 2 === 0
                             ? "bg-card"
