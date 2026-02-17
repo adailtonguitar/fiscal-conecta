@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { Search, User, DollarSign, CreditCard, ArrowDown, ArrowUp, AlertTriangle } from "lucide-react";
 import { useClients } from "@/hooks/useClients";
 import { useFinancialEntries } from "@/hooks/useFinancialEntries";
@@ -16,6 +16,16 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PDVCreditReceipt, type CreditReceiptData } from "@/components/pdv/PDVCreditReceipt";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const paymentMethods = [
   { value: "dinheiro", label: "Dinheiro" },
@@ -68,37 +78,27 @@ export default function Fiado() {
     );
   }, [entries, selectedClient]);
 
-  const handleReceivePayment = async (amount?: number) => {
-    const payAmount = amount || customAmount;
-    if (!payAmount || payAmount <= 0) {
-      toast.error("Informe um valor válido");
-      return;
-    }
-    if (payAmount > clientBalance) {
-      toast.error("Valor maior que o saldo devedor");
-      return;
-    }
-    if (!companyId || !user || !selectedClient) return;
+  // State for cash session prompt
+  const [cashPromptOpen, setCashPromptOpen] = useState(false);
+  const [pendingSession, setPendingSession] = useState<any>(null);
+  const pendingPayRef = useRef<{ amount: number } | null>(null);
 
+  const executePayment = useCallback(async (payAmount: number, registerInCash: boolean, session: any) => {
+    if (!companyId || !user || !selectedClient) return;
     const prevBalance = clientBalance;
     setIsProcessing(true);
     try {
-      // Try to register as cash movement if session is open
-      try {
-        const session = await CashSessionService.getCurrentSession(companyId);
-        if (session) {
-          await supabase.from("cash_movements").insert({
-            company_id: companyId,
-            session_id: session.id,
-            type: "suprimento" as any,
-            amount: payAmount,
-            performed_by: user.id,
-            payment_method: selectedMethod as any,
-            description: `Recebimento fiado: ${selectedClient.name}`,
-          });
-        }
-      } catch {
-        // No open session — just update balance without cash movement
+      // Register cash movement if operator chose to
+      if (registerInCash && session) {
+        await supabase.from("cash_movements").insert({
+          company_id: companyId,
+          session_id: session.id,
+          type: "suprimento" as any,
+          amount: payAmount,
+          performed_by: user.id,
+          payment_method: selectedMethod as any,
+          description: `Recebimento fiado: ${selectedClient.name}`,
+        });
       }
 
       const newBalance = Math.max(0, clientBalance - payAmount);
@@ -131,7 +131,7 @@ export default function Fiado() {
         user_id: user.id,
         action: "recebimento_fiado",
         module: "fiado",
-        details: `Recebido ${formatCurrency(payAmount)} de ${selectedClient.name} via ${selectedMethod}`,
+        details: `Recebido ${formatCurrency(payAmount)} de ${selectedClient.name} via ${selectedMethod}${registerInCash ? " (registrado no caixa)" : ""}`,
       });
 
       qc.invalidateQueries({ queryKey: ["clients"] });
@@ -155,6 +155,36 @@ export default function Fiado() {
     } finally {
       setIsProcessing(false);
     }
+  }, [companyId, user, selectedClient, clientBalance, selectedMethod, clientEntries, qc, companyName, slogan]);
+
+  const handleReceivePayment = async (amount?: number) => {
+    const payAmount = amount || customAmount;
+    if (!payAmount || payAmount <= 0) {
+      toast.error("Informe um valor válido");
+      return;
+    }
+    if (payAmount > clientBalance) {
+      toast.error("Valor maior que o saldo devedor");
+      return;
+    }
+    if (!companyId || !user || !selectedClient) return;
+
+    // Check for open cash session
+    try {
+      const session = await CashSessionService.getCurrentSession(companyId);
+      if (session) {
+        // Ask operator
+        pendingPayRef.current = { amount: payAmount };
+        setPendingSession(session);
+        setCashPromptOpen(true);
+        return;
+      }
+    } catch {
+      // No session — proceed without
+    }
+
+    // No open session, just process
+    await executePayment(payAmount, false, null);
   };
 
   if (receiptData) {
@@ -391,6 +421,50 @@ export default function Fiado() {
           )}
         </div>
       </div>
+
+      {/* Cash session prompt dialog */}
+      <AlertDialog open={cashPromptOpen} onOpenChange={setCashPromptOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Registrar no caixa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Há um caixa aberto. Deseja registrar este recebimento de{" "}
+              <span className="font-semibold text-foreground">
+                {formatCurrency(pendingPayRef.current?.amount || 0)}
+              </span>{" "}
+              como movimento no caixa atual?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={async () => {
+                setCashPromptOpen(false);
+                const pay = pendingPayRef.current;
+                if (pay) {
+                  pendingPayRef.current = null;
+                  await executePayment(pay.amount, false, null);
+                }
+              }}
+            >
+              Não, apenas baixar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setCashPromptOpen(false);
+                const pay = pendingPayRef.current;
+                const session = pendingSession;
+                if (pay && session) {
+                  pendingPayRef.current = null;
+                  setPendingSession(null);
+                  await executePayment(pay.amount, true, session);
+                }
+              }}
+            >
+              Sim, registrar no caixa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
