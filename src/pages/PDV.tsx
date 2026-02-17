@@ -4,7 +4,6 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useLoyalty } from "@/hooks/useLoyalty";
 import { PDVProductGrid } from "@/components/pdv/PDVProductGrid";
 import { PDVLoyaltyClientList } from "@/components/pdv/PDVLoyaltyClientList";
-import { PDVCart } from "@/components/pdv/PDVCart";
 import { PDVQuickProductDialog } from "@/components/pdv/PDVQuickProductDialog";
 import { PDVClientSelector, type CreditClient } from "@/components/pdv/PDVClientSelector";
 import { SaleReceipt } from "@/components/pos/SaleReceipt";
@@ -17,12 +16,15 @@ import { useQuotes } from "@/hooks/useQuotes";
 import { useCompany } from "@/hooks/useCompany";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { useTEFConfig } from "@/hooks/useTEFConfig";
-import { AnimatePresence, motion } from "framer-motion";
-import { Wifi, WifiOff, RefreshCw, AlertTriangle, Keyboard, ArrowLeft, Maximize, ScanBarcode, DollarSign, PackageX, PackagePlus, LockOpen, User, X, GraduationCap, Search, Repeat, Monitor, FileText } from "lucide-react";
+import { Wifi, WifiOff, Keyboard, X, Search, Monitor, FileText, User, PackageX, PackagePlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { PaymentResult } from "@/services/types";
 import { openCashDrawer } from "@/lib/escpos";
+import { playAddSound, playErrorSound, playSaleCompleteSound } from "@/lib/pdv-sounds";
+
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
 export default function PDV() {
   const pdv = usePDV();
@@ -45,7 +47,6 @@ export default function PDV() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showProductList, setShowProductList] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
-  const [selectedCartItemId, setSelectedCartItemId] = useState<string | null>(null);
   const [zeroStockProduct, setZeroStockProduct] = useState<PDVProduct | null>(null);
   const [stockMovementProduct, setStockMovementProduct] = useState<PDVProduct | null>(null);
   const [showQuickProduct, setShowQuickProduct] = useState(false);
@@ -59,7 +60,13 @@ export default function PDV() {
   const [terminalId, setTerminalId] = useState(() => localStorage.getItem("pdv_terminal_id") || "01");
   const [showTerminalPicker, setShowTerminalPicker] = useState(false);
   const [tempTerminalId, setTempTerminalId] = useState(terminalId);
+  const [editingQtyItemId, setEditingQtyItemId] = useState<string | null>(null);
+  const [editingQtyValue, setEditingQtyValue] = useState("");
+  const [editingItemDiscountId, setEditingItemDiscountId] = useState<string | null>(null);
+  const [editingGlobalDiscount, setEditingGlobalDiscount] = useState(false);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
+  const tableEndRef = useRef<HTMLTableRowElement>(null);
+  const [saleNumber, setSaleNumber] = useState(() => Number(localStorage.getItem("pdv_sale_number") || "1"));
 
   useBarcodeScanner(pdv.handleBarcodeScan);
 
@@ -75,14 +82,22 @@ export default function PDV() {
     }
   }, [pdv.loadingSession, pdv.currentSession]);
 
-  // Auto-focus barcode input on mount and after closing receipt
+  // Always re-focus barcode input when no modal is open
   useEffect(() => {
-    if (!showTEF && !receipt && !showCashRegister && !showProductList) {
-      setTimeout(() => barcodeInputRef.current?.focus(), 100);
+    if (!showTEF && !receipt && !showCashRegister && !showProductList && !showShortcuts && !showPriceLookup && !showLoyaltyClientSelector && !showQuickProduct && !showSaveQuote && !showTerminalPicker && !showClientSelector && !showReceiveCredit && !zeroStockProduct && !editingQtyItemId && !editingItemDiscountId && !editingGlobalDiscount) {
+      const t = setTimeout(() => barcodeInputRef.current?.focus(), 50);
+      return () => clearTimeout(t);
     }
-  }, [showTEF, receipt, showCashRegister, showProductList]);
+  }, [showTEF, receipt, showCashRegister, showProductList, showShortcuts, showPriceLookup, showLoyaltyClientSelector, showQuickProduct, showSaveQuote, showTerminalPicker, showClientSelector, showReceiveCredit, zeroStockProduct, editingQtyItemId, editingItemDiscountId, editingGlobalDiscount]);
 
-  // Load quote from sessionStorage (when converting from Orçamentos page)
+  // Auto-scroll to last item
+  useEffect(() => {
+    if (pdv.cartItems.length > 0) {
+      tableEndRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
+    }
+  }, [pdv.cartItems.length]);
+
+  // Load quote from sessionStorage
   useEffect(() => {
     const raw = sessionStorage.getItem("pdv_load_quote");
     if (raw && pdv.products.length > 0) {
@@ -106,35 +121,20 @@ export default function PDV() {
   }, [pdv.products.length]);
 
   const handleSaveQuote = async () => {
-    if (pdv.cartItems.length === 0) {
-      toast.warning("Carrinho vazio");
-      return;
-    }
+    if (pdv.cartItems.length === 0) { toast.warning("Carrinho vazio"); return; }
     try {
       const items = pdv.cartItems.map((item) => ({
-        product_id: item.id,
-        name: item.name,
-        sku: item.sku,
-        quantity: item.quantity,
-        unit_price: item.price,
-        unit: item.unit,
+        product_id: item.id, name: item.name, sku: item.sku,
+        quantity: item.quantity, unit_price: item.price, unit: item.unit,
       }));
       await createQuote({
-        items,
-        subtotal: pdv.subtotal,
-        discountPercent: pdv.globalDiscountPercent,
-        discountValue: pdv.globalDiscountValue,
-        total: pdv.total,
-        clientName: selectedClient?.name,
-        clientId: selectedClient?.id,
-        notes: quoteNotes || undefined,
-        validDays: 30,
+        items, subtotal: pdv.subtotal, discountPercent: pdv.globalDiscountPercent,
+        discountValue: pdv.globalDiscountValue, total: pdv.total,
+        clientName: selectedClient?.name, clientId: selectedClient?.id,
+        notes: quoteNotes || undefined, validDays: 30,
       });
       toast.success("Orçamento salvo com sucesso!");
-      pdv.clearCart();
-      setSelectedClient(null);
-      setShowSaveQuote(false);
-      setQuoteNotes("");
+      pdv.clearCart(); setSelectedClient(null); setShowSaveQuote(false); setQuoteNotes("");
     } catch (err: any) {
       toast.error(`Erro ao salvar orçamento: ${err.message}`);
     }
@@ -144,35 +144,48 @@ export default function PDV() {
     if (pdv.cartItems.length > 0) setShowTEF(true);
   }, [pdv.cartItems.length]);
 
-  // Barcode manual input
+  // Barcode manual input with multiplication support (e.g. 5*789123456789)
   const handleBarcodeSubmit = () => {
-    const query = barcodeInput.trim();
-    if (!query) return;
+    const raw = barcodeInput.trim();
+    if (!raw) return;
 
-    // Scale barcode — delegate to PDV hook
+    let query = raw;
+    let multiplier = 1;
+
+    // Parse multiplication: "5*789123456789"
+    const multiMatch = raw.match(/^(\d+)\*(.+)$/);
+    if (multiMatch) {
+      multiplier = Math.max(1, parseInt(multiMatch[1], 10));
+      query = multiMatch[2].trim();
+    }
+
+    // Scale barcode
     if (isScaleBarcode(query)) {
       pdv.handleBarcodeScan(query);
+      playAddSound();
       setBarcodeInput("");
       return;
     }
 
-    // Try exact match first (barcode/sku/id/ncm)
+    // Exact match
     const exactMatch = pdv.products.find(
       (p) => p.sku === query || p.barcode === query || p.id === query || p.ncm === query
     );
     if (exactMatch) {
       if (exactMatch.stock_quantity <= 0) {
+        playErrorSound();
         setZeroStockProduct(exactMatch);
         setBarcodeInput("");
         return;
       }
-      pdv.addToCart(exactMatch);
-      toast.success(`${exactMatch.name} adicionado`);
+      for (let i = 0; i < multiplier; i++) pdv.addToCart(exactMatch);
+      playAddSound();
+      toast.success(`${exactMatch.name}${multiplier > 1 ? ` x${multiplier}` : ""} adicionado`);
       setBarcodeInput("");
       return;
     }
 
-    // Try partial name/sku/ncm search
+    // Partial search
     const searchMatch = pdv.products.find(
       (p) =>
         p.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -181,88 +194,115 @@ export default function PDV() {
     );
     if (searchMatch) {
       if (searchMatch.stock_quantity <= 0) {
+        playErrorSound();
         setZeroStockProduct(searchMatch);
         setBarcodeInput("");
         return;
       }
-      pdv.addToCart(searchMatch);
-      toast.success(`${searchMatch.name} adicionado`);
+      for (let i = 0; i < multiplier; i++) pdv.addToCart(searchMatch);
+      playAddSound();
+      toast.success(`${searchMatch.name}${multiplier > 1 ? ` x${multiplier}` : ""} adicionado`);
     } else {
+      playErrorSound();
       toast.error(`Produto não encontrado: ${query}`, {
         action: {
           label: "Cadastrar",
-          onClick: () => {
-            setQuickProductBarcode(query);
-            setShowQuickProduct(true);
-          },
+          onClick: () => { setQuickProductBarcode(query); setShowQuickProduct(true); },
         },
       });
     }
     setBarcodeInput("");
   };
 
-  // Wrapper for grid add that checks stock
   const handleAddToCart = useCallback((product: PDVProduct) => {
     if (product.stock_quantity <= 0) {
+      playErrorSound();
       setZeroStockProduct(product);
       return;
     }
     const added = pdv.addToCart(product);
     if (added) {
+      playAddSound();
       toast.success(`${product.name} adicionado`);
     }
   }, [pdv]);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts — work everywhere including from barcode input
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-      if (showTEF || receipt || showCashRegister) {
-        if (e.key === "Escape") {
-          e.preventDefault();
-          if (receipt) setReceipt(null);
-          else if (showCashRegister) setShowCashRegister(false);
-        }
+      // Allow F-keys from any element (including input)
+      const isFKey = e.key.startsWith("F") && e.key.length <= 3;
+      const isDelete = e.key === "Delete";
+      const isEscape = e.key === "Escape";
+      
+      if (!isFKey && !isDelete && !isEscape) return;
+
+      // Don't intercept in modals (TEF handles its own keys)
+      if (showTEF) return;
+
+      if (receipt) {
+        if (isEscape) { e.preventDefault(); setReceipt(null); }
+        return;
+      }
+      if (showCashRegister) {
+        if (isEscape) { e.preventDefault(); setShowCashRegister(false); }
         return;
       }
 
       switch (e.key) {
+        case "F1": e.preventDefault(); setShowShortcuts((p) => !p); break;
         case "F2": e.preventDefault(); handleCheckout(); break;
-        case "F3":
-          e.preventDefault();
-          setShowProductList((p) => !p);
-          break;
-        case "F4": e.preventDefault(); setShowCashRegister(true); break;
-        case "F5": e.preventDefault(); setQuickProductBarcode(""); setShowQuickProduct(true); break;
+        case "F3": e.preventDefault(); setShowProductList((p) => !p); break;
+        case "F4": e.preventDefault(); openCashDrawer(); toast.info("Sangria/Gaveta aberta"); break;
+        case "F5": e.preventDefault(); setShowLoyaltyClientSelector(true); break;
         case "F6":
           e.preventDefault();
-          if (pdv.cartItems.length > 0) { pdv.clearCart(); setSelectedClient(null); toast.info("Carrinho limpo"); }
+          if (pdv.cartItems.length > 0) { pdv.clearCart(); setSelectedClient(null); toast.info("Venda limpa"); }
           break;
-        case "F7": e.preventDefault(); openCashDrawer(); toast.info("Gaveta aberta"); break;
-        case "F8": e.preventDefault(); setShowReceiveCredit(true); break;
-        case "F9":
-          e.preventDefault();
-          if (pdv.pendingCount > 0 && pdv.isOnline) pdv.syncAll();
-          break;
-        case "F10": e.preventDefault(); setShowPriceLookup(true); setPriceLookupQuery(""); break;
-        case "F11": e.preventDefault(); pdv.repeatLastSale(); break;
-        case "F12": e.preventDefault(); pdv.setTrainingMode(!pdv.trainingMode); toast.info(pdv.trainingMode ? "Modo treinamento DESATIVADO" : "🎓 Modo treinamento ATIVADO"); break;
-        case "F1": e.preventDefault(); setShowShortcuts((prev) => !prev); break;
-        case "Escape": e.preventDefault(); setShowShortcuts(false); setShowPriceLookup(false); setShowProductList(false); break;
-        case "Delete":
+        case "F7":
           e.preventDefault();
           if (pdv.cartItems.length > 0) {
             const lastItem = pdv.cartItems[pdv.cartItems.length - 1];
-            pdv.removeItem(lastItem.id);
-            toast.info(`${lastItem.name} removido`);
+            setEditingItemDiscountId(lastItem.id);
+          }
+          break;
+        case "F8": e.preventDefault(); setEditingGlobalDiscount(true); break;
+        case "F9":
+          e.preventDefault();
+          if (pdv.cartItems.length > 0) {
+            const lastItem = pdv.cartItems[pdv.cartItems.length - 1];
+            setEditingQtyItemId(lastItem.id);
+            setEditingQtyValue(String(lastItem.quantity));
+          }
+          break;
+        case "F10": e.preventDefault(); setShowPriceLookup(true); setPriceLookupQuery(""); break;
+        case "F11": e.preventDefault(); pdv.repeatLastSale(); break;
+        case "F12": e.preventDefault(); handleCheckout(); break;
+        case "Delete":
+          e.preventDefault();
+          if (pdv.cartItems.length > 0) {
+            const last = pdv.cartItems[pdv.cartItems.length - 1];
+            pdv.removeItem(last.id);
+            toast.info(`${last.name} removido`);
+          }
+          break;
+        case "Escape":
+          e.preventDefault();
+          if (showShortcuts) setShowShortcuts(false);
+          else if (showPriceLookup) setShowPriceLookup(false);
+          else if (showProductList) setShowProductList(false);
+          else if (editingQtyItemId) setEditingQtyItemId(null);
+          else if (editingItemDiscountId) setEditingItemDiscountId(null);
+          else if (editingGlobalDiscount) setEditingGlobalDiscount(false);
+          else if (pdv.cartItems.length > 0) {
+            pdv.clearCart(); setSelectedClient(null); toast.info("Venda cancelada");
           }
           break;
       }
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [showTEF, receipt, showCashRegister, handleCheckout, pdv]);
+    window.addEventListener("keydown", handler, true);
+    return () => window.removeEventListener("keydown", handler, true);
+  }, [showTEF, receipt, showCashRegister, showShortcuts, showPriceLookup, showProductList, handleCheckout, pdv, editingQtyItemId, editingItemDiscountId, editingGlobalDiscount]);
 
   const checkLowStockAfterSale = useCallback((soldItems: typeof pdv.cartItems) => {
     const lowStockItems: string[] = [];
@@ -278,10 +318,7 @@ export default function PDV() {
       }
     }
     if (lowStockItems.length > 0) {
-      toast.warning(
-        `⚠️ Estoque baixo — considere pedido de compra:\n${lowStockItems.join(", ")}`,
-        { duration: 6000 }
-      );
+      toast.warning(`⚠️ Estoque baixo:\n${lowStockItems.join(", ")}`, { duration: 6000 });
     }
   }, [pdv.products]);
 
@@ -291,35 +328,32 @@ export default function PDV() {
       try {
         const paymentResults: PaymentResult[] = tefResults.map((r) => ({
           method: r.method as PaymentResult["method"],
-          approved: r.approved,
-          amount: r.amount,
-          nsu: r.nsu,
-          auth_code: r.authCode,
-          card_brand: r.cardBrand,
-          card_last_digits: r.cardLastDigits,
-          installments: r.installments,
-          change_amount: r.changeAmount,
-          pix_tx_id: r.pixTxId,
+          approved: r.approved, amount: r.amount, nsu: r.nsu,
+          auth_code: r.authCode, card_brand: r.cardBrand,
+          card_last_digits: r.cardLastDigits, installments: r.installments,
+          change_amount: r.changeAmount, pix_tx_id: r.pixTxId,
         }));
         const savedItems = [...pdv.cartItems];
         const savedTotal = pdv.total;
         const savedClient = selectedClient;
         const result = await pdv.finalizeSale(paymentResults);
+        playSaleCompleteSound();
         setReceipt({
-          items: savedItems,
-          total: savedTotal,
-          payments: tefResults,
-          nfceNumber: result.nfceNumber,
+          items: savedItems, total: savedTotal,
+          payments: tefResults, nfceNumber: result.nfceNumber,
         });
         setSelectedClient(null);
-        // Check low stock after sale
+        // Increment sale number
+        const newNum = saleNumber + 1;
+        setSaleNumber(newNum);
+        localStorage.setItem("pdv_sale_number", String(newNum));
         checkLowStockAfterSale(savedItems);
-        // Award loyalty points if client was identified
         if (loyaltyActive && savedClient?.id) {
           const pts = await earnPoints(savedClient.id, savedTotal, result.fiscalDocId);
           if (pts > 0) toast.info(`🎁 ${savedClient.name} ganhou ${pts} pontos de fidelidade!`);
         }
       } catch (err: any) {
+        playErrorSound();
         toast.error(`Erro ao finalizar venda: ${err.message}`);
       }
     }
@@ -335,156 +369,87 @@ export default function PDV() {
     setShowClientSelector(false);
     try {
       const paymentResults: PaymentResult[] = [{
-        method: "prazo",
-        approved: true,
-        amount: pdv.total,
-        credit_client_id: client.id,
-        credit_client_name: client.name,
-        credit_mode: mode,
-        credit_installments: installments,
+        method: "prazo", approved: true, amount: pdv.total,
+        credit_client_id: client.id, credit_client_name: client.name,
+        credit_mode: mode, credit_installments: installments,
       }];
       const savedItems = [...pdv.cartItems];
       const savedTotal = pdv.total;
       const result = await pdv.finalizeSale(paymentResults);
+      playSaleCompleteSound();
       setReceipt({
-        items: savedItems,
-        total: savedTotal,
-        payments: [{
-          method: "prazo" as any,
-          approved: true,
-          amount: savedTotal,
-        }],
+        items: savedItems, total: savedTotal,
+        payments: [{ method: "prazo" as any, approved: true, amount: savedTotal }],
         nfceNumber: result.nfceNumber,
       });
       toast.success(`Venda a prazo registrada para ${client.name}`);
       setSelectedClient(null);
-      // Check low stock after sale
+      const newNum = saleNumber + 1;
+      setSaleNumber(newNum);
+      localStorage.setItem("pdv_sale_number", String(newNum));
       checkLowStockAfterSale(savedItems);
-      // Award loyalty points
       if (loyaltyActive && client.id) {
         const pts = await earnPoints(client.id, savedTotal, result.fiscalDocId);
         if (pts > 0) toast.info(`🎁 ${client.name} ganhou ${pts} pontos de fidelidade!`);
       }
     } catch (err: any) {
+      playErrorSound();
       toast.error(`Erro ao finalizar venda a prazo: ${err.message}`);
     }
   };
 
+  const totalItems = pdv.cartItems.length;
+  const totalQty = pdv.cartItems.reduce((a, i) => a + i.quantity, 0);
+  const totalFinal = pdv.total;
+
   return (
-    <div className={`pdv-theme flex flex-col h-screen bg-background text-foreground relative overflow-hidden ${pdv.trainingMode ? "ring-4 ring-warning/50 ring-inset" : ""}`}>
-      {/* ===== TOP HEADER BAR ===== */}
-      <div className="flex items-center justify-between px-4 h-11 bg-sidebar-background border-b border-border flex-shrink-0">
-        <div className="flex items-center gap-3">
+    <div className={`flex flex-col h-screen bg-background text-foreground overflow-hidden select-none ${pdv.trainingMode ? "ring-4 ring-warning/60 ring-inset" : ""}`}>
+
+      {/* ════════ TOP BAR ════════ */}
+      <div className="flex items-center justify-between px-3 h-9 bg-primary text-primary-foreground flex-shrink-0 text-xs">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-1.5 px-2 py-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-all text-xs font-medium"
+            className="font-bold opacity-80 hover:opacity-100 transition-opacity"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Sair
+            ← Sair
           </button>
-          <div className="h-4 w-px bg-border" />
-          {logoUrl ? (
-            <img src={logoUrl} alt={companyName || "Logo"} className="h-6 max-w-[80px] object-contain" />
-          ) : (
-            <span className="text-sm font-bold text-sidebar-foreground tracking-wide">PDV</span>
-          )}
-          <div className="h-4 w-px bg-border" />
-          {/* Terminal ID */}
+          <span className="opacity-60">|</span>
+          <span className="font-bold">{companyName || "PDV"}</span>
+          <span className="opacity-60">|</span>
           <button
             onClick={() => { setTempTerminalId(terminalId); setShowTerminalPicker(true); }}
-            className="flex items-center gap-1.5 px-2 py-1 rounded bg-muted border border-border hover:bg-accent transition-all cursor-pointer"
-            title="Trocar terminal"
+            className="font-mono font-bold hover:underline"
           >
-            <Monitor className="w-3 h-3 text-muted-foreground" />
-            <span className="text-xs font-bold text-foreground font-mono">T{terminalId}</span>
+            Caixa: T{terminalId}
           </button>
-          <div className="h-4 w-px bg-border" />
-          {/* Status: Caixa */}
-          <div className={`flex items-center gap-1.5 px-3 py-1 rounded border ${
-            pdv.trainingMode 
-              ? "bg-warning/20 border-warning/30" 
-              : pdv.currentSession 
-                ? "bg-success/20 border-success/30" 
-                : "bg-destructive/20 border-destructive/30"
-          }`}>
-            <div className={`w-2 h-2 rounded-full ${
-              pdv.trainingMode 
-                ? "bg-warning animate-pulse" 
-                : pdv.currentSession 
-                  ? "bg-success animate-pulse" 
-                  : "bg-destructive"
-            }`} />
-            <span className={`text-xs font-bold uppercase tracking-wider ${
-              pdv.trainingMode 
-                ? "text-warning" 
-                : pdv.currentSession 
-                  ? "text-success" 
-                  : "text-destructive"
-            }`}>
-              {pdv.trainingMode ? "🎓 Treinamento" : pdv.currentSession ? "Caixa Aberto" : "Caixa Fechado"}
-            </span>
-          </div>
+          <span className="opacity-60">|</span>
+          <span className="font-mono">Venda #{String(saleNumber).padStart(6, "0")}</span>
+          <span className="opacity-60">|</span>
+          <span className="font-mono">{new Date().toLocaleDateString("pt-BR")}</span>
         </div>
-
-        <div className="flex items-center gap-2">
-          {pdv.pendingCount > 0 && (
-            <button
-              onClick={pdv.syncAll}
-              disabled={pdv.syncing || !pdv.isOnline}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-muted border border-border text-warning hover:bg-accent transition-all text-xs font-medium"
-            >
-              <RefreshCw className={`w-3 h-3 ${pdv.syncing ? "animate-spin" : ""}`} />
-              {pdv.pendingCount}
-            </button>
+        <div className="flex items-center gap-4">
+          {pdv.trainingMode && (
+            <span className="font-bold text-warning animate-pulse">🎓 TREINAMENTO</span>
           )}
-          {pdv.stats.failed > 0 && (
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium">
-              <AlertTriangle className="w-3 h-3" />
-              {pdv.stats.failed}
-            </div>
+          {selectedClient && (
+            <span className="flex items-center gap-1">
+              <User className="w-3 h-3" />
+              <span className="font-bold truncate max-w-[120px]">{selectedClient.name}</span>
+              <button onClick={() => setSelectedClient(null)} className="ml-0.5 hover:text-destructive">✕</button>
+            </span>
           )}
-          <div className="flex items-center gap-1 px-2.5 py-1 rounded bg-muted border border-border text-xs font-medium">
-            {pdv.isOnline ? (
-              <><Wifi className="w-3 h-3 text-success" /><span className="text-success">Online</span></>
-            ) : (
-              <><WifiOff className="w-3 h-3 text-warning" /><span className="text-warning">Offline</span></>
-            )}
-          </div>
-          <button
-            onClick={() => setShowCashRegister(true)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded bg-muted border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all text-xs font-medium"
-          >
-            <DollarSign className="w-3 h-3" />
-            Caixa
-          </button>
-          <button
-            onClick={() => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()}
-            className="p-1.5 rounded bg-muted border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
-            title="Tela cheia"
-          >
-            <Maximize className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => { pdv.setTrainingMode(!pdv.trainingMode); toast.info(pdv.trainingMode ? "Modo treinamento DESATIVADO" : "🎓 Modo treinamento ATIVADO"); }}
-            className={`p-1.5 rounded border transition-all ${pdv.trainingMode ? "bg-warning/20 border-warning/30 text-warning" : "bg-muted border-border text-muted-foreground hover:text-foreground hover:bg-accent"}`}
-            title="Modo Treinamento (F12)"
-          >
-            <GraduationCap className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => setShowShortcuts((p) => !p)}
-            className="p-1.5 rounded bg-muted border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
-            title="Atalhos (F1)"
-          >
-            <Keyboard className="w-3.5 h-3.5" />
-          </button>
+          <span className="flex items-center gap-1">
+            {pdv.isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+            <span className="font-bold">{pdv.isOnline ? "Online" : "Offline"}</span>
+          </span>
+          <LiveClock />
         </div>
       </div>
 
-      {/* ===== BARCODE INPUT ===== */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-sidebar-background flex-shrink-0">
-        <ScanBarcode className="w-4 h-4 text-primary flex-shrink-0" />
-        <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">CÓDIGO DE BARRAS:</span>
+      {/* ════════ BARCODE INPUT - LARGEST ELEMENT ════════ */}
+      <div className="flex items-center gap-3 px-4 py-3 bg-card border-b-2 border-primary flex-shrink-0">
+        <span className="text-sm font-bold text-muted-foreground whitespace-nowrap">CÓDIGO:</span>
         <input
           ref={barcodeInputRef}
           type="text"
@@ -501,606 +466,566 @@ export default function PDV() {
               }
             }
           }}
-          placeholder="Leia ou digite o código..."
-          className="flex-1 px-3 py-1.5 rounded bg-card border border-border text-foreground text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary transition-all"
+          placeholder="Leia ou digite o código de barras... (ex: 5*789123 para multiplicar)"
+          className="flex-1 px-4 py-3 rounded-lg bg-background border-2 border-border text-foreground text-xl font-mono font-bold focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-muted-foreground/50 placeholder:text-sm placeholder:font-normal"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
         />
-        <button
-          onClick={handleBarcodeSubmit}
-          className="px-3 py-1.5 rounded bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all"
-        >
-          OK
-        </button>
-        <div className="h-4 w-px bg-border mx-1" />
-        <button
-          onClick={() => setShowProductList((p) => !p)}
-          className="px-3 py-1.5 rounded bg-muted border border-border text-muted-foreground hover:text-foreground text-xs font-medium hover:bg-accent transition-all"
-        >
-          {showProductList ? "Ocultar Produtos" : "Mostrar Produtos (F3)"}
-        </button>
-        <button
-          onClick={() => { setQuickProductBarcode(""); setShowQuickProduct(true); }}
-          className="px-3 py-1.5 rounded bg-primary/10 border border-primary/20 text-primary text-xs font-medium hover:bg-primary/20 transition-all flex items-center gap-1.5"
-        >
-          <PackagePlus className="w-3 h-3" />
-          Cadastrar (F5)
-        </button>
-        <div className="h-4 w-px bg-border mx-1" />
-        {selectedClient ? (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
-            <User className="w-3 h-3" />
-            <span className="font-bold truncate max-w-[120px]">{selectedClient.name}</span>
-            {loyaltyActive && <span className="text-[10px] opacity-70">🎁</span>}
-            <button
-              onClick={() => setSelectedClient(null)}
-              className="ml-1 p-0.5 rounded hover:bg-primary/20 transition-colors"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setShowLoyaltyClientSelector(true)}
-            className="px-3 py-1.5 rounded bg-muted border border-border text-muted-foreground hover:text-foreground text-xs font-medium hover:bg-accent transition-all flex items-center gap-1.5"
-          >
-            <User className="w-3 h-3" />
-            Cliente {loyaltyActive && "🎁"}
-          </button>
-        )}
       </div>
 
-      {/* ===== MAIN CONTENT ===== */}
-      <div className="flex flex-1 min-h-0 relative">
-        {/* FULL WIDTH: Cart with customer-facing layout */}
-        <div className="flex flex-col flex-1 min-w-0">
-          <PDVCart
-            items={pdv.cartItems}
-            onUpdateQuantity={pdv.updateQuantity}
-            onRemoveItem={pdv.removeItem}
-            onClearCart={pdv.clearCart}
-            onCheckout={handleCheckout}
-            selectedItemId={selectedCartItemId}
-            onSelectItem={setSelectedCartItemId}
-            companyName={companyName}
-            logoUrl={logoUrl}
-            maxDiscountPercent={maxDiscountPercent}
-            itemDiscounts={pdv.itemDiscounts}
-            onSetItemDiscount={pdv.setItemDiscount}
-            globalDiscountPercent={pdv.globalDiscountPercent}
-            onSetGlobalDiscount={pdv.setGlobalDiscountPercent}
-            subtotal={pdv.subtotal}
-            globalDiscountValue={pdv.globalDiscountValue}
-            appliedPromos={pdv.appliedPromos}
-            promoSavings={pdv.promoSavings}
-          />
+      {/* ════════ MAIN CONTENT: 70% items | 30% totals ════════ */}
+      <div className="flex flex-1 min-h-0">
+
+        {/* LEFT: Items Table (70%) */}
+        <div className="flex-[7] flex flex-col min-w-0 border-r border-border">
+          <div className="flex-1 overflow-y-auto">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 z-10 bg-muted">
+                <tr className="text-muted-foreground text-left uppercase tracking-wider">
+                  <th className="px-2 py-2 font-bold w-10 text-center">#</th>
+                  <th className="px-2 py-2 font-bold w-28">Código</th>
+                  <th className="px-2 py-2 font-bold">Descrição</th>
+                  <th className="px-2 py-2 font-bold text-center w-24">Qtd</th>
+                  <th className="px-2 py-2 font-bold text-right w-24">Unitário</th>
+                  <th className="px-2 py-2 font-bold text-right w-28">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pdv.cartItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-20 text-muted-foreground text-sm">
+                      Aguardando leitura de código de barras...
+                    </td>
+                  </tr>
+                ) : (
+                  pdv.cartItems.map((item, idx) => {
+                    const isLast = idx === pdv.cartItems.length - 1;
+                    const itemDiscount = pdv.itemDiscounts[item.id] || 0;
+                    const unitPrice = item.price * (1 - itemDiscount / 100);
+                    const subtotalItem = unitPrice * item.quantity;
+                    const isWeighed = !Number.isInteger(item.quantity);
+
+                    return (
+                      <tr
+                        key={item.id}
+                        ref={isLast ? tableEndRef : undefined}
+                        className={`border-b border-border transition-colors ${
+                          isLast
+                            ? "bg-primary/10 font-bold"
+                            : idx % 2 === 0
+                            ? "bg-card"
+                            : "bg-muted/30"
+                        }`}
+                      >
+                        <td className="px-2 py-2 text-center text-muted-foreground font-mono">{idx + 1}</td>
+                        <td className="px-2 py-2 font-mono text-muted-foreground">{item.sku}</td>
+                        <td className="px-2 py-2 text-foreground">
+                          {item.name}
+                          {isWeighed && (
+                            <span className="ml-1.5 text-[10px] text-primary font-bold">
+                              {item.quantity.toFixed(3)}kg × {formatCurrency(item.price)}
+                            </span>
+                          )}
+                          {itemDiscount > 0 && (
+                            <span className="ml-1.5 text-[10px] text-destructive font-bold">-{itemDiscount}%</span>
+                          )}
+                        </td>
+                        <td className="px-2 py-2 text-center font-mono font-bold text-foreground">
+                          {isWeighed ? item.quantity.toFixed(3) : item.quantity}
+                        </td>
+                        <td className="px-2 py-2 text-right font-mono text-muted-foreground">
+                          {itemDiscount > 0 && (
+                            <span className="line-through opacity-50 mr-1">{formatCurrency(item.price)}</span>
+                          )}
+                          {formatCurrency(unitPrice)}
+                        </td>
+                        <td className="px-2 py-2 text-right font-mono font-bold text-primary text-sm">
+                          {formatCurrency(subtotalItem)}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* PRODUCT LIST: fullscreen overlay */}
-        <AnimatePresence>
-          {showProductList && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="absolute inset-0 z-30 bg-background flex flex-col"
-            >
-              {/* Close bar */}
-              <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-sidebar-background flex-shrink-0">
-                <span className="text-xs font-bold text-muted-foreground uppercase">Buscar Produtos (F3)</span>
+        {/* RIGHT: Totals Sidebar (30%) */}
+        <div className="flex-[3] flex flex-col bg-card min-w-[260px] max-w-[400px]">
+          {/* Info rows */}
+          <div className="flex-1 flex flex-col p-4 gap-3">
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-xs font-bold text-muted-foreground uppercase">Itens</span>
+              <span className="text-lg font-bold text-foreground font-mono">{totalItems}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-xs font-bold text-muted-foreground uppercase">Qtd Total</span>
+              <span className="text-lg font-bold text-foreground font-mono">
+                {Number.isInteger(totalQty) ? totalQty : totalQty.toFixed(3)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-xs font-bold text-muted-foreground uppercase">Subtotal</span>
+              <span className="text-lg font-bold text-foreground font-mono">{formatCurrency(pdv.subtotal)}</span>
+            </div>
+
+            {/* Desconto item (F7) */}
+            {editingItemDiscountId && (
+              <div className="flex justify-between items-center py-2 border-b border-border bg-muted/50 rounded px-2 -mx-2">
+                <span className="text-xs font-bold text-muted-foreground uppercase">Desc. Item (F7)</span>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min={0}
+                    max={maxDiscountPercent}
+                    step={0.5}
+                    autoFocus
+                    defaultValue={pdv.itemDiscounts[editingItemDiscountId] || 0}
+                    onBlur={(e) => {
+                      const val = Math.min(Math.max(0, Number(e.target.value)), maxDiscountPercent);
+                      pdv.setItemDiscount(editingItemDiscountId!, val);
+                      setEditingItemDiscountId(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value)), maxDiscountPercent);
+                        pdv.setItemDiscount(editingItemDiscountId!, val);
+                        setEditingItemDiscountId(null);
+                      }
+                      if (e.key === "Escape") setEditingItemDiscountId(null);
+                    }}
+                    className="w-16 px-2 py-1 rounded bg-background border border-border text-sm font-mono text-right focus:outline-none focus:ring-1 focus:ring-primary/40"
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
+              </div>
+            )}
+
+            {/* Desconto global (F8) */}
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-xs font-bold text-muted-foreground uppercase">Desconto</span>
+              {editingGlobalDiscount ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min={0}
+                    max={maxDiscountPercent}
+                    step={0.5}
+                    autoFocus
+                    defaultValue={pdv.globalDiscountPercent}
+                    onBlur={(e) => {
+                      const val = Math.min(Math.max(0, Number(e.target.value)), maxDiscountPercent);
+                      pdv.setGlobalDiscountPercent(val);
+                      setEditingGlobalDiscount(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value)), maxDiscountPercent);
+                        pdv.setGlobalDiscountPercent(val);
+                        setEditingGlobalDiscount(false);
+                      }
+                      if (e.key === "Escape") setEditingGlobalDiscount(false);
+                    }}
+                    className="w-16 px-2 py-1 rounded bg-background border border-border text-sm font-mono text-right focus:outline-none focus:ring-1 focus:ring-primary/40"
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
+              ) : (
                 <button
-                  onClick={() => setShowProductList(false)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-muted border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all text-xs font-medium"
+                  onClick={() => maxDiscountPercent > 0 && setEditingGlobalDiscount(true)}
+                  className={`text-lg font-bold font-mono ${pdv.globalDiscountPercent > 0 ? "text-destructive" : "text-muted-foreground"}`}
                 >
-                  <X className="w-3 h-3" />
-                  Fechar (Esc)
+                  {pdv.globalDiscountPercent > 0 ? `-${formatCurrency(pdv.globalDiscountValue)}` : "R$ 0,00"}
                 </button>
+              )}
+            </div>
+
+            {/* Economia promoções */}
+            {pdv.promoSavings > 0 && (
+              <div className="flex justify-between items-center py-2 border-b border-border">
+                <span className="text-xs font-bold text-primary uppercase">Economia</span>
+                <span className="text-lg font-bold text-primary font-mono">-{formatCurrency(pdv.promoSavings)}</span>
               </div>
-              <div className="flex-1 min-h-0">
-                <PDVProductGrid
-                  products={pdv.products}
-                  loading={pdv.loadingProducts}
-                  companyName={companyName}
-                  logoUrl={logoUrl}
-                  onAddToCart={(product) => {
-                    handleAddToCart(product);
-                    setShowProductList(false);
-                  }}
-                />
+            )}
+
+            {/* Alterar Quantidade (F9) */}
+            {editingQtyItemId && (
+              <div className="flex justify-between items-center py-2 border-b border-border bg-muted/50 rounded px-2 -mx-2">
+                <span className="text-xs font-bold text-muted-foreground uppercase">Nova Qtd (F9)</span>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    autoFocus
+                    value={editingQtyValue}
+                    onChange={(e) => setEditingQtyValue(e.target.value)}
+                    onBlur={() => {
+                      const newQty = Math.max(1, parseInt(editingQtyValue) || 1);
+                      const item = pdv.cartItems.find(i => i.id === editingQtyItemId);
+                      if (item) {
+                        const delta = newQty - item.quantity;
+                        pdv.updateQuantity(editingQtyItemId!, delta);
+                      }
+                      setEditingQtyItemId(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const newQty = Math.max(1, parseInt(editingQtyValue) || 1);
+                        const item = pdv.cartItems.find(i => i.id === editingQtyItemId);
+                        if (item) {
+                          const delta = newQty - item.quantity;
+                          pdv.updateQuantity(editingQtyItemId!, delta);
+                        }
+                        setEditingQtyItemId(null);
+                      }
+                      if (e.key === "Escape") setEditingQtyItemId(null);
+                    }}
+                    className="w-16 px-2 py-1 rounded bg-background border border-border text-sm font-mono text-right focus:outline-none focus:ring-1 focus:ring-primary/40"
+                  />
+                </div>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            )}
+          </div>
+
+          {/* TOTAL — BIG DISPLAY */}
+          <div className="p-4 bg-primary">
+            <div className="text-center">
+              <span className="text-sm font-bold text-primary-foreground/80 uppercase tracking-widest block mb-1">Total da Venda</span>
+              <span className="text-5xl font-black text-primary-foreground font-mono tracking-tight block">
+                {formatCurrency(totalFinal)}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* ===== OVERLAYS ===== */}
-      <AnimatePresence>
-        {showTEF && (
-          <TEFProcessor total={pdv.total} onComplete={handleTEFComplete} onCancel={() => setShowTEF(false)} onPrazoRequested={handlePrazoRequested} pixConfig={pixKey ? { pixKey, pixKeyType: pixKeyType || undefined, merchantName: companyName || "LOJA", merchantCity: pixCity || "SAO PAULO" } : null} tefConfig={tefConfigData ? { provider: tefConfigData.provider, apiKey: tefConfigData.api_key, apiSecret: tefConfigData.api_secret, terminalId: tefConfigData.terminal_id, merchantId: tefConfigData.merchant_id, companyId: companyId || undefined, environment: tefConfigData.environment } : null} />
-        )}
-      </AnimatePresence>
+      {/* ════════ BOTTOM SHORTCUT BAR ════════ */}
+      <div className="flex items-center gap-1 px-2 py-1 bg-muted border-t border-border flex-shrink-0">
+        {[
+          { key: "F1", label: "Atalhos" },
+          { key: "F2", label: "Pagamento" },
+          { key: "F3", label: "Buscar" },
+          { key: "F4", label: "Sangria" },
+          { key: "F5", label: "Cliente" },
+          { key: "F6", label: "Limpar" },
+          { key: "F7", label: "Desc.Item" },
+          { key: "F8", label: "Desc.Total" },
+          { key: "F9", label: "Qtd" },
+          { key: "DEL", label: "Remover" },
+          { key: "ESC", label: "Cancelar" },
+          { key: "F12", label: "Finalizar" },
+        ].map(({ key, label }) => (
+          <div
+            key={key}
+            className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground"
+          >
+            <span className="font-mono text-primary text-[9px]">{key}</span>
+            <span>{label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* ════════ OVERLAYS ════════ */}
+
+      {/* Product List Overlay */}
+      {showProductList && (
+        <div className="absolute inset-0 z-30 bg-background flex flex-col">
+          <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-muted flex-shrink-0">
+            <span className="text-xs font-bold text-muted-foreground uppercase">Buscar Produtos (F3)</span>
+            <button
+              onClick={() => setShowProductList(false)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-card border border-border text-muted-foreground hover:text-foreground text-xs font-medium"
+            >
+              <X className="w-3 h-3" /> Fechar (Esc)
+            </button>
+          </div>
+          <div className="flex-1 min-h-0">
+            <PDVProductGrid
+              products={pdv.products}
+              loading={pdv.loadingProducts}
+              companyName={companyName}
+              logoUrl={logoUrl}
+              onAddToCart={(product) => {
+                handleAddToCart(product);
+                setShowProductList(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* TEF */}
+      {showTEF && (
+        <TEFProcessor total={pdv.total} onComplete={handleTEFComplete} onCancel={() => setShowTEF(false)} onPrazoRequested={handlePrazoRequested} pixConfig={pixKey ? { pixKey, pixKeyType: pixKeyType || undefined, merchantName: companyName || "LOJA", merchantCity: pixCity || "SAO PAULO" } : null} tefConfig={tefConfigData ? { provider: tefConfigData.provider, apiKey: tefConfigData.api_key, apiSecret: tefConfigData.api_secret, terminalId: tefConfigData.terminal_id, merchantId: tefConfigData.merchant_id, companyId: companyId || undefined, environment: tefConfigData.environment } : null} />
+      )}
 
       {/* Client selector for credit sales */}
-      <AnimatePresence>
-        {showClientSelector && (
-          <PDVClientSelector
-            open={showClientSelector}
-            onClose={() => setShowClientSelector(false)}
-            onSelect={handleCreditSaleConfirmed}
-            saleTotal={pdv.total}
-          />
-        )}
-      </AnimatePresence>
+      {showClientSelector && (
+        <PDVClientSelector open={showClientSelector} onClose={() => setShowClientSelector(false)} onSelect={handleCreditSaleConfirmed} saleTotal={pdv.total} />
+      )}
 
       {/* Loyalty client selector */}
-      <AnimatePresence>
-        {showLoyaltyClientSelector && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowLoyaltyClientSelector(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[85vh] flex flex-col"
-            >
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-                <h2 className="text-lg font-bold text-foreground">Identificar Cliente {loyaltyActive && "🎁"}</h2>
-                <button onClick={() => setShowLoyaltyClientSelector(false)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                  <X className="w-5 h-5 text-muted-foreground" />
-                </button>
-              </div>
-              {loyaltyActive && (
-                <div className="px-5 py-2 bg-primary/5 border-b border-border">
-                  <p className="text-xs text-primary">Identifique o cliente para acumular pontos de fidelidade automaticamente.</p>
-                </div>
-              )}
-              <PDVLoyaltyClientList
-                onSelect={(client) => {
-                  setSelectedClient(client);
-                  setShowLoyaltyClientSelector(false);
-                  toast.success(`Cliente: ${client.name}`);
-                }}
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {showLoyaltyClientSelector && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowLoyaltyClientSelector(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <h2 className="text-lg font-bold text-foreground">Identificar Cliente {loyaltyActive && "🎁"}</h2>
+              <button onClick={() => setShowLoyaltyClientSelector(false)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                <X className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </div>
+            <PDVLoyaltyClientList
+              onSelect={(client) => {
+                setSelectedClient(client);
+                setShowLoyaltyClientSelector(false);
+                toast.success(`Cliente: ${client.name}`);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Receive credit dialog */}
-      <AnimatePresence>
-        {showReceiveCredit && (
-          <PDVReceiveCreditDialog open={showReceiveCredit} onClose={() => setShowReceiveCredit(false)} />
-        )}
-      </AnimatePresence>
+      {showReceiveCredit && (
+        <PDVReceiveCreditDialog open={showReceiveCredit} onClose={() => setShowReceiveCredit(false)} />
+      )}
 
-      <AnimatePresence>
-        {receipt && (
-          <SaleReceipt
-            items={receipt.items.map((i) => ({
-              id: i.id, name: i.name, price: i.price, category: i.category || "",
-              sku: i.sku, ncm: i.ncm || "", unit: i.unit, stock: i.stock_quantity, quantity: i.quantity,
-            }))}
-            total={receipt.total}
-            payments={receipt.payments}
-            nfceNumber={receipt.nfceNumber}
-            slogan={slogan || undefined}
-            logoUrl={logoUrl || undefined}
-            companyName={companyName || undefined}
-            onClose={() => setReceipt(null)}
-          />
-        )}
-      </AnimatePresence>
+      {/* Receipt */}
+      {receipt && (
+        <SaleReceipt
+          items={receipt.items.map((i) => ({
+            id: i.id, name: i.name, price: i.price, category: i.category || "",
+            sku: i.sku, ncm: i.ncm || "", unit: i.unit, stock: i.stock_quantity, quantity: i.quantity,
+          }))}
+          total={receipt.total} payments={receipt.payments} nfceNumber={receipt.nfceNumber}
+          slogan={slogan || undefined} logoUrl={logoUrl || undefined} companyName={companyName || undefined}
+          onClose={() => setReceipt(null)}
+        />
+      )}
 
-      <AnimatePresence>
-        {showCashRegister && (
-          <CashRegister
-            terminalId={terminalId}
-            onClose={() => {
-              setShowCashRegister(false);
-              pdv.reloadSession(terminalId);
-            }}
-          />
-        )}
-      </AnimatePresence>
+      {/* Cash Register */}
+      {showCashRegister && (
+        <CashRegister
+          terminalId={terminalId}
+          onClose={() => { setShowCashRegister(false); pdv.reloadSession(terminalId); }}
+        />
+      )}
 
       {/* Zero stock dialog */}
-      <AnimatePresence>
-        {zeroStockProduct && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-            onClick={() => setZeroStockProduct(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-card rounded-2xl border border-border shadow-2xl p-6 w-full max-w-sm mx-4"
-            >
-              <div className="flex flex-col items-center text-center gap-3">
-                <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center">
-                  <PackageX className="w-7 h-7 text-destructive" />
-                </div>
-                <h2 className="text-lg font-bold text-foreground">Produto sem Estoque</h2>
-                <p className="text-sm text-muted-foreground">
-                  <strong>{zeroStockProduct.name}</strong> está com estoque zerado e não pode ser vendido.
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Deseja adicionar estoque agora?
-                </p>
-                <div className="flex gap-3 w-full mt-2">
-                  <button
-                    onClick={() => setZeroStockProduct(null)}
-                    className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-all"
-                  >
-                    Fechar
-                  </button>
-                  <button
-                    onClick={() => {
-                      setStockMovementProduct(zeroStockProduct);
-                      setZeroStockProduct(null);
-                    }}
-                    className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all"
-                  >
-                    Adicionar Estoque
-                  </button>
-                </div>
+      {zeroStockProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setZeroStockProduct(null)}>
+          <div onClick={(e) => e.stopPropagation()} className="bg-card rounded-2xl border border-border shadow-2xl p-6 w-full max-w-sm mx-4">
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center">
+                <PackageX className="w-7 h-7 text-destructive" />
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <h2 className="text-lg font-bold text-foreground">Produto sem Estoque</h2>
+              <p className="text-sm text-muted-foreground"><strong>{zeroStockProduct.name}</strong> está com estoque zerado.</p>
+              <div className="flex gap-3 w-full mt-2">
+                <button onClick={() => setZeroStockProduct(null)} className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted">Fechar</button>
+                <button onClick={() => { setStockMovementProduct(zeroStockProduct); setZeroStockProduct(null); }} className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium">Adicionar Estoque</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stock movement dialog from PDV */}
       {stockMovementProduct && (
         <StockMovementDialog
           open={!!stockMovementProduct}
-          onOpenChange={(v) => {
-            if (!v) {
-              setStockMovementProduct(null);
-              pdv.refreshProducts();
-            }
-          }}
+          onOpenChange={(v) => { if (!v) { setStockMovementProduct(null); pdv.refreshProducts(); } }}
           product={{
-            ...stockMovementProduct,
-            id: stockMovementProduct.id,
-            name: stockMovementProduct.name,
-            sku: stockMovementProduct.sku,
-            unit: stockMovementProduct.unit,
-            stock_quantity: stockMovementProduct.stock_quantity,
-            price: stockMovementProduct.price,
-            is_active: 1,
-            created_at: "",
-            updated_at: "",
-            company_id: "",
-            ncm: stockMovementProduct.ncm,
-            category: stockMovementProduct.category,
-            barcode: stockMovementProduct.barcode,
-            cost_price: null,
-            min_stock: null,
-            origem: 0,
-            cfop: "5102",
-            cest: null,
-            csosn: "102",
-            cst_icms: "00",
-            aliq_icms: 0,
-            cst_pis: "01",
-            aliq_pis: 1.65,
-            cst_cofins: "01",
-            aliq_cofins: 7.60,
-            gtin_tributavel: null,
-            fiscal_category_id: null,
+            ...stockMovementProduct, id: stockMovementProduct.id, name: stockMovementProduct.name,
+            sku: stockMovementProduct.sku, unit: stockMovementProduct.unit,
+            stock_quantity: stockMovementProduct.stock_quantity, price: stockMovementProduct.price,
+            is_active: 1, created_at: "", updated_at: "", company_id: "",
+            ncm: stockMovementProduct.ncm, category: stockMovementProduct.category,
+            barcode: stockMovementProduct.barcode, cost_price: null, min_stock: null,
+            origem: 0, cfop: "5102", cest: null, csosn: "102", cst_icms: "00",
+            aliq_icms: 0, cst_pis: "01", aliq_pis: 1.65, cst_cofins: "01",
+            aliq_cofins: 7.60, gtin_tributavel: null, fiscal_category_id: null,
           }}
         />
       )}
 
-      {/* Quick product registration from PDV */}
-      <PDVQuickProductDialog
-        open={showQuickProduct}
-        onOpenChange={setShowQuickProduct}
-        initialBarcode={quickProductBarcode}
-        onProductCreated={() => pdv.refreshProducts()}
-      />
+      {/* Quick product registration */}
+      <PDVQuickProductDialog open={showQuickProduct} onOpenChange={setShowQuickProduct} initialBarcode={quickProductBarcode} onProductCreated={() => pdv.refreshProducts()} />
 
-      {/* Price Lookup Dialog */}
-      <AnimatePresence>
-        {showPriceLookup && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowPriceLookup(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
-            >
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <Search className="w-5 h-5 text-primary" />
-                  Consulta de Preço
-                </h2>
-                <button onClick={() => setShowPriceLookup(false)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                  <X className="w-5 h-5 text-muted-foreground" />
-                </button>
-              </div>
-              <div className="p-5 space-y-4">
-                <input
-                  type="text"
-                  value={priceLookupQuery}
-                  onChange={(e) => setPriceLookupQuery(e.target.value)}
-                  placeholder="Digite código de barras, SKU ou nome..."
-                  autoFocus
-                  className="w-full px-4 py-3 rounded-xl bg-muted border border-border text-foreground text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
-                />
-                <div className="max-h-[300px] overflow-y-auto space-y-2">
-                  {priceLookupQuery.trim().length >= 2 && pdv.products
-                    .filter((p) =>
-                      p.name.toLowerCase().includes(priceLookupQuery.toLowerCase()) ||
-                      p.sku.toLowerCase().includes(priceLookupQuery.toLowerCase()) ||
-                      (p.barcode && p.barcode.includes(priceLookupQuery))
-                    )
-                    .slice(0, 10)
-                    .map((p) => (
-                      <div key={p.id} className="flex items-center justify-between px-4 py-3 rounded-xl bg-muted/50 border border-border">
-                        <div>
-                          <p className="text-sm font-bold text-foreground">{p.name}</p>
-                          <p className="text-xs text-muted-foreground font-mono">SKU: {p.sku} {p.barcode && `| CB: ${p.barcode}`}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-black text-primary font-mono">
-                            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(p.price)}
-                          </p>
-                          <p className={`text-xs font-mono ${p.stock_quantity > 0 ? "text-success" : "text-destructive"}`}>
-                            Estoque: {p.stock_quantity} {p.unit}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  {priceLookupQuery.trim().length >= 2 && pdv.products.filter((p) =>
+      {/* Price Lookup Dialog (F10) */}
+      {showPriceLookup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowPriceLookup(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <Search className="w-5 h-5 text-primary" /> Consulta de Preço (F10)
+              </h2>
+              <button onClick={() => setShowPriceLookup(false)} className="p-1.5 rounded-lg hover:bg-muted"><X className="w-5 h-5 text-muted-foreground" /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              <input
+                type="text" value={priceLookupQuery} onChange={(e) => setPriceLookupQuery(e.target.value)}
+                placeholder="Digite código, SKU ou nome..." autoFocus
+                className="w-full px-4 py-3 rounded-xl bg-muted border border-border text-foreground text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+              <div className="max-h-[300px] overflow-y-auto space-y-2">
+                {priceLookupQuery.trim().length >= 2 && pdv.products
+                  .filter((p) =>
                     p.name.toLowerCase().includes(priceLookupQuery.toLowerCase()) ||
                     p.sku.toLowerCase().includes(priceLookupQuery.toLowerCase()) ||
                     (p.barcode && p.barcode.includes(priceLookupQuery))
-                  ).length === 0 && (
-                    <p className="text-center text-sm text-muted-foreground py-8">Nenhum produto encontrado</p>
-                  )}
-                  {priceLookupQuery.trim().length < 2 && (
-                    <p className="text-center text-sm text-muted-foreground py-8">Digite ao menos 2 caracteres para buscar</p>
-                  )}
-                </div>
+                  )
+                  .slice(0, 10)
+                  .map((p) => (
+                    <div key={p.id} className="flex items-center justify-between px-4 py-3 rounded-xl bg-muted/50 border border-border">
+                      <div>
+                        <p className="text-sm font-bold text-foreground">{p.name}</p>
+                        <p className="text-xs text-muted-foreground font-mono">SKU: {p.sku} {p.barcode && `| CB: ${p.barcode}`}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-black text-primary font-mono">{formatCurrency(p.price)}</p>
+                        <p className={`text-xs font-mono ${p.stock_quantity > 0 ? "text-primary" : "text-destructive"}`}>
+                          Estoque: {p.stock_quantity} {p.unit}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                {priceLookupQuery.trim().length >= 2 && pdv.products.filter((p) =>
+                  p.name.toLowerCase().includes(priceLookupQuery.toLowerCase()) ||
+                  p.sku.toLowerCase().includes(priceLookupQuery.toLowerCase()) ||
+                  (p.barcode && p.barcode.includes(priceLookupQuery))
+                ).length === 0 && (
+                  <p className="text-center text-sm text-muted-foreground py-8">Nenhum produto encontrado</p>
+                )}
+                {priceLookupQuery.trim().length < 2 && (
+                  <p className="text-center text-sm text-muted-foreground py-8">Digite ao menos 2 caracteres</p>
+                )}
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Save Quote Dialog */}
-      <AnimatePresence>
-        {showSaveQuote && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowSaveQuote(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-md mx-4 overflow-hidden"
-            >
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-primary" />
-                  Salvar Orçamento
-                </h2>
-                <button onClick={() => setShowSaveQuote(false)} className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground">✕</button>
-              </div>
-              <div className="p-5 space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">{pdv.cartItems.length} item(ns) no carrinho</p>
-                  <p className="text-2xl font-black font-mono text-primary">
-                    {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(pdv.total)}
-                  </p>
-                </div>
-                {selectedClient && (
-                  <div className="text-sm text-foreground">
-                    Cliente: <strong>{selectedClient.name}</strong>
-                  </div>
-                )}
-                <div>
-                  <label className="text-xs text-muted-foreground font-medium">Observações (opcional)</label>
-                  <textarea
-                    value={quoteNotes}
-                    onChange={(e) => setQuoteNotes(e.target.value)}
-                    rows={3}
-                    placeholder="Ex: Validade 30 dias, condições especiais..."
-                    className="w-full mt-1 px-3 py-2 rounded-xl bg-muted border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowSaveQuote(false)}
-                    className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-all"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={handleSaveQuote}
-                    className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2"
-                  >
-                    <FileText className="w-4 h-4" />
-                    Salvar Orçamento
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Terminal Picker Modal */}
-      <AnimatePresence>
-        {showTerminalPicker && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm"
-            onClick={() => setShowTerminalPicker(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="bg-card rounded-2xl border border-border card-shadow w-full max-w-sm mx-4 p-6 space-y-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
-                  <Monitor className="w-5 h-5 text-accent-foreground" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-foreground">Selecionar Terminal</h3>
-                  <p className="text-xs text-muted-foreground">Identificação deste ponto de venda</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-4 gap-2">
-                {["01", "02", "03", "04", "05", "06", "07", "08"].map((tid) => (
-                  <button
-                    key={tid}
-                    onClick={() => setTempTerminalId(tid)}
-                    className={`py-3 rounded-xl text-sm font-bold font-mono transition-all ${
-                      tempTerminalId === tid
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-foreground hover:bg-accent"
-                    }`}
-                  >
-                    T{tid}
-                  </button>
-                ))}
-              </div>
+      {showSaveQuote && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowSaveQuote(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><FileText className="w-5 h-5 text-primary" /> Salvar Orçamento</h2>
+              <button onClick={() => setShowSaveQuote(false)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground">✕</button>
+            </div>
+            <div className="p-5 space-y-4">
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Ou digite o número:</label>
-                <input
-                  type="text"
-                  maxLength={3}
-                  value={tempTerminalId}
-                  onChange={(e) => setTempTerminalId(e.target.value.replace(/\D/g, "").padStart(2, "0").slice(-2))}
-                  className="w-full px-3 py-2 rounded-xl bg-background border border-border text-foreground font-mono text-center text-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                <p className="text-sm text-muted-foreground mb-1">{pdv.cartItems.length} item(ns)</p>
+                <p className="text-2xl font-black font-mono text-primary">{formatCurrency(pdv.total)}</p>
+              </div>
+              {selectedClient && <div className="text-sm text-foreground">Cliente: <strong>{selectedClient.name}</strong></div>}
+              <div>
+                <label className="text-xs text-muted-foreground font-medium">Observações (opcional)</label>
+                <textarea value={quoteNotes} onChange={(e) => setQuoteNotes(e.target.value)} rows={3}
+                  placeholder="Ex: Validade 30 dias..."
+                  className="w-full mt-1 px-3 py-2 rounded-xl bg-muted border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
                 />
               </div>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setShowTerminalPicker(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => {
-                    const newId = tempTerminalId || "01";
-                    setTerminalId(newId);
-                    localStorage.setItem("pdv_terminal_id", newId);
-                    setShowTerminalPicker(false);
-                    toast.success(`Terminal alterado para T${newId}`);
-                  }}
-                  className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:opacity-90 transition-all"
-                >
-                  Confirmar
+                <button onClick={() => setShowSaveQuote(false)} className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted">Cancelar</button>
+                <button onClick={handleSaveQuote} className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center gap-2">
+                  <FileText className="w-4 h-4" /> Salvar
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Compact bottom shortcut bar — only essentials */}
-      <div className="flex items-center gap-1 px-2 py-1 bg-sidebar-background border-t border-border flex-shrink-0">
-        {[
-          { key: "F1", label: "Atalhos", action: () => setShowShortcuts((p) => !p) },
-          { key: "F2", label: "Pagamento", action: handleCheckout },
-          { key: "F3", label: "Buscar", action: () => setShowProductList((p) => !p) },
-          { key: "F4", label: "Caixa", action: () => setShowCashRegister(true) },
-          { key: "F6", label: "Limpar", action: () => { if (pdv.cartItems.length > 0) { pdv.clearCart(); setSelectedClient(null); toast.info("Carrinho limpo"); } } },
-          { key: "Del", label: "Remover", action: () => { if (pdv.cartItems.length > 0) { const last = pdv.cartItems[pdv.cartItems.length - 1]; pdv.removeItem(last.id); toast.info(`${last.name} removido`); } } },
-        ].map(({ key, label, action }) => (
-          <button
-            key={key}
-            onClick={action}
-            title={`${label} [${key}]`}
-            className="flex items-center gap-1 px-2 py-1 rounded bg-muted border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all text-[10px] font-bold uppercase whitespace-nowrap"
-          >
-            <span className="text-[9px] font-mono text-primary">{key}</span>
-            <span>{label}</span>
-          </button>
-        ))}
-      </div>
+      {/* Terminal Picker Modal */}
+      {showTerminalPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowTerminalPicker(false)}>
+          <div className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-sm mx-4 p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
+                <Monitor className="w-5 h-5 text-accent-foreground" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-foreground">Selecionar Terminal</h3>
+                <p className="text-xs text-muted-foreground">Identificação deste caixa</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {["01", "02", "03", "04", "05", "06", "07", "08"].map((tid) => (
+                <button key={tid} onClick={() => setTempTerminalId(tid)}
+                  className={`py-3 rounded-xl text-sm font-bold font-mono transition-all ${tempTerminalId === tid ? "bg-primary text-primary-foreground" : "bg-muted text-foreground hover:bg-accent"}`}
+                >T{tid}</button>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShowTerminalPicker(false)} className="flex-1 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium">Cancelar</button>
+              <button onClick={() => {
+                const newId = tempTerminalId || "01";
+                setTerminalId(newId);
+                localStorage.setItem("pdv_terminal_id", newId);
+                setShowTerminalPicker(false);
+                toast.success(`Terminal: T${newId}`);
+              }} className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold">Confirmar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* F1 — All shortcuts modal */}
-      <AnimatePresence>
-        {showShortcuts && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowShortcuts(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-2xl mx-4 overflow-hidden"
-            >
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <Keyboard className="w-5 h-5 text-primary" />
-                  Todos os Atalhos
-                </h2>
-                <button onClick={() => setShowShortcuts(false)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                  <X className="w-5 h-5 text-muted-foreground" />
-                </button>
-              </div>
-              <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {[
-                  { key: "F1", label: "Atalhos", desc: "Mostra este painel" },
-                  { key: "F2", label: "Pagamento", desc: "Finalizar venda", action: () => { setShowShortcuts(false); handleCheckout(); } },
-                  { key: "F3", label: "Buscar Produtos", desc: "Abrir grade de produtos", action: () => { setShowShortcuts(false); setShowProductList((p) => !p); } },
-                  { key: "F4", label: "Caixa", desc: "Abrir/fechar caixa", action: () => { setShowShortcuts(false); setShowCashRegister(true); } },
-                  { key: "F5", label: "Cadastrar Produto", desc: "Cadastro rápido", action: () => { setShowShortcuts(false); setQuickProductBarcode(""); setShowQuickProduct(true); } },
-                  { key: "F6", label: "Limpar Carrinho", desc: "Remove todos os itens", action: () => { setShowShortcuts(false); if (pdv.cartItems.length > 0) { pdv.clearCart(); setSelectedClient(null); toast.info("Carrinho limpo"); } } },
-                  { key: "F7", label: "Abrir Gaveta", desc: "Gaveta de dinheiro", action: () => { setShowShortcuts(false); openCashDrawer(); toast.info("Gaveta aberta"); } },
-                  { key: "F8", label: "Receber Fiado", desc: "Receber débitos de clientes", action: () => { setShowShortcuts(false); setShowReceiveCredit(true); } },
-                  { key: "F9", label: "Sincronizar", desc: "Enviar vendas pendentes", action: () => { setShowShortcuts(false); if (pdv.pendingCount > 0 && pdv.isOnline) pdv.syncAll(); } },
-                  { key: "F10", label: "Consultar Preço", desc: "Busca por preço e estoque", action: () => { setShowShortcuts(false); setShowPriceLookup(true); setPriceLookupQuery(""); } },
-                  { key: "F11", label: "Repetir Venda", desc: "Recarrega última venda", action: () => { setShowShortcuts(false); pdv.repeatLastSale(); } },
-                  { key: "F12", label: "Treinamento", desc: "Modo sandbox sem salvar", action: () => { setShowShortcuts(false); pdv.setTrainingMode(!pdv.trainingMode); toast.info(pdv.trainingMode ? "Modo treinamento DESATIVADO" : "🎓 Modo treinamento ATIVADO"); } },
-                  { key: "Del", label: "Remover Último", desc: "Remove último item do carrinho", action: () => { setShowShortcuts(false); if (pdv.cartItems.length > 0) { const last = pdv.cartItems[pdv.cartItems.length - 1]; pdv.removeItem(last.id); toast.info(`${last.name} removido`); } } },
-                  { key: "Esc", label: "Fechar", desc: "Fecha painéis e modais" },
-                  { key: "Orc", label: "Orçamento", desc: "Salvar carrinho como orçamento", action: () => { setShowShortcuts(false); if (pdv.cartItems.length > 0) setShowSaveQuote(true); else toast.warning("Carrinho vazio"); } },
-                ].map(({ key, label, desc, action }) => (
-                  <button
-                    key={key}
-                    onClick={action || (() => setShowShortcuts(false))}
-                    className="flex items-start gap-3 p-3 rounded-xl bg-muted/50 border border-border hover:bg-accent hover:border-primary/30 transition-all text-left group"
-                  >
-                    <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-1 rounded mt-0.5 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                      {key}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-foreground">{label}</p>
-                      <p className="text-[10px] text-muted-foreground leading-tight">{desc}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {showShortcuts && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowShortcuts(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-2xl mx-4 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><Keyboard className="w-5 h-5 text-primary" /> Atalhos do PDV</h2>
+              <button onClick={() => setShowShortcuts(false)} className="p-1.5 rounded-lg hover:bg-muted"><X className="w-5 h-5 text-muted-foreground" /></button>
+            </div>
+            <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {[
+                { key: "F1", label: "Atalhos", desc: "Mostra este painel" },
+                { key: "F2", label: "Pagamento", desc: "Abrir tela de pagamento" },
+                { key: "F3", label: "Buscar Produto", desc: "Busca na grade" },
+                { key: "F4", label: "Sangria/Gaveta", desc: "Abrir gaveta de dinheiro" },
+                { key: "F5", label: "Cliente", desc: "Identificar cliente" },
+                { key: "F6", label: "Limpar Venda", desc: "Remove todos os itens" },
+                { key: "F7", label: "Desconto Item", desc: "Desconto no último item" },
+                { key: "F8", label: "Desconto Total", desc: "Desconto geral na venda" },
+                { key: "F9", label: "Alterar Qtd", desc: "Altera quantidade do último item" },
+                { key: "F10", label: "Consultar Preço", desc: "Busca preço e estoque" },
+                { key: "F11", label: "Repetir Venda", desc: "Recarrega última venda" },
+                { key: "F12", label: "Finalizar", desc: "Finalizar venda (= F2)" },
+                { key: "DEL", label: "Remover Último", desc: "Remove último item" },
+                { key: "ESC", label: "Cancelar", desc: "Cancela venda / fecha modal" },
+              ].map(({ key, label, desc }) => (
+                <div key={key} className="flex items-start gap-3 p-3 rounded-xl bg-muted/50 border border-border text-left">
+                  <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-1 rounded mt-0.5">{key}</span>
+                  <div>
+                    <p className="text-sm font-bold text-foreground">{label}</p>
+                    <p className="text-[10px] text-muted-foreground">{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+/** Simple live clock component for the top bar */
+function LiveClock() {
+  const [time, setTime] = useState(new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+  return (
+    <span className="font-mono font-bold tracking-wider">
+      {time.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+    </span>
   );
 }
