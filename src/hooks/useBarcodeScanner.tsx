@@ -27,8 +27,8 @@ export function useBarcodeScanner(onScan: (barcode: string) => void) {
         return;
       }
 
-      // Only capture printable single characters
-      if (e.key.length === 1) {
+      // Only capture printable single characters (not F-keys)
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
         buffer.current += e.key;
 
         // Reset buffer after 100ms of no input (human typing is slower)
