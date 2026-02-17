@@ -102,7 +102,6 @@ export default function Vendas() {
           {sales.map((sale, i) => {
             const items = Array.isArray(sale.items_json) ? sale.items_json : sale.items_json ? JSON.parse(String(sale.items_json)) : [];
             const isNfceEmitida = sale.status === "autorizada" && !!sale.access_key;
-            const isNfcePendente = sale.status === "pendente" && !!sale.number;
             const tefPayments = getTefPayments(sale);
             const isMPProvider = config?.provider === "mercadopago" && !!config?.api_key;
             const isRefunding = refundingSaleId === sale.id;
@@ -174,11 +173,11 @@ export default function Vendas() {
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
                             NFC-e Emitida
                           </span>
-                        ) : isNfcePendente ? (
+                        ) : (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-warning/10 text-warning">
                             Pendente NFC-e
                           </span>
-                        ) : null
+                        )
                       )}
                     </div>
                   </div>
