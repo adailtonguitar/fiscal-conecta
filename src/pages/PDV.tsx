@@ -691,10 +691,10 @@ export default function PDV() {
           </div>
 
           {/* TOTAL — BIG DISPLAY */}
-          <div className="p-6 border-t-4" style={{ backgroundColor: "hsl(142, 72%, 29%)", borderColor: "hsl(142, 72%, 40%)" }}>
+          <div className="p-6 mt-auto border-t-4" style={{ backgroundColor: "#1b7a3d", borderTopColor: "#25a854" }}>
             <div className="text-center">
-              <span className="text-xs font-bold text-white/70 uppercase tracking-[0.25em] block mb-2">Total da Venda</span>
-              <span className="text-6xl font-black text-white font-mono tracking-tight block drop-shadow-lg">
+              <span className="text-xs font-bold uppercase tracking-[0.25em] block mb-2" style={{ color: "rgba(255,255,255,0.7)" }}>TOTAL DA VENDA</span>
+              <span className="text-6xl font-black font-mono tracking-tight block" style={{ color: "#ffffff", textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
                 {formatCurrency(totalFinal)}
               </span>
             </div>
