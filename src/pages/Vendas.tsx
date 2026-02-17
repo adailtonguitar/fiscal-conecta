@@ -158,15 +158,23 @@ export default function Vendas() {
                         Estornar
                       </button>
                     )}
-                    <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                        isSynced
-                          ? "bg-success/10 text-success"
-                          : "bg-warning/10 text-warning"
-                      }`}
-                    >
-                      {isSynced ? "Sincronizado" : "Pendente"}
-                    </span>
+                    {sale.status === "cancelada" ? (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-destructive/10 text-destructive">
+                        Cancelada
+                      </span>
+                    ) : isSynced ? (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-success/10 text-success">
+                        NFC-e Emitida
+                      </span>
+                    ) : sale.number ? (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-warning/10 text-warning">
+                        NFC-e Pendente
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-success/10 text-success">
+                        Concluída
+                      </span>
+                    )}
                   </div>
                 </div>
 
