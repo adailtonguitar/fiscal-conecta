@@ -725,7 +725,7 @@ export default function PDV() {
       </div>
 
       {/* ════════ BOTTOM SHORTCUT BAR ════════ */}
-      <div className="flex items-center gap-1 px-2 py-1 bg-muted border-t border-border flex-shrink-0">
+      <div className="flex items-center justify-center gap-2 px-3 py-2 bg-muted border-t-2 border-border flex-shrink-0">
         {[
           { key: "F2", label: "Pagamento" },
           { key: "F3", label: "Buscar" },
@@ -741,10 +741,10 @@ export default function PDV() {
         ].map(({ key, label }) => (
           <div
             key={key}
-            className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground"
+            className="flex items-center gap-1 px-2 py-1.5 text-xs font-bold text-foreground"
           >
-            <span className="font-mono text-primary text-[9px]">{key}</span>
-            <span>{label}</span>
+            <span className="font-mono text-[11px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-black">{key}</span>
+            <span className="text-muted-foreground">{label}</span>
           </div>
         ))}
       </div>
