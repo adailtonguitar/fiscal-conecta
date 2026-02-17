@@ -16,7 +16,7 @@ import { useQuotes } from "@/hooks/useQuotes";
 import { useCompany } from "@/hooks/useCompany";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { useTEFConfig } from "@/hooks/useTEFConfig";
-import { Wifi, WifiOff, Keyboard, X, Search, Monitor, FileText, User, PackageX, PackagePlus } from "lucide-react";
+import { Wifi, WifiOff, Keyboard, X, Search, Monitor, FileText, User, PackageX, PackagePlus, Maximize, Minimize } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { PaymentResult } from "@/services/types";
@@ -67,6 +67,21 @@ export default function PDV() {
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const tableEndRef = useRef<HTMLTableRowElement>(null);
   const [saleNumber, setSaleNumber] = useState(() => Number(localStorage.getItem("pdv_sale_number") || "1"));
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+    } else {
+      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
 
   useBarcodeScanner(pdv.handleBarcodeScan);
 
@@ -439,6 +454,13 @@ export default function PDV() {
               <button onClick={() => setSelectedClient(null)} className="ml-0.5 hover:text-destructive">✕</button>
             </span>
           )}
+          <button
+            onClick={toggleFullscreen}
+            className="opacity-80 hover:opacity-100 transition-opacity"
+            title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
+          >
+            {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
+          </button>
           <span className="flex items-center gap-1">
             {pdv.isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
             <span className="font-bold">{pdv.isOnline ? "Online" : "Offline"}</span>
