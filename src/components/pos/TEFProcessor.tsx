@@ -657,12 +657,15 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, de
             >
               {method === "dinheiro" && (
                 <>
-                  <div className="text-center mb-2">
-                    <span className="text-sm text-pos-text-muted">Valor a pagar:</span>
-                    <span className="pos-price text-lg ml-2">{formatCurrency(paymentAmount)}</span>
+                  {/* Prominent total */}
+                  <div className="text-center py-3 rounded-2xl bg-pos-bg border border-pos-border">
+                    <p className="text-xs text-pos-text-muted uppercase tracking-wider mb-1">Total a pagar</p>
+                    <p className="text-3xl font-bold text-pos-text font-mono">{formatCurrency(paymentAmount)}</p>
                   </div>
+
+                  {/* Cash received input */}
                   <div>
-                    <label className="text-sm font-medium text-pos-text mb-2 block">
+                    <label className="text-xs font-medium text-pos-text-muted mb-1.5 block uppercase tracking-wider">
                       Valor Recebido
                     </label>
                     <input
@@ -671,22 +674,73 @@ export function TEFProcessor({ total, onComplete, onCancel, onPrazoRequested, de
                       min={paymentAmount}
                       value={cashReceived}
                       onChange={(e) => setCashReceived(e.target.value)}
-                      placeholder={formatCurrency(paymentAmount)}
+                      placeholder="0,00"
                       autoFocus
-                      className="w-full px-4 py-3 rounded-xl bg-pos-bg border border-pos-border text-pos-text text-lg font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-accent/30 focus:border-pos-accent transition-all"
+                      className="w-full px-4 py-4 rounded-xl bg-pos-bg border-2 border-pos-border text-pos-text text-2xl font-mono text-center focus:outline-none focus:ring-2 focus:ring-pos-accent/30 focus:border-pos-accent transition-all"
                     />
                   </div>
-                  {cashReceived && Number(cashReceived) >= paymentAmount && (
-                    <div className="flex justify-between items-center p-4 rounded-xl bg-pos-bg">
-                      <span className="text-sm text-pos-text-muted">Troco</span>
-                      <span className="pos-price text-2xl">
-                        {formatCurrency(Number(cashReceived) - paymentAmount)}
-                      </span>
-                    </div>
-                  )}
-                  {cashReceived && Number(cashReceived) < paymentAmount && (
-                    <p className="text-xs text-destructive text-center">Valor insuficiente</p>
-                  )}
+
+                  {/* Quick cash buttons */}
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { label: "Exato", value: paymentAmount },
+                      { label: "R$ 5", value: 5 },
+                      { label: "R$ 10", value: 10 },
+                      { label: "R$ 20", value: 20 },
+                      { label: "R$ 50", value: 50 },
+                      { label: "R$ 100", value: 100 },
+                      { label: "R$ 200", value: 200 },
+                      { label: "R$ 500", value: 500 },
+                    ]
+                      .filter((b) => b.value >= paymentAmount || b.label === "Exato")
+                      .slice(0, 8)
+                      .map((b) => (
+                        <button
+                          key={b.label}
+                          onClick={() => setCashReceived(String(b.value))}
+                          className={`py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                            cashReceived === String(b.value)
+                              ? "bg-pos-accent text-primary-foreground ring-2 ring-pos-accent/40"
+                              : "bg-pos-bg text-pos-text hover:bg-pos-surface-hover border border-pos-border"
+                          }`}
+                        >
+                          {b.label}
+                        </button>
+                      ))}
+                  </div>
+
+                  {/* Animated change display */}
+                  <AnimatePresence mode="wait">
+                    {cashReceived && Number(cashReceived) >= paymentAmount && (
+                      <motion.div
+                        key="change"
+                        initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: -10 }}
+                        className="text-center py-5 rounded-2xl bg-success/10 border-2 border-success/30"
+                      >
+                        <p className="text-xs text-success uppercase tracking-wider font-medium mb-1">Troco</p>
+                        <motion.p
+                          key={cashReceived}
+                          initial={{ scale: 1.2, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          className="text-4xl font-bold text-success font-mono"
+                        >
+                          {formatCurrency(Number(cashReceived) - paymentAmount)}
+                        </motion.p>
+                      </motion.div>
+                    )}
+                    {cashReceived && Number(cashReceived) < paymentAmount && (
+                      <motion.p
+                        key="insufficient"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-sm text-destructive text-center font-medium"
+                      >
+                        Valor insuficiente — faltam {formatCurrency(paymentAmount - Number(cashReceived))}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
                 </>
               )}
 
