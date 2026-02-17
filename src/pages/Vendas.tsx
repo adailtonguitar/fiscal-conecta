@@ -158,23 +158,28 @@ export default function Vendas() {
                         Estornar
                       </button>
                     )}
-                    {sale.status === "cancelada" ? (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-destructive/10 text-destructive">
-                        Cancelada
-                      </span>
-                    ) : isSynced ? (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-success/10 text-success">
-                        NFC-e Emitida
-                      </span>
-                    ) : sale.number ? (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-warning/10 text-warning">
-                        NFC-e Pendente
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-success/10 text-success">
-                        Concluída
-                      </span>
-                    )}
+                    <div className="flex flex-col items-end gap-1">
+                      {sale.status === "cancelada" ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-destructive/10 text-destructive">
+                          Cancelada
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-success/10 text-success">
+                          Concluída
+                        </span>
+                      )}
+                      {sale.status !== "cancelada" && (
+                        isSynced ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
+                            NFC-e Emitida
+                          </span>
+                        ) : sale.number ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-warning/10 text-warning">
+                            Pendente NFC-e
+                          </span>
+                        ) : null
+                      )}
+                    </div>
                   </div>
                 </div>
 
