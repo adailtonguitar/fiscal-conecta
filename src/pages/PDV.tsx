@@ -465,6 +465,38 @@ export default function PDV() {
   const totalQty = pdv.cartItems.reduce((a, i) => a + i.quantity, 0);
   const totalFinal = pdv.total;
 
+  // Block PDV entirely if no cash session is open
+  if (!pdv.loadingSession && !pdv.currentSession) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-background text-foreground gap-4">
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-bold">Caixa Fechado</h2>
+          <p className="text-muted-foreground">Abra o caixa para iniciar as operações no PDV.</p>
+        </div>
+        <CashRegister
+          terminalId={terminalId}
+          onClose={() => {
+            pdv.reloadSession(terminalId);
+          }}
+        />
+        <button
+          onClick={() => navigate("/")}
+          className="mt-4 text-sm text-muted-foreground hover:text-foreground underline"
+        >
+          ← Voltar ao menu
+        </button>
+      </div>
+    );
+  }
+
+  if (pdv.loadingSession) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background text-foreground">
+        <p className="text-muted-foreground animate-pulse">Carregando sessão de caixa...</p>
+      </div>
+    );
+  }
+
   return (
     <div className={`pdv-theme flex flex-col h-screen bg-background text-foreground overflow-hidden select-none ${pdv.trainingMode ? "ring-4 ring-warning/60 ring-inset" : ""}`}>
 
