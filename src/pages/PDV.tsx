@@ -325,6 +325,11 @@ export default function PDV() {
           break;
         case "Escape":
           e.preventDefault();
+          e.stopImmediatePropagation();
+          // Re-enter fullscreen if browser exited it due to ESC
+          if (isFullscreen && !document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+          }
           if (showShortcuts) setShowShortcuts(false);
           else if (showPriceLookup) setShowPriceLookup(false);
           else if (showProductList) setShowProductList(false);
@@ -339,7 +344,7 @@ export default function PDV() {
     };
     window.addEventListener("keydown", handler, true);
     return () => window.removeEventListener("keydown", handler, true);
-  }, [showTEF, receipt, showCashRegister, showShortcuts, showPriceLookup, showProductList, handleCheckout, pdv, editingQtyItemId, editingItemDiscountId, editingGlobalDiscount]);
+  }, [showTEF, receipt, showCashRegister, showShortcuts, showPriceLookup, showProductList, handleCheckout, pdv, editingQtyItemId, editingItemDiscountId, editingGlobalDiscount, isFullscreen]);
 
   const checkLowStockAfterSale = useCallback((soldItems: typeof pdv.cartItems) => {
     const lowStockItems: string[] = [];
