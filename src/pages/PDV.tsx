@@ -164,11 +164,16 @@ export default function PDV() {
   };
 
   const handleCheckout = useCallback((defaultMethod?: string) => {
+    if (!pdv.currentSession) {
+      toast.warning("Abra o caixa antes de finalizar uma venda");
+      setShowCashRegister(true);
+      return;
+    }
     if (pdv.cartItems.length > 0) {
       setTefDefaultMethod(defaultMethod || null);
       setShowTEF(true);
     }
-  }, [pdv.cartItems.length]);
+  }, [pdv.cartItems.length, pdv.currentSession]);
 
   const handleDirectPayment = useCallback((method: string) => {
     if (pdv.cartItems.length === 0) {
@@ -186,6 +191,12 @@ export default function PDV() {
   const handleBarcodeSubmit = () => {
     const raw = barcodeInput.trim();
     if (!raw) return;
+    if (!pdv.currentSession) {
+      toast.warning("Abra o caixa antes de registrar produtos");
+      setShowCashRegister(true);
+      setBarcodeInput("");
+      return;
+    }
 
     let query = raw;
     let multiplier = 1;
@@ -283,7 +294,8 @@ export default function PDV() {
         return;
       }
       if (showCashRegister) {
-        if (isEscape) { e.preventDefault(); setShowCashRegister(false); }
+        // Only allow closing cash register via ESC if there's an active session
+        if (isEscape && pdv.currentSession) { e.preventDefault(); setShowCashRegister(false); }
         return;
       }
 
@@ -912,7 +924,15 @@ export default function PDV() {
       {showCashRegister && (
         <CashRegister
           terminalId={terminalId}
-          onClose={() => { setShowCashRegister(false); pdv.reloadSession(terminalId); }}
+          onClose={() => {
+            // Only allow closing if there's an active session
+            if (pdv.currentSession) {
+              setShowCashRegister(false);
+              pdv.reloadSession(terminalId);
+            } else {
+              toast.warning("Abra o caixa antes de usar o PDV");
+            }
+          }}
         />
       )}
 
