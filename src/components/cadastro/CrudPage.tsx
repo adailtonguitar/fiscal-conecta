@@ -62,10 +62,12 @@ interface CrudPageProps<T extends { id: string }> {
   onValidate?: (data: Record<string, any>) => string | null;
   /** Dynamic field config based on current form data */
   getFields?: (formData: Record<string, any>) => FieldConfig[];
+  /** Extra action buttons rendered in the header */
+  headerActions?: React.ReactNode;
 }
 
 export function CrudPage<T extends { id: string }>({
-  title, subtitle, icon, data, isLoading, fields, onCreate, onUpdate, onDelete, searchKeys = ["name" as keyof T], nameKey = "name" as keyof T, cnpjFieldMap, onValidate, getFields,
+  title, subtitle, icon, data, isLoading, fields, onCreate, onUpdate, onDelete, searchKeys = ["name" as keyof T], nameKey = "name" as keyof T, cnpjFieldMap, onValidate, getFields, headerActions,
 }: CrudPageProps<T>) {
   const { lookup: cnpjLookup, loading: cnpjLoading } = useCnpjLookup();
   const [search, setSearch] = useState("");
@@ -168,10 +170,13 @@ export function CrudPage<T extends { id: string }>({
             {subtitle ?? `${data.length} registros cadastrados`}
           </p>
         </div>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo
-        </Button>
+        <div className="flex items-center gap-2">
+          {headerActions}
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-2" />
+            Novo
+          </Button>
+        </div>
       </div>
 
       <div className="relative max-w-md">

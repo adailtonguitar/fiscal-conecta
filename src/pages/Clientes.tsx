@@ -1,8 +1,11 @@
-import { Users } from "lucide-react";
+import { useState } from "react";
+import { Users, Upload } from "lucide-react";
 import { CrudPage, type FieldConfig } from "@/components/cadastro/CrudPage";
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from "@/hooks/useClients";
 import { useCallback } from "react";
 import { validateDoc } from "@/lib/cpf-cnpj-validator";
+import { Button } from "@/components/ui/button";
+import { CSVClientImportDialog } from "@/components/clients/CSVClientImportDialog";
 
 const baseFields: FieldConfig[] = [
   {
@@ -44,6 +47,7 @@ export default function Clientes() {
   const create = useCreateClient();
   const update = useUpdateClient();
   const del = useDeleteClient();
+  const [showCSVImport, setShowCSVImport] = useState(false);
 
   const getFields = useCallback((formData: Record<string, any>): FieldConfig[] => {
     const isPJ = formData.tipo_pessoa === "pj";
@@ -68,7 +72,7 @@ export default function Clientes() {
 
   const onValidate = useCallback((data: Record<string, any>): string | null => {
     const doc = (data.cpf_cnpj || "").replace(/\D/g, "");
-    if (!doc) return null; // field not required when empty
+    if (!doc) return null;
     const isPJ = data.tipo_pessoa === "pj";
     if (isPJ && doc.length !== 14) return "CNPJ deve ter 14 dígitos";
     if (!isPJ && doc.length !== 11) return "CPF deve ter 11 dígitos";
@@ -77,20 +81,31 @@ export default function Clientes() {
     return null;
   }, []);
 
+  const headerActions = (
+    <Button variant="outline" size="sm" onClick={() => setShowCSVImport(true)}>
+      <Upload className="w-4 h-4 mr-2" />
+      Importar CSV
+    </Button>
+  );
+
   return (
-    <CrudPage
-      title="Clientes"
-      icon={<Users className="w-5 h-5" />}
-      data={data}
-      isLoading={isLoading}
-      fields={baseFields}
-      getFields={getFields}
-      onValidate={onValidate}
-      onCreate={(d) => create.mutateAsync(d as any)}
-      onUpdate={(d) => update.mutateAsync(d as any)}
-      onDelete={(id) => del.mutateAsync(id)}
-      searchKeys={["name", "cpf_cnpj", "email"] as any}
-      cnpjFieldMap={{ name: "name", trade_name: "trade_name", email: "email", phone: "phone", address_street: "address_street", address_number: "address_number", address_complement: "address_complement", address_neighborhood: "address_neighborhood", address_city: "address_city", address_state: "address_state", address_zip: "address_zip" }}
-    />
+    <>
+      <CrudPage
+        title="Clientes"
+        icon={<Users className="w-5 h-5" />}
+        data={data}
+        isLoading={isLoading}
+        fields={baseFields}
+        getFields={getFields}
+        onValidate={onValidate}
+        onCreate={(d) => create.mutateAsync(d as any)}
+        onUpdate={(d) => update.mutateAsync(d as any)}
+        onDelete={(id) => del.mutateAsync(id)}
+        searchKeys={["name", "cpf_cnpj", "email"] as any}
+        cnpjFieldMap={{ name: "name", trade_name: "trade_name", email: "email", phone: "phone", address_street: "address_street", address_number: "address_number", address_complement: "address_complement", address_neighborhood: "address_neighborhood", address_city: "address_city", address_state: "address_state", address_zip: "address_zip" }}
+        headerActions={headerActions}
+      />
+      <CSVClientImportDialog open={showCSVImport} onOpenChange={setShowCSVImport} />
+    </>
   );
 }
