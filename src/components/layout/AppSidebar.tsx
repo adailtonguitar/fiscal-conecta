@@ -42,7 +42,6 @@ const navItems: NavEntry[] = [
     label: "Estoque",
     children: [
       { icon: Package, label: "Produtos", path: "/produtos" },
-      { icon: ArrowUpDown, label: "Movimentações", path: "/estoque/movimentacoes" },
       { icon: ClipboardList, label: "Inventário", path: "/estoque/inventario" },
       { icon: BarChart3, label: "Curva ABC", path: "/estoque/curva-abc" },
       { icon: Tags, label: "Lotes & Validade", path: "/estoque/lotes" },
@@ -55,7 +54,6 @@ const navItems: NavEntry[] = [
     label: "Vendas",
     children: [
       { icon: FileText, label: "Histórico", path: "/vendas" },
-      { icon: ScrollText, label: "Orçamentos", path: "/orcamentos" },
       { icon: Tag, label: "Promoções", path: "/promocoes" },
       { icon: CreditCard, label: "Fiado", path: "/fiado" },
     ],
@@ -68,13 +66,21 @@ const navItems: NavEntry[] = [
       { icon: Brain, label: "Relatórios IA", path: "/relatorios-ia" },
     ],
   },
+  {
+    icon: ArrowUpDown,
+    label: "Movimentações",
+    children: [
+      { icon: ArrowUpDown, label: "Estoque", path: "/estoque/movimentacoes" },
+      { icon: DollarSign, label: "Caixa", path: "/caixa" },
+      { icon: Landmark, label: "Financeiro", path: "/financeiro" },
+      { icon: ScrollText, label: "Orçamentos", path: "/orcamentos" },
+    ],
+  },
   { icon: Monitor, label: "Terminais", path: "/terminais" },
-  { icon: DollarSign, label: "Caixa", path: "/caixa" },
   {
     icon: Landmark,
     label: "Financeiro",
     children: [
-      { icon: Landmark, label: "Visão Geral", path: "/financeiro" },
       { icon: TrendingUp, label: "Lucro Diário", path: "/lucro-diario" },
       { icon: TrendingUp, label: "Painel de Lucro", path: "/painel-lucro" },
       { icon: FileSpreadsheet, label: "DRE", path: "/dre" },
