@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Check, Search, Upload, X, Package, AlertTriangle, ShieldAlert, Info } from "lucide-react";
 import { NCM_TABLE } from "@/lib/ncm-table";
 import { validateNcm, detectNcmDuplicates, getNcmDescription, isValidNcmFormat, type NcmIssue } from "@/lib/ncm-validator";
+import { isTypicalStNcm } from "@/lib/icms-st-engine";
 import { useProducts } from "@/hooks/useProducts";
 import { toast } from "sonner";
 
@@ -108,9 +109,20 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
       product?.id,
       allProducts.map(p => ({ id: p.id, name: p.name, ncm: p.ncm }))
     );
+
+    // ST detection warning
+    const stCheck = isTypicalStNcm(ncmValue);
+    const stWarnings: NcmIssue[] = [];
+    if (stCheck.isTypical) {
+      stWarnings.push({
+        type: "duplicate" as const,
+        message: `NCM típico de Substituição Tributária (${stCheck.description}). Verifique se a categoria fiscal está configurada como ST.`,
+      });
+    }
+
     setNcmIssues({
       errors: result.errors,
-      warnings: [...result.warnings, ...duplicates],
+      warnings: [...result.warnings, ...duplicates, ...stWarnings],
     });
   };
 
