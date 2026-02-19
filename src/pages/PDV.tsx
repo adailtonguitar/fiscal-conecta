@@ -277,8 +277,9 @@ export default function PDV() {
       const isFKey = e.key.startsWith("F") && e.key.length <= 3;
       const isDelete = e.key === "Delete";
       const isEscape = e.key === "Escape";
+      const isArrow = e.key === "ArrowUp" || e.key === "ArrowDown";
       
-      if (!isFKey && !isDelete && !isEscape) return;
+      if (!isFKey && !isDelete && !isEscape && !isArrow) return;
 
       // Don't intercept in modals (TEF handles its own keys)
       if (showTEF) return;
