@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "./useCompany";
 import { toast } from "sonner";
+import { logFiscalAudit } from "@/services/FiscalAuditLogger";
 
 export interface IcmsStRule {
   id: string;
@@ -51,6 +52,13 @@ export function useCreateIcmsStRule() {
         .select()
         .single();
       if (error) throw error;
+
+      logFiscalAudit({
+        companyId,
+        action: "icms_st_rule_CRIADA",
+        details: { entity_type: "icms_st_rule", entity_id: (data as any).id, entity_name: `${rule.uf_origin}→${rule.uf_destination}`, before: null, after: data as any },
+      });
+
       return data;
     },
     onSuccess: () => {
@@ -63,8 +71,15 @@ export function useCreateIcmsStRule() {
 
 export function useUpdateIcmsStRule() {
   const qc = useQueryClient();
+  const { companyId } = useCompany();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<IcmsStRule> & { id: string }) => {
+      const { data: before } = await supabase
+        .from("icms_st_rules" as any)
+        .select("*")
+        .eq("id", id)
+        .single();
+
       const { data, error } = await supabase
         .from("icms_st_rules" as any)
         .update(updates as any)
@@ -72,6 +87,15 @@ export function useUpdateIcmsStRule() {
         .select()
         .single();
       if (error) throw error;
+
+      if (companyId) {
+        logFiscalAudit({
+          companyId,
+          action: "icms_st_rule_ALTERADA",
+          details: { entity_type: "icms_st_rule", entity_id: id, entity_name: `${(data as any).uf_origin}→${(data as any).uf_destination}`, before: before as any, after: data as any },
+        });
+      }
+
       return data;
     },
     onSuccess: () => {
@@ -84,13 +108,28 @@ export function useUpdateIcmsStRule() {
 
 export function useDeleteIcmsStRule() {
   const qc = useQueryClient();
+  const { companyId } = useCompany();
   return useMutation({
     mutationFn: async (id: string) => {
+      const { data: before } = await supabase
+        .from("icms_st_rules" as any)
+        .select("*")
+        .eq("id", id)
+        .single();
+
       const { error } = await supabase
         .from("icms_st_rules" as any)
         .delete()
         .eq("id", id);
       if (error) throw error;
+
+      if (companyId) {
+        logFiscalAudit({
+          companyId,
+          action: "icms_st_rule_EXCLUIDA",
+          details: { entity_type: "icms_st_rule", entity_id: id, entity_name: `${(before as any)?.uf_origin}→${(before as any)?.uf_destination}`, before: before as any, after: null },
+        });
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["icms_st_rules"] });
