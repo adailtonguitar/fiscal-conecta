@@ -4,6 +4,7 @@
  * Todas as validações são logadas na tabela fiscal_audit_logs.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { isValidNcmFormat, isNcmInOfficialTable, isNcmExpired } from "@/lib/ncm-validator";
 
 export interface FiscalValidationItem {
   product_id: string;
@@ -67,8 +68,8 @@ export class FiscalEngine {
       // REGRA 1 — Regime tributário
       this.validateRegime(ctx, item, errors);
 
-      // REGRA 2 — NCM obrigatório
-      this.validateNcm(item, errors);
+      // REGRA 2 — NCM obrigatório + validação
+      this.validateNcm(item, errors, warnings);
 
       // REGRA 3 — Produto ST exige CEST
       this.validateSt(ctx, item, errors);
@@ -143,15 +144,50 @@ export class FiscalEngine {
   }
 
   /**
-   * REGRA 2: NCM obrigatório
+   * REGRA 2: NCM obrigatório + formato válido + tabela oficial + não expirado
    */
-  private static validateNcm(item: FiscalValidationItem, errors: FiscalError[]) {
+  private static validateNcm(item: FiscalValidationItem, errors: FiscalError[], warnings: FiscalError[]) {
     if (!item.ncm || item.ncm.trim().length === 0) {
       errors.push({
         rule: "NCM_VAZIO",
         product: item.name,
         message: `Produto "${item.name}" sem NCM configurado`,
         severity: "error",
+      });
+      return;
+    }
+
+    const ncm = item.ncm.trim();
+
+    // Format validation
+    if (!isValidNcmFormat(ncm)) {
+      errors.push({
+        rule: "NCM_FORMATO_INVALIDO",
+        product: item.name,
+        message: `Produto "${item.name}": NCM "${ncm}" deve ter exatamente 8 dígitos numéricos`,
+        severity: "error",
+      });
+      return;
+    }
+
+    // Expired NCM check
+    const expiredMsg = isNcmExpired(ncm);
+    if (expiredMsg) {
+      errors.push({
+        rule: "NCM_EXPIRADO",
+        product: item.name,
+        message: `Produto "${item.name}": NCM "${ncm}" foi revogado — ${expiredMsg}`,
+        severity: "error",
+      });
+    }
+
+    // Official table check (warning only — table may not be exhaustive)
+    if (!isNcmInOfficialTable(ncm)) {
+      warnings.push({
+        rule: "NCM_NAO_ENCONTRADO",
+        product: item.name,
+        message: `Produto "${item.name}": NCM "${ncm}" não encontrado na tabela de referência`,
+        severity: "warning",
       });
     }
   }

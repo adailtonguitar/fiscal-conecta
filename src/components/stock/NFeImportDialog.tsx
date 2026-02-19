@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { FileUp, Upload, Check, Link2, Plus, Pencil, X, FileText } from "lucide-react";
+import { FileUp, Upload, Check, Link2, Plus, Pencil, X, FileText, AlertTriangle, ShieldAlert } from "lucide-react";
 import { parseNFeXML, type NFeItem, type NFeData } from "@/lib/nfe-parser";
 import { useLocalProducts, useCreateLocalProduct, type LocalProduct } from "@/hooks/useLocalProducts";
 import { useRegisterLocalStockMovement } from "@/hooks/useLocalStock";
@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCompany } from "@/hooks/useCompany";
 import { formatCurrency } from "@/lib/mock-data";
 import { toast } from "sonner";
+import { validateNcm, detectNcmDuplicates, type NcmIssue } from "@/lib/ncm-validator";
 import {
   Dialog,
   DialogContent,
@@ -40,7 +41,6 @@ interface ReviewItem {
   action: MatchAction;
   linkedProductId: string | null;
   linkedProductName: string | null;
-  // Editable fields
   name: string;
   price: number;
   costPrice: number;
@@ -49,6 +49,8 @@ interface ReviewItem {
   barcode: string;
   category: string;
   selected: boolean;
+  ncmErrors: NcmIssue[];
+  ncmWarnings: NcmIssue[];
 }
 
 export function NFeImportDialog({ open, onOpenChange }: Props) {
@@ -124,6 +126,13 @@ export function NFeImportDialog({ open, onOpenChange }: Props) {
 
       const items: ReviewItem[] = data.items.map((item) => {
         const match = findMatch(item);
+        const ncmResult = validateNcm(item.NCM);
+        const ncmDuplicates = detectNcmDuplicates(
+          match?.product.name ?? item.xProd,
+          item.NCM,
+          match?.product.id,
+          existingProducts.map(p => ({ id: p.id, name: p.name, ncm: p.ncm }))
+        );
         return {
           nfeItem: item,
           action: match ? "link" : "create",
@@ -137,6 +146,8 @@ export function NFeImportDialog({ open, onOpenChange }: Props) {
           barcode: item.cEAN === "SEM GTIN" ? "" : item.cEAN,
           category: match?.product.category ?? "",
           selected: true,
+          ncmErrors: ncmResult.errors,
+          ncmWarnings: [...ncmResult.warnings, ...ncmDuplicates],
         };
       });
 
@@ -389,6 +400,27 @@ export function NFeImportDialog({ open, onOpenChange }: Props) {
                                   <span className="text-primary">→ {item.linkedProductName}</span>
                                 )}
                               </div>
+                              {/* NCM Validation Alerts */}
+                              {item.ncmErrors.length > 0 && (
+                                <div className="mt-1 space-y-0.5">
+                                  {item.ncmErrors.map((issue, i) => (
+                                    <div key={i} className="flex items-center gap-1 text-[11px] text-destructive">
+                                      <ShieldAlert className="w-3 h-3 shrink-0" />
+                                      <span>{issue.message}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {item.ncmWarnings.length > 0 && (
+                                <div className="mt-1 space-y-0.5">
+                                  {item.ncmWarnings.map((issue, i) => (
+                                    <div key={i} className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                                      <AlertTriangle className="w-3 h-3 shrink-0" />
+                                      <span>{issue.message}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                             <Button
                               variant="ghost"
