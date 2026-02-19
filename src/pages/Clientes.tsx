@@ -2,6 +2,7 @@ import { Users } from "lucide-react";
 import { CrudPage, type FieldConfig } from "@/components/cadastro/CrudPage";
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from "@/hooks/useClients";
 import { useCallback } from "react";
+import { validateDoc } from "@/lib/cpf-cnpj-validator";
 
 const baseFields: FieldConfig[] = [
   {
@@ -34,7 +35,7 @@ const baseFields: FieldConfig[] = [
   { key: "notes", label: "Observações", type: "textarea", colSpan: 2, showInTable: true },
 ];
 
-function cleanDoc(value: string) {
+function cleanDocStr(value: string) {
   return (value || "").replace(/\D/g, "");
 }
 
@@ -66,14 +67,13 @@ export default function Clientes() {
   }, []);
 
   const onValidate = useCallback((data: Record<string, any>): string | null => {
+    const doc = (data.cpf_cnpj || "").replace(/\D/g, "");
+    if (!doc) return null; // field not required when empty
     const isPJ = data.tipo_pessoa === "pj";
-    const doc = cleanDoc(data.cpf_cnpj);
-    if (isPJ && doc.length !== 14) {
-      return "CNPJ deve ter 14 dígitos";
-    }
-    if (!isPJ && doc.length !== 11) {
-      return "CPF deve ter 11 dígitos";
-    }
+    if (isPJ && doc.length !== 14) return "CNPJ deve ter 14 dígitos";
+    if (!isPJ && doc.length !== 11) return "CPF deve ter 11 dígitos";
+    const result = validateDoc(doc);
+    if (!result.valid) return result.error || "Documento inválido";
     return null;
   }, []);
 

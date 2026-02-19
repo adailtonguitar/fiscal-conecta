@@ -1,6 +1,8 @@
 import { UserCheck } from "lucide-react";
 import { CrudPage, type FieldConfig } from "@/components/cadastro/CrudPage";
 import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee } from "@/hooks/useEmployees";
+import { useCallback } from "react";
+import { validateDoc } from "@/lib/cpf-cnpj-validator";
 
 const fields: FieldConfig[] = [
   { key: "name", label: "Nome Completo", required: true, showInTable: true, colSpan: 2 },
@@ -27,6 +29,14 @@ export default function Funcionarios() {
   const update = useUpdateEmployee();
   const del = useDeleteEmployee();
 
+  const onValidate = useCallback((data: Record<string, any>): string | null => {
+    const cpf = (data.cpf || "").replace(/\D/g, "");
+    if (!cpf) return null;
+    const result = validateDoc(cpf);
+    if (!result.valid) return result.error || "CPF inválido";
+    return null;
+  }, []);
+
   return (
     <CrudPage
       title="Funcionários"
@@ -34,6 +44,7 @@ export default function Funcionarios() {
       data={data}
       isLoading={isLoading}
       fields={fields}
+      onValidate={onValidate}
       onCreate={(d) => create.mutateAsync(d as any)}
       onUpdate={(d) => update.mutateAsync(d as any)}
       onDelete={(id) => del.mutateAsync(id)}
