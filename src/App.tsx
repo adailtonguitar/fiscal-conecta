@@ -28,6 +28,7 @@ const FiscalConfig = lazy(() => import("./pages/FiscalConfig"));
 const FiscalConfigEdit = lazy(() => import("./pages/FiscalConfigEdit"));
 const AssinadorDownload = lazy(() => import("./pages/AssinadorDownload"));
 const AuditLogs = lazy(() => import("./pages/AuditLogs"));
+const CompararXML = lazy(() => import("./pages/CompararXML"));
 const Financeiro = lazy(() => import("./pages/Financeiro"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
@@ -217,6 +218,7 @@ function AppRoutes() {
                     <Route path="/fiscal/config/edit" element={<FiscalConfigEdit />} />
                     <Route path="/fiscal/assinador" element={<AssinadorDownload />} />
                     <Route path="/fiscal/auditoria" element={<AuditLogs />} />
+                    <Route path="/fiscal/comparar-xml" element={<CompararXML />} />
                     <Route path="/financeiro" element={<Financeiro />} />
                     <Route path="/dre" element={<PlanGate feature="hasDre" featureName="DRE"><DRE /></PlanGate>} />
                     <Route path="/fluxo-caixa" element={<PlanGate feature="hasCashFlow" featureName="Fluxo de Caixa Projetado"><FluxoCaixaProjetado /></PlanGate>} />

@@ -96,6 +96,7 @@ const navItems: NavEntry[] = [
   { icon: Receipt, label: "Fiscal", path: "/fiscal" },
   { icon: Shield, label: "Config. Fiscal", path: "/fiscal/config" },
   { icon: ScrollText, label: "Auditoria", path: "/fiscal/auditoria" },
+  { icon: ArrowRightLeft, label: "Comparar XML", path: "/fiscal/comparar-xml" },
   { icon: Download, label: "Assinador Digital", path: "/fiscal/assinador" },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
   { icon: Download, label: "Instalar App", path: "/install" },
