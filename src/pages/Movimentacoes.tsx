@@ -22,6 +22,7 @@ export default function Movimentacoes() {
   const { data: products = [] } = useLocalProducts();
   const [search, setSearch] = useState("");
   const [batchMode, setBatchMode] = useState(false);
+  const [showNewEntry, setShowNewEntry] = useState(false);
   const [movementProduct, setMovementProduct] = useState<LocalProduct | null>(null);
 
   const getProductName = (m: LocalStockMovement) => {
@@ -60,6 +61,10 @@ export default function Movimentacoes() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => setShowNewEntry(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Entrada
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setBatchMode(true)}>
             <ArrowUpDown className="w-4 h-4 mr-2" />
             Movimentação em Lote
@@ -134,6 +139,40 @@ export default function Movimentacoes() {
           </table>
         </div>
       </motion.div>
+
+      {showNewEntry && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md max-h-[80vh] overflow-y-auto space-y-4">
+            <h2 className="text-lg font-bold text-foreground">Selecione o Produto</h2>
+            <input
+              type="text"
+              placeholder="Buscar produto..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+            <div className="space-y-1">
+              {products
+                .filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || (p.sku || '').toLowerCase().includes(search.toLowerCase()))
+                .slice(0, 20)
+                .map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      setMovementProduct(p);
+                      setShowNewEntry(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted/50 text-sm text-foreground flex justify-between items-center"
+                  >
+                    <span>{p.name}</span>
+                    <span className="text-xs text-muted-foreground">Estoque: {p.stock_quantity}</span>
+                  </button>
+                ))}
+            </div>
+            <Button variant="outline" className="w-full" onClick={() => setShowNewEntry(false)}>Cancelar</Button>
+          </div>
+        </div>
+      )}
 
       {movementProduct && (
         <StockMovementDialog
