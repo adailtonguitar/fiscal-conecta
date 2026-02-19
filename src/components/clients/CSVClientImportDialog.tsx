@@ -151,19 +151,38 @@ export function CSVClientImportDialog({ open, onOpenChange }: Props) {
   };
 
   const downloadTemplate = () => {
-    const BOM = "\uFEFF"; // BOM para Excel abrir com acentos corretos
-    const header = "tipo_pessoa;nome;nome_fantasia;cpf_cnpj;inscricao_estadual;email;telefone;telefone2;rua;numero;complemento;bairro;cidade;uf;cep;observacoes";
+    const BOM = "\uFEFF";
+    const sep = "sep=;\n"; // Instrução para Excel usar ; como separador
+    const header = [
+      "TIPO (pf/pj)",
+      "NOME / RAZÃO SOCIAL",
+      "NOME FANTASIA",
+      "CPF / CNPJ",
+      "INSCRIÇÃO ESTADUAL",
+      "E-MAIL",
+      "TELEFONE",
+      "TELEFONE 2",
+      "RUA / LOGRADOURO",
+      "NÚMERO",
+      "COMPLEMENTO",
+      "BAIRRO",
+      "CIDADE",
+      "UF",
+      "CEP",
+      "OBSERVAÇÕES",
+    ].join(";");
     const examples = [
-      "pf;João da Silva;Joãozinho;12345678901;;joao@email.com;(11) 99999-8888;;Rua das Flores;100;Apto 12;Centro;São Paulo;SP;01001000;Cliente fiel",
-      "pj;Comércio ABC Ltda;ABC Materiais;12345678000199;123456789;contato@abc.com.br;(11) 3333-4444;(11) 3333-5555;Av. Paulista;1000;Sala 501;Bela Vista;São Paulo;SP;01310100;Atacado",
-      "pf;Maria Oliveira;;98765432100;;maria@gmail.com;(21) 98888-7777;;Rua do Catete;200;;Catete;Rio de Janeiro;RJ;22220000;",
+      "pf;João da Silva;;123.456.789-01;;joao@email.com;(11) 99999-8888;;Rua das Flores;100;Apto 12;Centro;São Paulo;SP;01001-000;Cliente fiel",
+      "pj;Comércio ABC Ltda;ABC Materiais;12.345.678/0001-99;123456789;contato@abc.com.br;(11) 3333-4444;(11) 3333-5555;Av. Paulista;1000;Sala 501;Bela Vista;São Paulo;SP;01310-100;Atacado",
+      "pf;Maria Oliveira;;987.654.321-00;;maria@gmail.com;(21) 98888-7777;;Rua do Catete;200;;Catete;Rio de Janeiro;RJ;22220-000;",
+      "pf;Carlos Santos;;;;carlos@email.com;(31) 97777-6666;;;;;Belo Horizonte;MG;;Sem endereço completo",
     ];
-    const content = BOM + header + "\n" + examples.join("\n");
+    const content = BOM + sep + header + "\n" + examples.join("\n") + "\n";
     const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "modelo_clientes.csv";
+    a.download = "modelo_importacao_clientes.csv";
     a.click();
     URL.revokeObjectURL(url);
   };
