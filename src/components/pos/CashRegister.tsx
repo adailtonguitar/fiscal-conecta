@@ -26,9 +26,10 @@ type CashSession = Tables<"cash_sessions">;
 interface CashRegisterProps {
   onClose: () => void;
   terminalId?: string;
+  preventClose?: boolean;
 }
 
-export function CashRegister({ onClose, terminalId = "01" }: CashRegisterProps) {
+export function CashRegister({ onClose, terminalId = "01", preventClose = false }: CashRegisterProps) {
   const { user } = useAuth();
   const { companyId } = useCompany();
 
@@ -177,7 +178,7 @@ export function CashRegister({ onClose, terminalId = "01" }: CashRegisterProps) 
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm"
-      onClick={onClose}
+      onClick={preventClose ? undefined : onClose}
     >
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
@@ -196,9 +197,11 @@ export function CashRegister({ onClose, terminalId = "01" }: CashRegisterProps) 
               <p className="text-xs text-muted-foreground">Terminal {session?.terminal_id || "01"}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-            <X className="w-5 h-5" />
-          </button>
+          {!preventClose && (
+            <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         <AnimatePresence mode="wait">
