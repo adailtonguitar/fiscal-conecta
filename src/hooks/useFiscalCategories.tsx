@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "./useCompany";
 import { toast } from "sonner";
+import { logFiscalAudit } from "@/services/FiscalAuditLogger";
 
 export interface FiscalCategory {
   id: string;
@@ -58,6 +59,13 @@ export function useCreateFiscalCategory() {
         .select()
         .single();
       if (error) throw error;
+
+      logFiscalAudit({
+        companyId,
+        action: "fiscal_category_CRIADA",
+        details: { entity_type: "fiscal_category", entity_id: data.id, entity_name: c.name, before: null, after: data },
+      });
+
       return data;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["fiscal_categories"] }); toast.success("Categoria fiscal criada"); },
@@ -67,8 +75,16 @@ export function useCreateFiscalCategory() {
 
 export function useUpdateFiscalCategory() {
   const qc = useQueryClient();
+  const { companyId } = useCompany();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<FiscalCategory> & { id: string }) => {
+      // Fetch current state BEFORE update
+      const { data: before } = await supabase
+        .from("fiscal_categories")
+        .select("*")
+        .eq("id", id)
+        .single();
+
       const { data, error } = await supabase
         .from("fiscal_categories")
         .update(updates as any)
@@ -76,6 +92,15 @@ export function useUpdateFiscalCategory() {
         .select()
         .single();
       if (error) throw error;
+
+      if (companyId) {
+        logFiscalAudit({
+          companyId,
+          action: "fiscal_category_ALTERADA",
+          details: { entity_type: "fiscal_category", entity_id: id, entity_name: data.name, before, after: data },
+        });
+      }
+
       return data;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["fiscal_categories"] }); toast.success("Categoria fiscal atualizada"); },
@@ -85,10 +110,26 @@ export function useUpdateFiscalCategory() {
 
 export function useDeleteFiscalCategory() {
   const qc = useQueryClient();
+  const { companyId } = useCompany();
   return useMutation({
     mutationFn: async (id: string) => {
+      // Fetch current state BEFORE delete
+      const { data: before } = await supabase
+        .from("fiscal_categories")
+        .select("*")
+        .eq("id", id)
+        .single();
+
       const { error } = await supabase.from("fiscal_categories").delete().eq("id", id);
       if (error) throw error;
+
+      if (companyId) {
+        logFiscalAudit({
+          companyId,
+          action: "fiscal_category_EXCLUIDA",
+          details: { entity_type: "fiscal_category", entity_id: id, entity_name: before?.name, before, after: null },
+        });
+      }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["fiscal_categories"] }); toast.success("Categoria fiscal excluída"); },
     onError: (e: Error) => toast.error(`Erro: ${e.message}`),
