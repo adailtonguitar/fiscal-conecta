@@ -217,7 +217,10 @@ export default function Fiscal() {
             <FileSpreadsheet className="w-4 h-4" />
             SPED Fiscal
           </button>
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all">
+          <button
+            onClick={() => toast.info("Para emitir NFC-e, finalize uma venda pelo PDV. O documento fiscal será gerado automaticamente.")}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all"
+          >
             <Send className="w-4 h-4" />
             Emitir NFC-e
           </button>
