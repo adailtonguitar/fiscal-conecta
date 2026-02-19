@@ -3270,6 +3270,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_daily_profit_report: {
+        Args: { p_company_id: string; p_date: string }
+        Returns: {
+          by_payment: Json
+          margin: number
+          profit: number
+          total_cost: number
+          total_revenue: number
+          total_sales: number
+        }[]
+      }
       get_user_company_ids: { Args: never; Returns: string[] }
       has_role: {
         Args: {

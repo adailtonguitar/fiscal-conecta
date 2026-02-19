@@ -77,6 +77,7 @@ const navItems: NavEntry[] = [
   { icon: Percent, label: "Comissões", path: "/comissoes" },
   { icon: ArrowRightLeft, label: "Conciliação Bancária", path: "/conciliacao" },
   { icon: TrendingUp, label: "Painel de Lucro", path: "/painel-lucro" },
+  { icon: TrendingUp, label: "Lucro Diário", path: "/lucro-diario" },
   { icon: AlertTriangleIcon, label: "Alertas Financeiros", path: "/alertas" },
   {
     icon: ClipboardList,
