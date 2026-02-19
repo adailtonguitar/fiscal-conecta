@@ -12,7 +12,16 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Sale } from "@/hooks/useSales";
+
+type DocType = "nfce" | "nfe";
 
 interface NfceItem {
   product_id: string;
@@ -61,6 +70,7 @@ export function NfceEmissionDialog({ sale, open, onOpenChange, onSuccess }: Prop
   const [items, setItems] = useState<NfceItem[]>([]);
   const [customerCpf, setCustomerCpf] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [docType, setDocType] = useState<DocType>("nfce");
   const [emitting, setEmitting] = useState(false);
 
   // Reset state when sale changes
@@ -96,6 +106,8 @@ export function NfceEmissionDialog({ sale, open, onOpenChange, onSuccess }: Prop
     }
     setEmitting(true);
     try {
+      const docLabel = docType === "nfce" ? "NFC-e" : "NF-e";
+      // Both NFC-e and NF-e use the same emission endpoint with doc_type parameter
       const result = await FiscalEmissionService.emitirNfce({
         fiscalDocumentId: sale.id,
         items,
@@ -106,14 +118,14 @@ export function NfceEmissionDialog({ sale, open, onOpenChange, onSuccess }: Prop
       });
 
       if (result?.success || result?.status === "autorizada") {
-        toast.success("NFC-e emitida com sucesso!");
+        toast.success(`${docLabel} emitida com sucesso!`);
         onOpenChange(false);
         onSuccess();
       } else {
-        toast.error(result?.error || "Erro ao emitir NFC-e. Verifique a configuração fiscal.");
+        toast.error(result?.error || `Erro ao emitir ${docLabel}. Verifique a configuração fiscal.`);
       }
     } catch (err: any) {
-      toast.error(err.message || "Erro ao emitir NFC-e");
+      toast.error(err.message || `Erro ao emitir ${docType === "nfce" ? "NFC-e" : "NF-e"}`);
     } finally {
       setEmitting(false);
     }
@@ -123,18 +135,30 @@ export function NfceEmissionDialog({ sale, open, onOpenChange, onSuccess }: Prop
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Emitir NFC-e — Revisão</DialogTitle>
+          <DialogTitle>Emitir Documento Fiscal — Revisão</DialogTitle>
         </DialogHeader>
 
-        {/* Customer info */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Doc type + Customer info */}
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Modelo</label>
+            <Select value={docType} onValueChange={(v) => setDocType(v as DocType)}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="nfce">NFC-e (Consumidor)</SelectItem>
+                <SelectItem value="nfe">NF-e (Completa)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">CPF/CNPJ do Cliente</label>
-            <Input value={customerCpf} onChange={(e) => setCustomerCpf(e.target.value)} placeholder="Opcional" />
+            <Input value={customerCpf} onChange={(e) => setCustomerCpf(e.target.value)} placeholder="Opcional" className="mt-1" />
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">Nome do Cliente</label>
-            <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Opcional" />
+            <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Opcional" className="mt-1" />
           </div>
         </div>
 
@@ -199,7 +223,7 @@ export function NfceEmissionDialog({ sale, open, onOpenChange, onSuccess }: Prop
           </Button>
           <Button onClick={handleEmit} disabled={emitting || items.length === 0}>
             {emitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-            Emitir NFC-e
+            Emitir {docType === "nfce" ? "NFC-e" : "NF-e"}
           </Button>
         </DialogFooter>
       </DialogContent>
