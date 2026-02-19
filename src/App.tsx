@@ -30,6 +30,7 @@ const AssinadorDownload = lazy(() => import("./pages/AssinadorDownload"));
 const AuditLogs = lazy(() => import("./pages/AuditLogs"));
 const CompararXML = lazy(() => import("./pages/CompararXML"));
 const Financeiro = lazy(() => import("./pages/Financeiro"));
+const Producao = lazy(() => import("./pages/Producao"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Revendas = lazy(() => import("./pages/Revendas"));
@@ -239,6 +240,7 @@ function AppRoutes() {
                     <Route path="/estoque/curva-abc" element={<PlanGate feature="hasAbcCurve" featureName="Curva ABC"><CurvaABC /></PlanGate>} />
                     <Route path="/estoque/lotes" element={<Lotes />} />
                     <Route path="/estoque/perdas" element={<Perdas />} />
+                    <Route path="/producao" element={<Producao />} />
                     <Route path="/fidelidade" element={<PlanGate feature="hasLoyalty" featureName="Programa de Fidelidade"><Fidelidade /></PlanGate>} />
                     <Route path="/relatorios-ia" element={<PlanGate feature="hasAiReports" featureName="Relatórios com IA"><RelatoriosIA /></PlanGate>} />
                     <Route path="/etiquetas" element={<Etiquetas />} />
