@@ -398,6 +398,86 @@ export type Database = {
           },
         ]
       }
+      catalogo_diario: {
+        Row: {
+          created_at: string
+          data: string
+          empresa_id: string
+          id: string
+          imagem_url: string | null
+          modelo_escolhido: string | null
+          status: string
+          titulo: string | null
+        }
+        Insert: {
+          created_at?: string
+          data?: string
+          empresa_id: string
+          id?: string
+          imagem_url?: string | null
+          modelo_escolhido?: string | null
+          status?: string
+          titulo?: string | null
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          empresa_id?: string
+          id?: string
+          imagem_url?: string | null
+          modelo_escolhido?: string | null
+          status?: string
+          titulo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalogo_diario_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      catalogo_produtos: {
+        Row: {
+          catalogo_id: string
+          destaque: boolean
+          id: string
+          preco_personalizado: number | null
+          produto_id: string
+        }
+        Insert: {
+          catalogo_id: string
+          destaque?: boolean
+          id?: string
+          preco_personalizado?: number | null
+          produto_id: string
+        }
+        Update: {
+          catalogo_id?: string
+          destaque?: boolean
+          id?: string
+          preco_personalizado?: number | null
+          produto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalogo_produtos_catalogo_id_fkey"
+            columns: ["catalogo_id"]
+            isOneToOne: false
+            referencedRelation: "catalogo_diario"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalogo_produtos_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "hotel_produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address_city: string | null
@@ -632,6 +712,58 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consumo_quarto: {
+        Row: {
+          data: string
+          hospede_id: string | null
+          id: string
+          produto_id: string
+          quantidade: number
+          quarto_id: string
+          valor: number
+        }
+        Insert: {
+          data?: string
+          hospede_id?: string | null
+          id?: string
+          produto_id: string
+          quantidade?: number
+          quarto_id: string
+          valor?: number
+        }
+        Update: {
+          data?: string
+          hospede_id?: string | null
+          id?: string
+          produto_id?: string
+          quantidade?: number
+          quarto_id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consumo_quarto_hospede_id_fkey"
+            columns: ["hospede_id"]
+            isOneToOne: false
+            referencedRelation: "hospedes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consumo_quarto_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "hotel_produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consumo_quarto_quarto_id_fkey"
+            columns: ["quarto_id"]
+            isOneToOne: false
+            referencedRelation: "quartos"
             referencedColumns: ["id"]
           },
         ]
@@ -1226,6 +1358,130 @@ export type Database = {
           {
             foreignKeyName: "fiscal_documents_company_id_fkey"
             columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hospedes: {
+        Row: {
+          cpf: string | null
+          created_at: string
+          empresa_id: string
+          id: string
+          nome: string
+          telefone: string | null
+        }
+        Insert: {
+          cpf?: string | null
+          created_at?: string
+          empresa_id: string
+          id?: string
+          nome: string
+          telefone?: string | null
+        }
+        Update: {
+          cpf?: string | null
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          nome?: string
+          telefone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hospedes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hotel_categorias: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hotel_categorias_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hotel_produtos: {
+        Row: {
+          ativo: boolean
+          categoria_id: string | null
+          created_at: string
+          descricao: string | null
+          empresa_id: string
+          estoque: number
+          horario_fim: string | null
+          horario_inicio: string | null
+          id: string
+          imagem_url: string | null
+          nome: string
+          preco: number
+        }
+        Insert: {
+          ativo?: boolean
+          categoria_id?: string | null
+          created_at?: string
+          descricao?: string | null
+          empresa_id: string
+          estoque?: number
+          horario_fim?: string | null
+          horario_inicio?: string | null
+          id?: string
+          imagem_url?: string | null
+          nome: string
+          preco?: number
+        }
+        Update: {
+          ativo?: boolean
+          categoria_id?: string | null
+          created_at?: string
+          descricao?: string | null
+          empresa_id?: string
+          estoque?: number
+          horario_fim?: string | null
+          horario_inicio?: string | null
+          id?: string
+          imagem_url?: string | null
+          nome?: string
+          preco?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hotel_produtos_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "hotel_categorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hotel_produtos_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
@@ -2374,6 +2630,41 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quartos: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          id: string
+          numero: string
+          status: string
+          valor_diaria: number
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          id?: string
+          numero: string
+          status?: string
+          valor_diaria?: number
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          numero?: string
+          status?: string
+          valor_diaria?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quartos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
