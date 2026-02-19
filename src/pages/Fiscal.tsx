@@ -12,6 +12,8 @@ import {
   RotateCcw,
   Printer,
   Loader2,
+  Download,
+  FileSpreadsheet,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/mock-data";
 import { motion } from "framer-motion";
@@ -125,6 +127,81 @@ export default function Fiscal() {
     rejeitada: docs.filter((d) => d.status === "rejeitada").length,
   };
 
+  // SPED export state
+  const [spedYear, setSpedYear] = useState(new Date().getFullYear());
+  const [spedMonth, setSpedMonth] = useState(new Date().getMonth() + 1);
+  const [spedGenerating, setSpedGenerating] = useState(false);
+  const [spedJobId, setSpedJobId] = useState<string | null>(null);
+  const [spedProgress, setSpedProgress] = useState(0);
+  const [showSpedPanel, setShowSpedPanel] = useState(false);
+
+  // Poll SPED job
+  useEffect(() => {
+    if (!spedJobId) return;
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from("processing_jobs")
+        .select("status, progress, result, error")
+        .eq("id", spedJobId)
+        .single();
+
+      if (!data) return;
+      setSpedProgress(data.progress || 0);
+
+      if (data.status === "completed") {
+        clearInterval(interval);
+        setSpedGenerating(false);
+        setSpedJobId(null);
+        const result = data.result as any;
+        toast.success(`SPED gerado: ${result?.period} — ${result?.docs_count} documentos`);
+        // Download file
+        if (result?.file_path) {
+          const { data: fileData } = await supabase.storage
+            .from("company-backups")
+            .download(result.file_path);
+          if (fileData) {
+            const url = URL.createObjectURL(fileData);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `SPED_${result.period?.replace("/", "_")}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }
+        }
+      } else if (data.status === "failed") {
+        clearInterval(interval);
+        setSpedGenerating(false);
+        setSpedJobId(null);
+        toast.error(`Erro ao gerar SPED: ${data.error || "erro desconhecido"}`);
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [spedJobId]);
+
+  const handleGenerateSped = async () => {
+    setSpedGenerating(true);
+    setSpedProgress(0);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-sped", {
+        body: { year: spedYear, month: spedMonth },
+      });
+      if (error) throw error;
+      if (data?.job_id) {
+        setSpedJobId(data.job_id);
+        toast.info(`Gerando SPED ${data.period}...`);
+      } else if (data?.success) {
+        // Completed synchronously
+        setSpedGenerating(false);
+        toast.success("SPED gerado com sucesso!");
+      } else {
+        throw new Error(data?.error || "Erro desconhecido");
+      }
+    } catch (err: any) {
+      setSpedGenerating(false);
+      toast.error(err?.message || "Erro ao gerar SPED");
+    }
+  };
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
@@ -133,12 +210,72 @@ export default function Fiscal() {
           <p className="text-sm text-muted-foreground mt-1">NFC-e, NF-e e SAT</p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => setShowSpedPanel(!showSpedPanel)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-90 transition-all"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            SPED Fiscal
+          </button>
           <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all">
             <Send className="w-4 h-4" />
             Emitir NFC-e
           </button>
         </div>
       </div>
+
+      {/* SPED Export Panel */}
+      {showSpedPanel && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-xl card-shadow border border-border p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <FileSpreadsheet className="w-5 h-5 text-primary" />
+            <h2 className="text-base font-semibold text-foreground">Exportação SPED Fiscal (EFD ICMS/IPI)</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Gera o arquivo SPED Fiscal com os registros de documentos fiscais, produtos e participantes do período selecionado.
+          </p>
+          <div className="flex flex-wrap items-end gap-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Mês</label>
+              <select value={spedMonth} onChange={(e) => setSpedMonth(Number(e.target.value))}
+                className="px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+                {Array.from({ length: 12 }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>
+                    {new Date(2000, i).toLocaleString("pt-BR", { month: "long" })}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Ano</label>
+              <input type="number" value={spedYear} onChange={(e) => setSpedYear(Number(e.target.value))} min={2020} max={2030}
+                className="w-24 px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+            <button onClick={handleGenerateSped} disabled={spedGenerating}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50">
+              {spedGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Gerando... {spedProgress}%
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  Gerar e Baixar SPED
+                </>
+              )}
+            </button>
+          </div>
+          {spedGenerating && (
+            <div className="mt-3">
+              <div className="w-full bg-muted rounded-full h-2">
+                <div className="bg-primary h-2 rounded-full transition-all duration-500" style={{ width: `${spedProgress}%` }} />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Processando documentos fiscais do período...</p>
+            </div>
+          )}
+        </motion.div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
