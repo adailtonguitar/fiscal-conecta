@@ -468,7 +468,13 @@ export default function PDV() {
   // Block PDV entirely if no cash session is open
   if (!pdv.loadingSession && !pdv.currentSession) {
     return (
-      <div className="flex flex-col h-screen bg-background text-foreground">
+      <div className="flex flex-col h-screen bg-background text-foreground relative">
+        <button
+          onClick={() => navigate("/")}
+          className="absolute top-4 left-4 z-[60] px-4 py-2 rounded-lg bg-destructive text-destructive-foreground font-semibold text-sm hover:opacity-90 transition-opacity shadow-lg"
+        >
+          ← Sair do PDV
+        </button>
         <CashRegister
           terminalId={terminalId}
           preventClose
