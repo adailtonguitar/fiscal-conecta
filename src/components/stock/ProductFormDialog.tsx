@@ -12,8 +12,10 @@ import type { LocalProduct } from "@/hooks/useLocalProducts";
 import { useFiscalCategories } from "@/hooks/useFiscalCategories";
 import { useCompany } from "@/hooks/useCompany";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, Search, Upload, X, Package } from "lucide-react";
+import { Check, Search, Upload, X, Package, AlertTriangle, ShieldAlert, Info } from "lucide-react";
 import { NCM_TABLE } from "@/lib/ncm-table";
+import { validateNcm, detectNcmDuplicates, getNcmDescription, isValidNcmFormat, type NcmIssue } from "@/lib/ncm-validator";
+import { useProducts } from "@/hooks/useProducts";
 import { toast } from "sonner";
 
 interface NCMSuggestion {
@@ -74,7 +76,9 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>((product as any)?.image_url || null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [ncmIssues, setNcmIssues] = useState<{ errors: NcmIssue[]; warnings: NcmIssue[] }>({ errors: [], warnings: [] });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { data: allProducts = [] } = useProducts();
 
   const ncmFiltered = useMemo(() => {
     const q = ncmSearchText.trim().toLowerCase();
@@ -88,6 +92,26 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
     fieldOnChange(value);
     setNcmSearchText(value);
     setShowNcmSuggestions(value.trim().length >= 2);
+    // Run NCM validation
+    runNcmValidation(value);
+  };
+
+  const runNcmValidation = (ncmValue: string) => {
+    if (!ncmValue || ncmValue.trim().length === 0) {
+      setNcmIssues({ errors: [], warnings: [] });
+      return;
+    }
+    const result = validateNcm(ncmValue);
+    const duplicates = detectNcmDuplicates(
+      form.getValues("name"),
+      ncmValue,
+      product?.id,
+      allProducts.map(p => ({ id: p.id, name: p.name, ncm: p.ncm }))
+    );
+    setNcmIssues({
+      errors: result.errors,
+      warnings: [...result.warnings, ...duplicates],
+    });
   };
 
   const selectNCM = (ncm: string) => {
@@ -292,7 +316,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                           <button
                             key={idx}
                             type="button"
-                            onClick={() => selectNCM(s.ncm)}
+                            onClick={() => { selectNCM(s.ncm); runNcmValidation(s.ncm); }}
                             className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent transition-colors border-b border-border last:border-0"
                           >
                             <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
@@ -300,6 +324,33 @@ export function ProductFormDialog({ open, onOpenChange, product }: Props) {
                             <span className="text-muted-foreground text-xs truncate">— {s.description}</span>
                           </button>
                         ))}
+                      </div>
+                    )}
+                    {/* NCM Validation Alerts */}
+                    {ncmIssues.errors.length > 0 && (
+                      <div className="mt-1 space-y-1">
+                        {ncmIssues.errors.map((issue, i) => (
+                          <div key={i} className="flex items-start gap-1.5 text-xs text-destructive bg-destructive/10 rounded px-2 py-1.5">
+                            <ShieldAlert className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                            <span>{issue.message}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {ncmIssues.warnings.length > 0 && (
+                      <div className="mt-1 space-y-1">
+                        {ncmIssues.warnings.map((issue, i) => (
+                          <div key={i} className="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded px-2 py-1.5">
+                            <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                            <span>{issue.message}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {field.value && ncmIssues.errors.length === 0 && ncmIssues.warnings.length === 0 && isValidNcmFormat(field.value) && (
+                      <div className="mt-1 flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+                        <Check className="w-3.5 h-3.5" />
+                        <span>{getNcmDescription(field.value) || "NCM válido"}</span>
                       </div>
                     )}
                     <FormMessage />
