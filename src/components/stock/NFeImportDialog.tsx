@@ -61,7 +61,7 @@ export function NFeImportDialog({ open, onOpenChange }: Props) {
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const { data: existingProducts = [] } = useProducts();
+  const { data: existingProducts = [], isLoading: loadingProducts } = useProducts();
   const createProduct = useCreateProduct();
   const createStockMovement = useCreateStockMovement();
   const { user } = useAuth();
@@ -159,17 +159,29 @@ export function NFeImportDialog({ open, onOpenChange }: Props) {
   };
 
   const handleFile = (file: File) => {
-    if (!file.name.endsWith(".xml")) {
+    if (!file.name.toLowerCase().endsWith(".xml")) {
       toast.error("Selecione um arquivo .xml");
       return;
     }
+
+    if (loadingProducts) {
+      toast.warning("Aguarde o carregamento dos produtos antes de importar...");
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
-      if (text) processXML(text);
+      if (text) {
+        console.log(`[NFeImport] File loaded: ${file.name}, size: ${text.length} chars`);
+        processXML(text);
+      } else {
+        toast.error("Arquivo vazio ou não pôde ser lido");
+      }
     };
-    reader.onerror = () => toast.error("Erro ao ler arquivo");
-    reader.readAsText(file);
+    reader.onerror = () => toast.error("Erro ao ler arquivo. Tente novamente.");
+    // Try UTF-8 first (most common for NF-e)
+    reader.readAsText(file, "UTF-8");
   };
 
   const handleDrop = (e: React.DragEvent) => {
