@@ -5,6 +5,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { isValidNcmFormat, isNcmInOfficialTable, isNcmExpired } from "@/lib/ncm-validator";
+import { validateCstCsosn, type TaxRegime } from "@/lib/cst-csosn-validator";
 
 export interface FiscalValidationItem {
   product_id: string;
@@ -113,33 +114,29 @@ export class FiscalEngine {
    *          Lucro Presumido/Real → CST_ICMS obrigatório
    */
   private static validateRegime(ctx: FiscalValidationContext, item: FiscalValidationItem, errors: FiscalError[]) {
-    if (ctx.companyRegime === "simples_nacional") {
-      if (!item.csosn) {
-        errors.push({
-          rule: "REGIME_CSOSN",
-          product: item.name,
-          message: `Produto "${item.name}": Simples Nacional exige CSOSN`,
-          severity: "error",
-        });
-      }
-      if (item.cst_icms && item.cst_icms !== "00") {
-        errors.push({
-          rule: "REGIME_CST_BLOQUEADO",
-          product: item.name,
-          message: `Produto "${item.name}": Simples Nacional não deve usar CST ICMS`,
-          severity: "error",
-        });
-      }
-    } else {
-      // Lucro Presumido ou Real
-      if (!item.cst_icms) {
-        errors.push({
-          rule: "REGIME_CST",
-          product: item.name,
-          message: `Produto "${item.name}": Regime ${ctx.companyRegime} exige CST ICMS`,
-          severity: "error",
-        });
-      }
+    const result = validateCstCsosn({
+      regime: ctx.companyRegime as TaxRegime,
+      csosn: item.csosn,
+      cstIcms: item.cst_icms,
+      productType: item.product_type,
+    });
+
+    for (const err of result.errors) {
+      errors.push({
+        rule: err.type === "wrong_regime" ? "REGIME_CST_BLOQUEADO" : err.type === "missing" ? "REGIME_CSOSN" : "REGIME_CST",
+        product: item.name,
+        message: `Produto "${item.name}": ${err.message}`,
+        severity: "error",
+      });
+    }
+
+    for (const warn of result.warnings) {
+      errors.push({
+        rule: "REGIME_CST_AVISO",
+        product: item.name,
+        message: `Produto "${item.name}": ${warn.message}`,
+        severity: "warning",
+      });
     }
   }
 

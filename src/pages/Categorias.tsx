@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Tags, FolderTree, Zap } from "lucide-react";
+import { Tags, FolderTree, Zap, AlertTriangle, CheckCircle, Info } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CrudPage, type FieldConfig } from "@/components/cadastro/CrudPage";
 import { Button } from "@/components/ui/button";
@@ -7,27 +7,94 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useProductCategories, useCreateProductCategory, useUpdateProductCategory, useDeleteProductCategory } from "@/hooks/useProductCategories";
 import { useFiscalCategories, useCreateFiscalCategory, useUpdateFiscalCategory, useDeleteFiscalCategory } from "@/hooks/useFiscalCategories";
 import { toast } from "sonner";
+import {
+  validateCstCsosn,
+  getSuggestedCodes,
+  CSOSN_TABLE,
+  CST_ICMS_TABLE,
+  type TaxRegime,
+} from "@/lib/cst-csosn-validator";
 
 const categoryFields: FieldConfig[] = [
   { key: "name", label: "Nome", required: true, showInTable: true },
   { key: "description", label: "Descrição", showInTable: true, colSpan: 2 },
 ];
 
-const fiscalFields: FieldConfig[] = [
+/** Build fiscal fields dynamically based on selected regime */
+function buildFiscalFields(formData: Record<string, any>): FieldConfig[] {
+  const regime = (formData.regime || "simples_nacional") as TaxRegime;
+  const isSN = regime === "simples_nacional";
+  const productType = formData.product_type || "normal";
+
+  // Get suggested codes for the current regime + product type
+  const suggested = getSuggestedCodes(regime, productType);
+
+  const csosnField: FieldConfig = {
+    key: "csosn",
+    label: "CSOSN",
+    required: isSN,
+    type: "select",
+    options: [
+      { value: "", label: "Selecione..." },
+      ...CSOSN_TABLE.map((c) => ({
+        value: c.code,
+        label: `${c.code} — ${c.description}`,
+      })),
+    ],
+    placeholder: isSN ? "Obrigatório para Simples Nacional" : "Não utilizar neste regime",
+  };
+
+  const cstField: FieldConfig = {
+    key: "cst_icms",
+    label: "CST ICMS",
+    required: !isSN,
+    type: "select",
+    options: [
+      { value: "", label: "Selecione..." },
+      ...CST_ICMS_TABLE.map((c) => ({
+        value: c.code,
+        label: `${c.code} — ${c.description}`,
+      })),
+    ],
+    placeholder: !isSN ? "Obrigatório para este regime" : "Não utilizar no Simples Nacional",
+  };
+
+  return [
+    { key: "name", label: "Nome", required: true, showInTable: true },
+    { key: "regime", label: "Regime", required: true, showInTable: true, type: "select", options: [
+      { value: "simples_nacional", label: "Simples Nacional" },
+      { value: "lucro_presumido", label: "Lucro Presumido" },
+      { value: "lucro_real", label: "Lucro Real" },
+    ]},
+    { key: "operation_type", label: "Operação", required: true, showInTable: true, type: "select", options: [
+      { value: "interna", label: "Interna" },
+      { value: "interestadual", label: "Interestadual" },
+    ]},
+    { key: "product_type", label: "Tipo Produto", required: true, showInTable: true, type: "select", options: [
+      { value: "normal", label: "Normal" },
+      { value: "st", label: "Substituição Tributária" },
+    ]},
+    { key: "cfop", label: "CFOP", required: true, showInTable: true },
+    { key: "ncm", label: "NCM" },
+    { key: "cest", label: "CEST" },
+    // Show both fields but mark the correct one as required
+    csosnField,
+    cstField,
+    { key: "icms_rate", label: "Alíq. ICMS %", type: "number" },
+    { key: "icms_st_rate", label: "Alíq. ICMS ST %", type: "number" },
+    { key: "mva", label: "MVA %", type: "number" },
+    { key: "pis_rate", label: "Alíq. PIS %", type: "number" },
+    { key: "cofins_rate", label: "Alíq. COFINS %", type: "number" },
+    { key: "ipi_rate", label: "Alíq. IPI %", type: "number" },
+  ];
+}
+
+// Static fields for table display (all columns)
+const fiscalTableFields: FieldConfig[] = [
   { key: "name", label: "Nome", required: true, showInTable: true },
-  { key: "regime", label: "Regime", required: true, showInTable: true, type: "select", options: [
-    { value: "simples_nacional", label: "Simples Nacional" },
-    { value: "lucro_presumido", label: "Lucro Presumido" },
-    { value: "lucro_real", label: "Lucro Real" },
-  ]},
-  { key: "operation_type", label: "Operação", required: true, showInTable: true, type: "select", options: [
-    { value: "interna", label: "Interna" },
-    { value: "interestadual", label: "Interestadual" },
-  ]},
-  { key: "product_type", label: "Tipo Produto", required: true, showInTable: true, type: "select", options: [
-    { value: "normal", label: "Normal" },
-    { value: "st", label: "Substituição Tributária" },
-  ]},
+  { key: "regime", label: "Regime", required: true, showInTable: true },
+  { key: "operation_type", label: "Operação", required: true, showInTable: true },
+  { key: "product_type", label: "Tipo Produto", required: true, showInTable: true },
   { key: "cfop", label: "CFOP", required: true, showInTable: true },
   { key: "ncm", label: "NCM" },
   { key: "cest", label: "CEST" },
@@ -95,6 +162,28 @@ export default function Categorias() {
     }
   };
 
+  /** Validate CST/CSOSN before saving fiscal category */
+  const handleFiscalValidate = (data: Record<string, any>): string | null => {
+    const regime = data.regime as TaxRegime;
+    const result = validateCstCsosn({
+      regime,
+      csosn: data.csosn,
+      cstIcms: data.cst_icms,
+      productType: data.product_type,
+    });
+
+    if (!result.valid) {
+      return result.errors.map((e) => e.message).join("\n");
+    }
+
+    // Show warnings as toast but don't block
+    if (result.warnings.length > 0) {
+      result.warnings.forEach((w) => toast.warning(w.message));
+    }
+
+    return null;
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <Tabs value={tab} onValueChange={setTab}>
@@ -123,18 +212,24 @@ export default function Categorias() {
         </TabsContent>
 
         <TabsContent value="fiscal">
-          <div className="mb-4">
+          <div className="mb-4 flex items-center gap-3">
             <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)} className="gap-2">
               <Zap className="w-4 h-4" />
               Criar a partir de modelo
             </Button>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Info className="w-3.5 h-3.5" />
+              <span>CST/CSOSN são validados automaticamente conforme o regime tributário</span>
+            </div>
           </div>
           <CrudPage
             title="Categorias Fiscais"
             icon={<Tags className="w-5 h-5" />}
             data={fiscalCats.data ?? []}
             isLoading={fiscalCats.isLoading}
-            fields={fiscalFields}
+            fields={fiscalTableFields}
+            getFields={buildFiscalFields}
+            onValidate={handleFiscalValidate}
             onCreate={(d) => createFiscalCat.mutateAsync(d as any)}
             onUpdate={(d) => updateFiscalCat.mutateAsync(d as any)}
             onDelete={(id) => deleteFiscalCat.mutateAsync(id)}
@@ -152,6 +247,7 @@ export default function Categorias() {
           </DialogHeader>
           <p className="text-sm text-muted-foreground mb-4">
             Selecione um modelo para criar automaticamente com todos os campos preenchidos.
+            Os modelos já utilizam o CST/CSOSN correto para cada regime.
           </p>
           <div className="space-y-2">
             {FISCAL_TEMPLATES.map((t) => {
