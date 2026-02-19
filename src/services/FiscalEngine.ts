@@ -97,6 +97,9 @@ export class FiscalEngine {
 
       // REGRA 8 — NCM típico de ST sem ST configurada
       this.validateStNcmMismatch(ctx, item, warnings);
+
+      // REGRA 9 — Tributação zerada suspeita
+      this.validateZeroTax(ctx, item, warnings);
     }
 
     // REGRA 7 — DIFAL para consumidor final interestadual
@@ -330,6 +333,44 @@ export class FiscalEngine {
         message: `Produto "${item.name}" com NCM típico de ST (${stCheck.description}) mas não configurado como ST`,
         severity: "warning",
       });
+    }
+  }
+
+  /**
+   * REGRA 9: Tributação zerada suspeita — ICMS 0% + PIS 0% + COFINS 0%
+   * pode indicar isenção não configurada corretamente (sonegação acidental).
+   */
+  private static validateZeroTax(
+    ctx: FiscalValidationContext,
+    item: FiscalValidationItem,
+    warnings: FiscalError[]
+  ) {
+    const category = item.fiscal_category_id
+      ? ctx.fiscalCategories.find(c => c.id === item.fiscal_category_id)
+      : null;
+
+    if (!category) return;
+
+    const icms = Number(category.cfop ? (item as any).icms_rate : 0) || 0;
+    const pis = Number((category as any).pis_rate) || 0;
+    const cofins = Number((category as any).cofins_rate) || 0;
+
+    // Only warn if ALL three are zero — legitimate isenção uses specific CST/CSOSN codes
+    if (icms === 0 && pis === 0 && cofins === 0) {
+      // Check if CST/CSOSN indicates explicit isenção (40, 41, 300, 400, etc.)
+      const csosn = item.csosn || category.csosn || "";
+      const cst = item.cst_icms || category.cst_icms || "";
+      const exemptCodes = ["40", "41", "50", "300", "400"];
+      const hasExemptCode = exemptCodes.some(c => csosn === c || cst === c);
+
+      if (!hasExemptCode) {
+        warnings.push({
+          rule: "TRIBUTACAO_ZERADA",
+          product: item.name,
+          message: `Produto "${item.name}": ICMS, PIS e COFINS todos em 0% — verifique se produto realmente possui isenção fiscal`,
+          severity: "warning",
+        });
+      }
     }
   }
 
