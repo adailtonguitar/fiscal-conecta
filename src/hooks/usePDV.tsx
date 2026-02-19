@@ -132,15 +132,21 @@ export function usePDV() {
 
   // Load current cash session — accepts optional terminalId for filtering
   const loadSession = useCallback(async (tid?: string) => {
-    if (!companyId) return;
+    if (!companyId) {
+      setCurrentSession(null);
+      setLoadingSession(false);
+      return;
+    }
     setLoadingSession(true);
     try {
       if (navigator.onLine) {
         const session = await CashSessionService.getCurrentSession(companyId, tid);
         setCurrentSession(session);
+      } else {
+        setCurrentSession(null);
       }
     } catch {
-      // offline — no session data
+      setCurrentSession(null);
     } finally {
       setLoadingSession(false);
     }
