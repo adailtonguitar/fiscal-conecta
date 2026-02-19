@@ -1656,6 +1656,56 @@ export type Database = {
           },
         ]
       }
+      processing_jobs: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          error: string | null
+          id: string
+          params: Json | null
+          progress: number | null
+          result: Json | null
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          error?: string | null
+          id?: string
+          params?: Json | null
+          progress?: number | null
+          result?: Json | null
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          error?: string | null
+          id?: string
+          params?: Json | null
+          progress?: number | null
+          result?: Json | null
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "processing_jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_categories: {
         Row: {
           company_id: string
