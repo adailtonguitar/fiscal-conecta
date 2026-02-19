@@ -21,6 +21,7 @@ export default function Movimentacoes() {
   const { data: movements = [], isLoading } = useLocalStockMovements();
   const { data: products = [] } = useLocalProducts();
   const [search, setSearch] = useState("");
+  const [productSearch, setProductSearch] = useState("");
   const [batchMode, setBatchMode] = useState(false);
   const [showNewEntry, setShowNewEntry] = useState(false);
   const [movementProduct, setMovementProduct] = useState<LocalProduct | null>(null);
@@ -61,7 +62,7 @@ export default function Movimentacoes() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => setShowNewEntry(true)}>
+          <Button size="sm" onClick={() => { setProductSearch(""); setShowNewEntry(true); }}>
             <Plus className="w-4 h-4 mr-2" />
             Nova Entrada
           </Button>
@@ -147,13 +148,13 @@ export default function Movimentacoes() {
             <input
               type="text"
               placeholder="Buscar produto..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
               className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
             <div className="space-y-1">
               {products
-                .filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || (p.sku || '').toLowerCase().includes(search.toLowerCase()))
+                .filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()) || (p.sku || '').toLowerCase().includes(productSearch.toLowerCase()))
                 .slice(0, 20)
                 .map(p => (
                   <button
