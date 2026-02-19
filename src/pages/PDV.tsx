@@ -468,23 +468,14 @@ export default function PDV() {
   // Block PDV entirely if no cash session is open
   if (!pdv.loadingSession && !pdv.currentSession) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-background text-foreground gap-4">
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold">Caixa Fechado</h2>
-          <p className="text-muted-foreground">Abra o caixa para iniciar as operações no PDV.</p>
-        </div>
+      <div className="flex flex-col h-screen bg-background text-foreground">
         <CashRegister
           terminalId={terminalId}
+          preventClose
           onClose={() => {
             pdv.reloadSession(terminalId);
           }}
         />
-        <button
-          onClick={() => navigate("/")}
-          className="mt-4 text-sm text-muted-foreground hover:text-foreground underline"
-        >
-          ← Voltar ao menu
-        </button>
       </div>
     );
   }
