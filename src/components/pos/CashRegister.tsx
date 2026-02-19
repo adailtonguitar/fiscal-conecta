@@ -12,7 +12,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/mock-data";
-import { motion, AnimatePresence } from "framer-motion";
+
 import { CashSessionService } from "@/services";
 import { useAuth } from "@/hooks/useAuth";
 import { useCompany } from "@/hooks/useCompany";
@@ -158,31 +158,23 @@ export function CashRegister({ onClose, terminalId = "01", preventClose = false 
 
   if (loading) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm"
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20"
       >
         <div className="bg-card rounded-2xl border border-border card-shadow p-12 flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <span className="text-sm text-muted-foreground">Carregando caixa...</span>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm"
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20"
       onClick={preventClose ? undefined : onClose}
     >
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
+      <div
         className="bg-card rounded-2xl border border-border card-shadow w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
@@ -204,10 +196,10 @@ export function CashRegister({ onClose, terminalId = "01", preventClose = false 
           )}
         </div>
 
-        <AnimatePresence mode="wait">
+        <>
           {/* Status View */}
           {view === "status" && (
-            <motion.div key="status" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 space-y-4">
+            <div className="p-6 space-y-4">
               <div className={`flex items-center gap-3 p-4 rounded-xl ${isOpen ? "bg-success/10" : "bg-muted"}`}>
                 {isOpen ? (
                   <>
@@ -315,12 +307,12 @@ export function CashRegister({ onClose, terminalId = "01", preventClose = false 
                   Abrir Caixa
                 </button>
               )}
-            </motion.div>
+            </div>
           )}
 
           {/* Open Cash Register */}
           {view === "open" && (
-            <motion.div key="open" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 space-y-4">
+            <div className="p-6 space-y-4">
               <h4 className="text-base font-semibold text-foreground">Abertura de Caixa</h4>
               <div>
                 <label className="text-sm font-medium text-foreground mb-1.5 block">Fundo de Troco (R$)</label>
@@ -346,12 +338,12 @@ export function CashRegister({ onClose, terminalId = "01", preventClose = false 
                   Abrir Caixa
                 </button>
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* Cash Movement */}
           {view === "movement" && (
-            <motion.div key="movement" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 space-y-4">
+            <div className="p-6 space-y-4">
               <h4 className="text-base font-semibold text-foreground">
                 {movementType === "sangria" ? "Sangria" : "Suprimento"}
               </h4>
@@ -389,12 +381,12 @@ export function CashRegister({ onClose, terminalId = "01", preventClose = false 
                   Confirmar
                 </button>
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* Close Cash Register */}
           {view === "close" && (
-            <motion.div key="close" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 space-y-4">
+            <div className="p-6 space-y-4">
               <h4 className="text-base font-semibold text-foreground">Fechamento de Caixa</h4>
               <p className="text-sm text-muted-foreground">Informe os valores conferidos:</p>
 
@@ -462,10 +454,10 @@ export function CashRegister({ onClose, terminalId = "01", preventClose = false 
                   Confirmar Fechamento
                 </button>
               </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
-      </motion.div>
-    </motion.div>
+        </>
+      </div>
+    </div>
   );
 }

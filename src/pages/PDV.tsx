@@ -69,9 +69,7 @@ export default function PDV() {
   const tableEndRef = useRef<HTMLTableRowElement>(null);
   const [saleNumber, setSaleNumber] = useState(() => Number(localStorage.getItem("pdv_sale_number") || "1"));
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [flashItemId, setFlashItemId] = useState<string | null>(null);
   const [selectedCartItemId, setSelectedCartItemId] = useState<string | null>(null);
-  const flashTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -109,13 +107,9 @@ export default function PDV() {
     }
   }, [showTEF, receipt, showCashRegister, showProductList, showShortcuts, showPriceLookup, showLoyaltyClientSelector, showQuickProduct, showSaveQuote, showTerminalPicker, showClientSelector, showReceiveCredit, zeroStockProduct, editingQtyItemId, editingItemDiscountId, editingGlobalDiscount]);
 
-  // Auto-scroll to last item + flash effect
+  // Auto-scroll to last item
   useEffect(() => {
     if (pdv.cartItems.length > 0) {
-      const lastItem = pdv.cartItems[pdv.cartItems.length - 1];
-      setFlashItemId(lastItem.id);
-      if (flashTimeout.current) clearTimeout(flashTimeout.current);
-      flashTimeout.current = setTimeout(() => setFlashItemId(null), 600);
       tableEndRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
     }
   }, [pdv.cartItems.length]);
@@ -566,7 +560,7 @@ export default function PDV() {
             }
           }}
           placeholder="Leia ou digite o código de barras... (ex: 5*789123 para multiplicar)"
-          className="flex-1 px-4 py-3 rounded-lg bg-background border-2 border-border text-foreground text-xl font-mono font-bold focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-muted-foreground/50 placeholder:text-sm placeholder:font-normal"
+          className="flex-1 px-4 py-3 rounded-lg bg-background border-2 border-border text-foreground text-xl font-mono font-bold focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/50 placeholder:text-sm placeholder:font-normal"
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
@@ -594,7 +588,7 @@ export default function PDV() {
                 {pdv.cartItems.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="text-center py-0">
-                      <div className="flex flex-col items-center justify-center py-12 gap-5 animate-fade-in">
+                      <div className="flex flex-col items-center justify-center py-12 gap-5">
                         {logoUrl ? (
                           <img src={logoUrl} alt={companyName || "Logo"} className="h-44 object-contain" />
                         ) : (
@@ -623,11 +617,9 @@ export default function PDV() {
                         key={item.id}
                         ref={isLast ? tableEndRef : undefined}
                         onClick={(e) => { e.stopPropagation(); setSelectedCartItemId(item.id); }}
-                        className={`border-b border-border transition-colors cursor-pointer ${
+                        className={`border-b border-border cursor-pointer ${
                           selectedCartItemId === item.id
                             ? "bg-accent ring-1 ring-primary/40"
-                            : flashItemId === item.id
-                            ? "animate-pdv-flash"
                             : isLast && !selectedCartItemId
                             ? "bg-primary/10 font-bold"
                             : idx % 2 === 0
