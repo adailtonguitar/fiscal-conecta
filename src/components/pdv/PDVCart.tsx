@@ -36,7 +36,7 @@ function LiveClock() {
     return () => clearInterval(interval);
   }, []);
   return (
-    <span className="text-3xl font-bold font-mono text-primary-foreground tracking-wider">
+    <span className="text-3xl font-bold font-mono text-sidebar-foreground tracking-wider">
       {time.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
     </span>
   );
@@ -53,19 +53,19 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
   return (
     <div className="flex flex-col h-full">
       {/* Top info bar: date + clock */}
-      <div className="flex items-center justify-between px-4 py-2 bg-primary border-b border-primary/80">
+      <div className="flex items-center justify-between px-4 py-2 bg-sidebar-background border-b border-border">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-primary-foreground/80 uppercase">Itens:</span>
-            <span className="text-sm font-bold text-primary-foreground font-mono">{items.length}</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase">Itens:</span>
+            <span className="text-sm font-bold text-sidebar-foreground font-mono">{items.length}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-primary-foreground/80 uppercase">Qtd Total:</span>
-            <span className="text-sm font-bold text-primary-foreground font-mono">{totalQuantity}</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase">Qtd Total:</span>
+            <span className="text-sm font-bold text-sidebar-foreground font-mono">{totalQuantity}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-primary-foreground/80 uppercase">Data:</span>
-            <span className="text-sm font-bold text-primary-foreground font-mono">
+            <span className="text-xs font-bold text-muted-foreground uppercase">Data:</span>
+            <span className="text-sm font-bold text-sidebar-foreground font-mono">
               {new Date().toLocaleDateString("pt-BR")}
             </span>
           </div>
@@ -201,8 +201,8 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
         <div className="flex-1 flex flex-col min-w-0">
           <div className="flex-1 overflow-y-auto">
             <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-primary z-10">
-                <tr className="text-primary-foreground text-left">
+              <thead className="sticky top-0 bg-sidebar-background z-10">
+                <tr className="text-sidebar-foreground text-left">
                   <th className="px-3 py-2 font-bold w-12">Item</th>
                   <th className="px-3 py-2 font-bold">Código</th>
                   <th className="px-3 py-2 font-bold">Descrição</th>
@@ -297,7 +297,7 @@ export function PDVCart({ items, onUpdateQuantity, onRemoveItem, onClearCart, on
           </div>
 
           {/* Total bar at bottom of table */}
-          <div className="border-t-2 border-primary bg-card px-4 py-3 flex items-center justify-between">
+          <div className="border-t-2 border-border bg-card px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-muted-foreground uppercase">Itens:</span>
