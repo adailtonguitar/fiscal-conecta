@@ -38,6 +38,7 @@ const Clientes = lazy(() => import("./pages/Clientes"));
 const Fornecedores = lazy(() => import("./pages/Fornecedores"));
 const Funcionarios = lazy(() => import("./pages/Funcionarios"));
 const Transportadoras = lazy(() => import("./pages/Transportadoras"));
+const AdmCartoes = lazy(() => import("./pages/AdmCartoes"));
 const Categorias = lazy(() => import("./pages/Categorias"));
 const Etiquetas = lazy(() => import("./pages/Etiquetas"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -245,6 +246,7 @@ function AppRoutes() {
                     <Route path="/cadastro/fornecedores" element={<Fornecedores />} />
                     <Route path="/cadastro/funcionarios" element={<Funcionarios />} />
                     <Route path="/cadastro/transportadoras" element={<Transportadoras />} />
+                    <Route path="/cadastro/adm-cartoes" element={<AdmCartoes />} />
                     <Route path="/cadastro/categorias" element={<Categorias />} />
                     <Route path="/estoque/movimentacoes" element={<Movimentacoes />} />
                     <Route path="/estoque/inventario" element={<Inventario />} />

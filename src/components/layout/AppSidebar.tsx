@@ -94,6 +94,7 @@ const navItems: NavEntry[] = [
       { icon: Factory, label: "Fornecedores", path: "/cadastro/fornecedores" },
       { icon: UserCheck, label: "Funcionários", path: "/cadastro/funcionarios" },
       { icon: Truck, label: "Transportadoras", path: "/cadastro/transportadoras" },
+      { icon: CreditCard, label: "ADM Cartões", path: "/cadastro/adm-cartoes" },
       { icon: Tags, label: "Categorias", path: "/cadastro/categorias" },
       { icon: Users, label: "Usuários", path: "/usuarios" },
     ],
