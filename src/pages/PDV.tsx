@@ -288,6 +288,22 @@ export default function PDV() {
       }
 
       switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          if (pdv.cartItems.length > 0) {
+            const currentIdx = selectedCartItemId ? pdv.cartItems.findIndex(i => i.id === selectedCartItemId) : -1;
+            const nextIdx = currentIdx < pdv.cartItems.length - 1 ? currentIdx + 1 : 0;
+            setSelectedCartItemId(pdv.cartItems[nextIdx].id);
+          }
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          if (pdv.cartItems.length > 0) {
+            const currentIdx = selectedCartItemId ? pdv.cartItems.findIndex(i => i.id === selectedCartItemId) : 0;
+            const prevIdx = currentIdx > 0 ? currentIdx - 1 : pdv.cartItems.length - 1;
+            setSelectedCartItemId(pdv.cartItems[prevIdx].id);
+          }
+          break;
         case "F1": e.preventDefault(); break;
         case "F2": e.preventDefault(); handleCheckout(); break;
         case "F3": e.preventDefault(); setShowProductList((p) => !p); break;
