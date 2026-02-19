@@ -1214,6 +1214,75 @@ export type Database = {
           },
         ]
       }
+      icms_st_rules: {
+        Row: {
+          cest: string | null
+          company_id: string
+          created_at: string
+          description: string | null
+          fiscal_category_id: string | null
+          icms_internal_rate: number
+          icms_interstate_rate: number
+          id: string
+          is_active: boolean
+          mva_adjusted: number | null
+          mva_original: number
+          ncm: string | null
+          uf_destination: string
+          uf_origin: string
+          updated_at: string
+        }
+        Insert: {
+          cest?: string | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          fiscal_category_id?: string | null
+          icms_internal_rate?: number
+          icms_interstate_rate?: number
+          id?: string
+          is_active?: boolean
+          mva_adjusted?: number | null
+          mva_original?: number
+          ncm?: string | null
+          uf_destination: string
+          uf_origin?: string
+          updated_at?: string
+        }
+        Update: {
+          cest?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          fiscal_category_id?: string | null
+          icms_internal_rate?: number
+          icms_interstate_rate?: number
+          id?: string
+          is_active?: boolean
+          mva_adjusted?: number | null
+          mva_original?: number
+          ncm?: string | null
+          uf_destination?: string
+          uf_origin?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "icms_st_rules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "icms_st_rules_fiscal_category_id_fkey"
+            columns: ["fiscal_category_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_count_items: {
         Row: {
           company_id: string

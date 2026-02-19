@@ -6,6 +6,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isValidNcmFormat, isNcmInOfficialTable, isNcmExpired } from "@/lib/ncm-validator";
 import { validateCstCsosn, type TaxRegime } from "@/lib/cst-csosn-validator";
+import { isTypicalStNcm } from "@/lib/icms-st-engine";
 
 export interface FiscalValidationItem {
   product_id: string;
@@ -93,6 +94,9 @@ export class FiscalEngine {
           severity: "error",
         });
       }
+
+      // REGRA 8 — NCM típico de ST sem ST configurada
+      this.validateStNcmMismatch(ctx, item, warnings);
     }
 
     // REGRA 7 — DIFAL para consumidor final interestadual
@@ -300,6 +304,32 @@ export class FiscalEngine {
           severity: "warning",
         });
       }
+    }
+  }
+
+  /**
+   * REGRA 8: NCM típico de ST mas produto não configurado como ST
+   */
+  private static validateStNcmMismatch(
+    ctx: FiscalValidationContext,
+    item: FiscalValidationItem,
+    warnings: FiscalError[]
+  ) {
+    const stCheck = isTypicalStNcm(item.ncm);
+    if (!stCheck.isTypical) return;
+
+    const category = item.fiscal_category_id
+      ? ctx.fiscalCategories.find(c => c.id === item.fiscal_category_id)
+      : null;
+
+    const productType = category?.product_type || item.product_type;
+    if (productType !== "st") {
+      warnings.push({
+        rule: "NCM_ST_SEM_CONFIG",
+        product: item.name,
+        message: `Produto "${item.name}" com NCM típico de ST (${stCheck.description}) mas não configurado como ST`,
+        severity: "warning",
+      });
     }
   }
 

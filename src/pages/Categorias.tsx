@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { Tags, FolderTree, Zap, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { Tags, FolderTree, Zap, AlertTriangle, CheckCircle, Info, Shield, Calculator, Plus, Trash2, Edit } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CrudPage, type FieldConfig } from "@/components/cadastro/CrudPage";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProductCategories, useCreateProductCategory, useUpdateProductCategory, useDeleteProductCategory } from "@/hooks/useProductCategories";
 import { useFiscalCategories, useCreateFiscalCategory, useUpdateFiscalCategory, useDeleteFiscalCategory } from "@/hooks/useFiscalCategories";
+import { useIcmsStRules, useCreateIcmsStRule, useUpdateIcmsStRule, useDeleteIcmsStRule } from "@/hooks/useIcmsStRules";
 import { toast } from "sonner";
 import {
   validateCstCsosn,
@@ -14,6 +17,7 @@ import {
   CST_ICMS_TABLE,
   type TaxRegime,
 } from "@/lib/cst-csosn-validator";
+import { calculateIcmsSt, calculateAdjustedMva, BRAZILIAN_UFS } from "@/lib/icms-st-engine";
 
 const categoryFields: FieldConfig[] = [
   { key: "name", label: "Nome", required: true, showInTable: true },
@@ -136,6 +140,12 @@ export default function Categorias() {
   const [tab, setTab] = useState("product");
   const [showTemplates, setShowTemplates] = useState(false);
   const [creatingTemplate, setCreatingTemplate] = useState<string | null>(null);
+  const [showStRuleForm, setShowStRuleForm] = useState(false);
+  const [editingStRule, setEditingStRule] = useState<any>(null);
+  const [stForm, setStForm] = useState({
+    uf_origin: "SP", uf_destination: "", mva_original: 0, mva_adjusted: 0,
+    icms_internal_rate: 18, icms_interstate_rate: 12, ncm: "", cest: "", description: "",
+  });
 
   const prodCats = useProductCategories();
   const createProdCat = useCreateProductCategory();
@@ -146,6 +156,11 @@ export default function Categorias() {
   const createFiscalCat = useCreateFiscalCategory();
   const updateFiscalCat = useUpdateFiscalCategory();
   const deleteFiscalCat = useDeleteFiscalCategory();
+
+  const stRules = useIcmsStRules();
+  const createStRule = useCreateIcmsStRule();
+  const updateStRule = useUpdateIcmsStRule();
+  const deleteStRule = useDeleteIcmsStRule();
 
   const existingNames = (fiscalCats.data ?? []).map((c: any) => c.name);
 
@@ -184,6 +199,56 @@ export default function Categorias() {
     return null;
   };
 
+  const resetStForm = () => {
+    setStForm({
+      uf_origin: "SP", uf_destination: "", mva_original: 0, mva_adjusted: 0,
+      icms_internal_rate: 18, icms_interstate_rate: 12, ncm: "", cest: "", description: "",
+    });
+    setEditingStRule(null);
+  };
+
+  const handleSaveStRule = async () => {
+    if (!stForm.uf_destination) {
+      toast.error("UF destino obrigatória");
+      return;
+    }
+    // Auto-calculate adjusted MVA
+    const adjusted = calculateAdjustedMva(stForm.mva_original, stForm.icms_interstate_rate, stForm.icms_internal_rate);
+    const payload = { ...stForm, mva_adjusted: adjusted, is_active: true, fiscal_category_id: null };
+
+    if (editingStRule) {
+      await updateStRule.mutateAsync({ id: editingStRule.id, ...payload });
+    } else {
+      await createStRule.mutateAsync(payload);
+    }
+    resetStForm();
+    setShowStRuleForm(false);
+  };
+
+  const handleEditStRule = (rule: any) => {
+    setStForm({
+      uf_origin: rule.uf_origin, uf_destination: rule.uf_destination,
+      mva_original: rule.mva_original, mva_adjusted: rule.mva_adjusted || 0,
+      icms_internal_rate: rule.icms_internal_rate, icms_interstate_rate: rule.icms_interstate_rate,
+      ncm: rule.ncm || "", cest: rule.cest || "", description: rule.description || "",
+    });
+    setEditingStRule(rule);
+    setShowStRuleForm(true);
+  };
+
+  // Preview ST calculation
+  const stPreview = stForm.mva_original > 0
+    ? calculateIcmsSt({
+        productValue: 100,
+        mvaOriginal: stForm.mva_original,
+        mvaAdjusted: calculateAdjustedMva(stForm.mva_original, stForm.icms_interstate_rate, stForm.icms_internal_rate),
+        icmsOwnRate: stForm.icms_interstate_rate,
+        icmsInternalRate: stForm.icms_internal_rate,
+        icmsInterstateRate: stForm.icms_interstate_rate,
+        isInterstate: stForm.uf_origin !== stForm.uf_destination,
+      })
+    : null;
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <Tabs value={tab} onValueChange={setTab}>
@@ -195,6 +260,10 @@ export default function Categorias() {
           <TabsTrigger value="fiscal" className="gap-2">
             <Tags className="w-4 h-4" />
             Categorias Fiscais
+          </TabsTrigger>
+          <TabsTrigger value="icms_st" className="gap-2">
+            <Shield className="w-4 h-4" />
+            ICMS-ST
           </TabsTrigger>
         </TabsList>
 
@@ -237,7 +306,167 @@ export default function Categorias() {
             nameKey={"name" as any}
           />
         </TabsContent>
+
+        <TabsContent value="icms_st">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Regras ICMS-ST por Estado</h2>
+                <p className="text-sm text-muted-foreground">Cadastre MVA e alíquotas por UF para cálculo automático de ICMS-ST</p>
+              </div>
+              <Button size="sm" onClick={() => { resetStForm(); setShowStRuleForm(true); }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Regra
+              </Button>
+            </div>
+
+            {/* ST Rules Table */}
+            <div className="bg-card rounded-xl border border-border overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase">Origem → Destino</th>
+                      <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase">MVA Original</th>
+                      <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase">MVA Ajustado</th>
+                      <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase">ICMS Interno</th>
+                      <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase">ICMS Inter.</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase">NCM</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase">Descrição</th>
+                      <th className="text-center px-4 py-3 text-xs font-medium text-muted-foreground uppercase">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(stRules.data ?? []).length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                          Nenhuma regra cadastrada. Clique em "Nova Regra" para começar.
+                        </td>
+                      </tr>
+                    ) : (
+                      (stRules.data ?? []).map((rule) => (
+                        <tr key={rule.id} className="border-b border-border last:border-0 hover:bg-muted/50">
+                          <td className="px-4 py-3 font-medium">{rule.uf_origin} → {rule.uf_destination}</td>
+                          <td className="px-4 py-3 text-right font-mono">{rule.mva_original}%</td>
+                          <td className="px-4 py-3 text-right font-mono">{rule.mva_adjusted?.toFixed(2) ?? "—"}%</td>
+                          <td className="px-4 py-3 text-right font-mono">{rule.icms_internal_rate}%</td>
+                          <td className="px-4 py-3 text-right font-mono">{rule.icms_interstate_rate}%</td>
+                          <td className="px-4 py-3 font-mono text-xs">{rule.ncm || "—"}</td>
+                          <td className="px-4 py-3 text-muted-foreground text-xs">{rule.description || "—"}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-center gap-1">
+                              <button onClick={() => handleEditStRule(rule)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => deleteStRule.mutate(rule.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
       </Tabs>
+
+      {/* ST Rule Form Dialog */}
+      <Dialog open={showStRuleForm} onOpenChange={(v) => { if (!v) resetStForm(); setShowStRuleForm(v); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingStRule ? "Editar Regra ICMS-ST" : "Nova Regra ICMS-ST"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">UF Origem</label>
+                <Select value={stForm.uf_origin} onValueChange={(v) => setStForm(f => ({ ...f, uf_origin: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {BRAZILIAN_UFS.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">UF Destino</label>
+                <Select value={stForm.uf_destination} onValueChange={(v) => setStForm(f => ({ ...f, uf_destination: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {BRAZILIAN_UFS.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">MVA Original (%)</label>
+                <Input type="number" step="0.01" value={stForm.mva_original} onChange={(e) => setStForm(f => ({ ...f, mva_original: Number(e.target.value) }))} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">MVA Ajustado (auto)</label>
+                <Input type="number" readOnly className="bg-muted" value={calculateAdjustedMva(stForm.mva_original, stForm.icms_interstate_rate, stForm.icms_internal_rate).toFixed(2)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">ICMS Interno (%)</label>
+                <Input type="number" step="0.01" value={stForm.icms_internal_rate} onChange={(e) => setStForm(f => ({ ...f, icms_internal_rate: Number(e.target.value) }))} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">ICMS Interestadual (%)</label>
+                <Input type="number" step="0.01" value={stForm.icms_interstate_rate} onChange={(e) => setStForm(f => ({ ...f, icms_interstate_rate: Number(e.target.value) }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">NCM (opcional)</label>
+                <Input placeholder="22021000" value={stForm.ncm} onChange={(e) => setStForm(f => ({ ...f, ncm: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">CEST (opcional)</label>
+                <Input placeholder="0300100" value={stForm.cest} onChange={(e) => setStForm(f => ({ ...f, cest: e.target.value }))} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Descrição</label>
+              <Input placeholder="Ex: Refrigerantes SP→MG" value={stForm.description} onChange={(e) => setStForm(f => ({ ...f, description: e.target.value }))} />
+            </div>
+
+            {/* ST Calculation Preview */}
+            {stPreview && (
+              <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-foreground mb-2">
+                  <Calculator className="w-3.5 h-3.5" />
+                  Simulação (produto de R$ 100,00)
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  <span className="text-muted-foreground">BC ICMS próprio:</span>
+                  <span className="text-right font-mono">R$ {stPreview.bcIcmsOwn.toFixed(2)}</span>
+                  <span className="text-muted-foreground">ICMS próprio:</span>
+                  <span className="text-right font-mono">R$ {stPreview.icmsOwn.toFixed(2)}</span>
+                  <span className="text-muted-foreground">MVA utilizado:</span>
+                  <span className="text-right font-mono">{stPreview.mvaUsed.toFixed(2)}%</span>
+                  <span className="text-muted-foreground">BC ICMS-ST:</span>
+                  <span className="text-right font-mono">R$ {stPreview.bcIcmsSt.toFixed(2)}</span>
+                  <span className="text-muted-foreground font-semibold">ICMS-ST:</span>
+                  <span className="text-right font-mono font-semibold text-primary">R$ {stPreview.icmsSt.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={() => { resetStForm(); setShowStRuleForm(false); }}>Cancelar</Button>
+              <Button onClick={handleSaveStRule} disabled={createStRule.isPending || updateStRule.isPending}>
+                {editingStRule ? "Salvar" : "Criar Regra"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Template selector dialog */}
       <Dialog open={showTemplates} onOpenChange={setShowTemplates}>
