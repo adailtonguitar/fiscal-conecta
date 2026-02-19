@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Clock,
   AlertTriangle,
@@ -9,32 +11,36 @@ import {
   Send,
   Settings,
   Eye,
+  RefreshCw,
+  Search,
+  Filter,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { useCompany } from "@/hooks/useCompany";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface AuditEntry {
   id: string;
   action: string;
-  docType: string;
-  docNumber?: string;
-  userName: string;
-  details: string;
-  timestamp: string;
-  severity: "info" | "warning" | "error" | "success";
+  details: Record<string, any> | null;
+  doc_type: string | null;
+  document_id: string | null;
+  user_id: string | null;
+  created_at: string;
+  company_id: string;
 }
 
-const mockAudit: AuditEntry[] = [
-  { id: "1", action: "Emissão NFC-e", docType: "NFC-e", docNumber: "000001", userName: "Maria Santos", details: "NFC-e autorizada com sucesso. Protocolo: 135260200000001", timestamp: "2026-02-09T08:30:15", severity: "success" },
-  { id: "2", action: "Emissão NFC-e", docType: "NFC-e", docNumber: "000002", userName: "Maria Santos", details: "NFC-e autorizada com identificação de consumidor", timestamp: "2026-02-09T09:15:30", severity: "success" },
-  { id: "3", action: "Contingência Ativada", docType: "NFC-e", userName: "Sistema", details: "Contingência automática ativada: falha na comunicação com SEFAZ (timeout 30s)", timestamp: "2026-02-09T09:55:00", severity: "warning" },
-  { id: "4", action: "Emissão Contingência", docType: "NFC-e", docNumber: "000003", userName: "Maria Santos", details: "NFC-e emitida em contingência offline. Pendente transmissão", timestamp: "2026-02-09T10:00:05", severity: "warning" },
-  { id: "5", action: "Contingência Resolvida", docType: "NFC-e", userName: "Sistema", details: "Comunicação com SEFAZ restabelecida. 1 documento pendente de transmissão", timestamp: "2026-02-09T10:15:00", severity: "info" },
-  { id: "6", action: "Emissão NF-e", docType: "NF-e", docNumber: "000001", userName: "Carlos Oliveira", details: "NF-e autorizada. Destinatário: Empresa ABC Ltda", timestamp: "2026-02-09T11:00:20", severity: "success" },
-  { id: "7", action: "Rejeição NF-e", docType: "NF-e", docNumber: "000002", userName: "Carlos Oliveira", details: "Rejeição 539: Duplicidade de NF-e. Verificar numeração", timestamp: "2026-02-09T12:00:45", severity: "error" },
-  { id: "8", action: "Emissão SAT", docType: "SAT", docNumber: "000001", userName: "Ana Lima", details: "CF-e SAT emitido com sucesso via equipamento SAT 900123456", timestamp: "2026-02-09T13:00:10", severity: "success" },
-  { id: "9", action: "Certificado Verificado", docType: "Sistema", userName: "Sistema", details: "Certificado A1 verificado. Validade: 15/06/2027", timestamp: "2026-02-09T06:00:00", severity: "info" },
-  { id: "10", action: "Config Atualizada", docType: "Sistema", userName: "Carlos Oliveira", details: "CSC do NFC-e atualizado. Ambiente: Homologação", timestamp: "2026-02-08T18:00:00", severity: "info" },
-];
+function getSeverity(action: string): "info" | "warning" | "error" | "success" {
+  const lower = action.toLowerCase();
+  if (lower.includes("rejeição") || lower.includes("erro") || lower.includes("falha") || lower.includes("cancelamento")) return "error";
+  if (lower.includes("contingência") || lower.includes("alerta")) return "warning";
+  if (lower.includes("autoriza") || lower.includes("emissão") || lower.includes("sucesso")) return "success";
+  return "info";
+}
 
 const severityConfig = {
   info: { icon: Eye, className: "bg-muted text-muted-foreground", dot: "bg-muted-foreground" },
@@ -43,78 +49,176 @@ const severityConfig = {
   error: { icon: XCircle, className: "bg-destructive/10 text-destructive", dot: "bg-destructive" },
 };
 
-const actionIcons: Record<string, React.ElementType> = {
-  "Emissão NFC-e": Send,
-  "Emissão NF-e": Send,
-  "Emissão SAT": Send,
-  "Emissão Contingência": AlertTriangle,
-  "Rejeição NF-e": XCircle,
-  "Contingência Ativada": AlertTriangle,
-  "Contingência Resolvida": CheckCircle,
-  "Certificado Verificado": Shield,
-  "Config Atualizada": Settings,
-};
+function getActionIcon(action: string): React.ElementType {
+  const lower = action.toLowerCase();
+  if (lower.includes("emissão")) return Send;
+  if (lower.includes("contingência")) return AlertTriangle;
+  if (lower.includes("rejeição") || lower.includes("cancelamento")) return XCircle;
+  if (lower.includes("certificado")) return Shield;
+  if (lower.includes("config") || lower.includes("atualiz")) return Settings;
+  if (lower.includes("resolv")) return CheckCircle;
+  return FileText;
+}
 
 export default function AuditLogs() {
+  const { companyId } = useCompany();
+  const [search, setSearch] = useState("");
+  const [docTypeFilter, setDocTypeFilter] = useState("all");
+
+  const { data: logs = [], isLoading, refetch } = useQuery({
+    queryKey: ["fiscal-audit-logs", companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      const { data, error } = await supabase
+        .from("fiscal_audit_logs")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data as AuditEntry[];
+    },
+    enabled: !!companyId,
+  });
+
+  const filtered = logs.filter((entry) => {
+    const matchesSearch = !search || 
+      entry.action.toLowerCase().includes(search.toLowerCase()) ||
+      JSON.stringify(entry.details).toLowerCase().includes(search.toLowerCase());
+    const matchesType = docTypeFilter === "all" || entry.doc_type === docTypeFilter;
+    return matchesSearch && matchesType;
+  });
+
+  const docTypes = [...new Set(logs.map((l) => l.doc_type).filter(Boolean))];
+
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Logs de Auditoria</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Histórico completo de operações fiscais
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Logs de Auditoria Fiscal</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Histórico completo de operações fiscais ({filtered.length} registros)
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <RefreshCw className="w-4 h-4 mr-1" /> Atualizar
+        </Button>
       </div>
+
+      {/* Filters */}
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por ação ou detalhes..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={docTypeFilter} onValueChange={setDocTypeFilter}>
+          <SelectTrigger className="w-40">
+            <Filter className="w-4 h-4 mr-1" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            {docTypes.map((dt) => (
+              <SelectItem key={dt} value={dt!}>{dt}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Loading */}
+      {isLoading && (
+        <div className="space-y-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex gap-4">
+              <Skeleton className="w-10 h-10 rounded-full" />
+              <Skeleton className="flex-1 h-20 rounded-xl" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Empty */}
+      {!isLoading && filtered.length === 0 && (
+        <div className="text-center py-16 text-muted-foreground">
+          <FileText className="w-12 h-12 mx-auto mb-3 opacity-40" />
+          <p className="font-medium">Nenhum log de auditoria encontrado</p>
+          <p className="text-sm mt-1">Os registros aparecerão conforme operações fiscais forem realizadas.</p>
+        </div>
+      )}
 
       {/* Timeline */}
-      <div className="relative">
-        <div className="absolute left-5 top-0 bottom-0 w-px bg-border" />
+      {!isLoading && filtered.length > 0 && (
+        <div className="relative">
+          <div className="absolute left-5 top-0 bottom-0 w-px bg-border" />
 
-        {mockAudit.map((entry, i) => {
-          const sev = severityConfig[entry.severity];
-          const ActionIcon = actionIcons[entry.action] || FileText;
+          {filtered.map((entry, i) => {
+            const severity = getSeverity(entry.action);
+            const sev = severityConfig[severity];
+            const ActionIcon = getActionIcon(entry.action);
+            const details = entry.details || {};
+            const detailText = details.entity_name
+              ? `${details.entity_type || ""} ${details.entity_name || ""}`.trim()
+              : details.user_email
+                ? `Usuário: ${details.user_email}`
+                : entry.action;
+            const changedFields = details.changed_fields as string[] | undefined;
 
-          return (
-            <motion.div
-              key={entry.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="relative flex gap-4 pb-6 last:pb-0"
-            >
-              {/* Timeline dot */}
-              <div className="relative z-10 flex-shrink-0">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${sev.className}`}>
-                  <ActionIcon className="w-4 h-4" />
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 bg-card rounded-xl border border-border p-4 card-shadow">
-                <div className="flex items-start justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-foreground">{entry.action}</span>
-                    {entry.docNumber && (
-                      <span className="text-xs font-mono text-muted-foreground">#{entry.docNumber}</span>
-                    )}
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">
-                      {entry.docType}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="w-3 h-3" />
-                    {new Date(entry.timestamp).toLocaleString("pt-BR")}
+            return (
+              <motion.div
+                key={entry.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: Math.min(i, 10) * 0.03 }}
+                className="relative flex gap-4 pb-6 last:pb-0"
+              >
+                <div className="relative z-10 flex-shrink-0">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${sev.className}`}>
+                    <ActionIcon className="w-4 h-4" />
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground">{entry.details}</p>
-                <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                  <User className="w-3 h-3" />
-                  {entry.userName}
+
+                <div className="flex-1 bg-card rounded-xl border border-border p-4 card-shadow">
+                  <div className="flex items-start justify-between mb-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-semibold text-foreground">{entry.action}</span>
+                      {entry.doc_type && (
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">
+                          {entry.doc_type}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+                      <Clock className="w-3 h-3" />
+                      {new Date(entry.created_at).toLocaleString("pt-BR")}
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{detailText}</p>
+                  {changedFields && changedFields.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {changedFields.map((f) => (
+                        <span key={f} className="text-xs px-1.5 py-0.5 rounded bg-accent text-accent-foreground">
+                          {f}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {details.user_email && (
+                    <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                      <User className="w-3 h-3" />
+                      {details.user_email}
+                    </div>
+                  )}
                 </div>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
