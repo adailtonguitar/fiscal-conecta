@@ -70,6 +70,7 @@ export default function PDV() {
   const [saleNumber, setSaleNumber] = useState(() => Number(localStorage.getItem("pdv_sale_number") || "1"));
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [flashItemId, setFlashItemId] = useState<string | null>(null);
+  const [selectedCartItemId, setSelectedCartItemId] = useState<string | null>(null);
   const flashTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toggleFullscreen = useCallback(() => {
@@ -299,17 +300,16 @@ export default function PDV() {
         case "F7":
           e.preventDefault();
           if (pdv.cartItems.length > 0) {
-            const lastItem = pdv.cartItems[pdv.cartItems.length - 1];
-            setEditingItemDiscountId(lastItem.id);
+            const targetItem = selectedCartItemId ? pdv.cartItems.find(i => i.id === selectedCartItemId) : pdv.cartItems[pdv.cartItems.length - 1];
+            if (targetItem) setEditingItemDiscountId(targetItem.id);
           }
           break;
         case "F8": e.preventDefault(); setEditingGlobalDiscount(true); break;
         case "F9":
           e.preventDefault();
           if (pdv.cartItems.length > 0) {
-            const lastItem = pdv.cartItems[pdv.cartItems.length - 1];
-            setEditingQtyItemId(lastItem.id);
-            setEditingQtyValue(String(lastItem.quantity));
+            const targetItem = selectedCartItemId ? pdv.cartItems.find(i => i.id === selectedCartItemId) : pdv.cartItems[pdv.cartItems.length - 1];
+            if (targetItem) { setEditingQtyItemId(targetItem.id); setEditingQtyValue(String(targetItem.quantity)); }
           }
           break;
         case "F10": e.preventDefault(); setShowPriceLookup(true); setPriceLookupQuery(""); break;
@@ -318,9 +318,8 @@ export default function PDV() {
         case "Delete":
           e.preventDefault();
           if (pdv.cartItems.length > 0) {
-            const last = pdv.cartItems[pdv.cartItems.length - 1];
-            pdv.removeItem(last.id);
-            toast.info(`${last.name} removido`);
+            const targetItem = selectedCartItemId ? pdv.cartItems.find(i => i.id === selectedCartItemId) : pdv.cartItems[pdv.cartItems.length - 1];
+            if (targetItem) { pdv.removeItem(targetItem.id); setSelectedCartItemId(null); toast.info(`${targetItem.name} removido`); }
           }
           break;
         case "Escape":
@@ -344,7 +343,7 @@ export default function PDV() {
     };
     window.addEventListener("keydown", handler, true);
     return () => window.removeEventListener("keydown", handler, true);
-  }, [showTEF, receipt, showCashRegister, showShortcuts, showPriceLookup, showProductList, handleCheckout, pdv, editingQtyItemId, editingItemDiscountId, editingGlobalDiscount, isFullscreen]);
+  }, [showTEF, receipt, showCashRegister, showShortcuts, showPriceLookup, showProductList, handleCheckout, pdv, editingQtyItemId, editingItemDiscountId, editingGlobalDiscount, isFullscreen, selectedCartItemId]);
 
   const checkLowStockAfterSale = useCallback((soldItems: typeof pdv.cartItems) => {
     const lowStockItems: string[] = [];
@@ -574,15 +573,18 @@ export default function PDV() {
                       <tr
                         key={item.id}
                         ref={isLast ? tableEndRef : undefined}
-                        className={`border-b border-border transition-colors ${
-                          flashItemId === item.id
+                        onClick={(e) => { e.stopPropagation(); setSelectedCartItemId(item.id); }}
+                        className={`border-b border-border transition-colors cursor-pointer ${
+                          selectedCartItemId === item.id
+                            ? "bg-accent ring-1 ring-primary/40"
+                            : flashItemId === item.id
                             ? "animate-pdv-flash"
-                            : isLast
+                            : isLast && !selectedCartItemId
                             ? "bg-primary/10 font-bold"
                             : idx % 2 === 0
                             ? "bg-card"
                             : "bg-muted/30"
-                        }`}
+                        } hover:bg-accent/50`}
                       >
                         <td className="px-2 py-2 text-center text-muted-foreground font-mono">{idx + 1}</td>
                         <td className="px-2 py-2 font-mono text-muted-foreground">{item.sku}</td>
