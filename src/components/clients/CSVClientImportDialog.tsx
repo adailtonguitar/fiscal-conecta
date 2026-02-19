@@ -151,9 +151,15 @@ export function CSVClientImportDialog({ open, onOpenChange }: Props) {
   };
 
   const downloadTemplate = () => {
-    const header = "nome;cpf_cnpj;email;telefone;cidade;uf;rua;numero;bairro;cep;observacoes";
-    const example = "João Silva;12345678901;joao@email.com;11999998888;São Paulo;SP;Rua Exemplo;100;Centro;01001000;Cliente VIP";
-    const blob = new Blob([header + "\n" + example], { type: "text/csv;charset=utf-8;" });
+    const BOM = "\uFEFF"; // BOM para Excel abrir com acentos corretos
+    const header = "tipo_pessoa;nome;nome_fantasia;cpf_cnpj;inscricao_estadual;email;telefone;telefone2;rua;numero;complemento;bairro;cidade;uf;cep;observacoes";
+    const examples = [
+      "pf;João da Silva;Joãozinho;12345678901;;joao@email.com;(11) 99999-8888;;Rua das Flores;100;Apto 12;Centro;São Paulo;SP;01001000;Cliente fiel",
+      "pj;Comércio ABC Ltda;ABC Materiais;12345678000199;123456789;contato@abc.com.br;(11) 3333-4444;(11) 3333-5555;Av. Paulista;1000;Sala 501;Bela Vista;São Paulo;SP;01310100;Atacado",
+      "pf;Maria Oliveira;;98765432100;;maria@gmail.com;(21) 98888-7777;;Rua do Catete;200;;Catete;Rio de Janeiro;RJ;22220000;",
+    ];
+    const content = BOM + header + "\n" + examples.join("\n");
+    const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
