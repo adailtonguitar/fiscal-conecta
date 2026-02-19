@@ -472,6 +472,8 @@ export default function PDV() {
         <CashRegister
           terminalId={terminalId}
           preventClose
+          initialSession={null}
+          skipInitialLoad
           onClose={() => {
             pdv.reloadSession(terminalId);
           }}

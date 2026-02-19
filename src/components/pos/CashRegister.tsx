@@ -27,15 +27,19 @@ interface CashRegisterProps {
   onClose: () => void;
   terminalId?: string;
   preventClose?: boolean;
+  /** Pass existing session to skip the initial fetch */
+  initialSession?: CashSession | null;
+  /** If true, skip the initial load (session already known) */
+  skipInitialLoad?: boolean;
 }
 
-export function CashRegister({ onClose, terminalId = "01", preventClose = false }: CashRegisterProps) {
+export function CashRegister({ onClose, terminalId = "01", preventClose = false, initialSession, skipInitialLoad = false }: CashRegisterProps) {
   const { user } = useAuth();
   const { companyId } = useCompany();
 
   const [view, setView] = useState<CashView>("status");
-  const [session, setSession] = useState<CashSession | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<CashSession | null>(initialSession ?? null);
+  const [loading, setLoading] = useState(!skipInitialLoad);
   const [submitting, setSubmitting] = useState(false);
 
   // Form states
@@ -63,8 +67,10 @@ export function CashRegister({ onClose, terminalId = "01", preventClose = false 
   }, [companyId, terminalId]);
 
   useEffect(() => {
-    loadSession();
-  }, [loadSession]);
+    if (!skipInitialLoad) {
+      loadSession();
+    }
+  }, [loadSession, skipInitialLoad]);
 
   const isOpen = session?.status === "aberto";
 
