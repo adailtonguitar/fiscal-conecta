@@ -69,7 +69,16 @@ const PedidosCompra = lazy(() => import("./pages/PedidosCompra"));
 const Terminais = lazy(() => import("./pages/Terminais"));
 const Admin = lazy(() => import("./pages/Admin"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 min — avoid refetch on every mount
+      gcTime: 10 * 60 * 1000,   // 10 min cache retention
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const PageSpinner = () => (
   <div className="flex items-center justify-center h-screen bg-background">
