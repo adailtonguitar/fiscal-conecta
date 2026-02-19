@@ -15,6 +15,7 @@ const schema = z.object({
   type: z.enum(["entrada", "saida", "ajuste"]),
   quantity: z.coerce.number().min(0.01, "Quantidade inválida"),
   unit_cost: z.coerce.number().min(0).optional(),
+  new_price: z.coerce.number().min(0).optional(),
   reason: z.string().trim().max(500).optional(),
   reference: z.string().trim().max(100).optional(),
 });
@@ -42,6 +43,7 @@ export function StockMovementDialog({ open, onOpenChange, product }: Props) {
       type: "entrada",
       quantity: 0,
       unit_cost: 0,
+      new_price: product.price ?? 0,
       reason: "",
       reference: "",
     },
@@ -55,6 +57,7 @@ export function StockMovementDialog({ open, onOpenChange, product }: Props) {
       type: data.type,
       quantity: data.quantity,
       unit_cost: data.unit_cost,
+      new_price: data.new_price,
       reason: data.reason,
       reference: data.reference,
     });
@@ -99,13 +102,23 @@ export function StockMovementDialog({ open, onOpenChange, product }: Props) {
             )} />
 
             {selectedType === "entrada" && (
-              <FormField control={form.control} name="unit_cost" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Custo Unitário (opcional)</FormLabel>
-                  <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              <>
+                <FormField control={form.control} name="unit_cost" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Custo Unitário (opcional)</FormLabel>
+                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="new_price" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preço de Venda (opcional)</FormLabel>
+                    <FormControl><Input type="number" step="0.01" placeholder={String(product.price ?? 0)} {...field} /></FormControl>
+                    <p className="text-xs text-muted-foreground">Atual: R$ {(product.price ?? 0).toFixed(2)}</p>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </>
             )}
 
             <FormField control={form.control} name="reference" render={({ field }) => (

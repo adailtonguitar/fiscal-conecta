@@ -56,6 +56,7 @@ export function useRegisterLocalStockMovement() {
       type: "entrada" | "saida" | "ajuste" | "venda" | "devolucao";
       quantity: number;
       unit_cost?: number;
+      new_price?: number;
       reason?: string;
       reference?: string;
     }) => {
@@ -106,10 +107,15 @@ export function useRegisterLocalStockMovement() {
 
       if (result.error) throw new Error(result.error);
 
-      // Update product stock locally
-      await DataLayer.update("products", input.product_id, {
-        stock_quantity: newStock,
-      });
+      // Update product stock and optionally price/cost
+      const updateFields: Record<string, unknown> = { stock_quantity: newStock };
+      if (input.unit_cost && input.unit_cost > 0) {
+        updateFields.cost_price = input.unit_cost;
+      }
+      if (input.new_price && input.new_price > 0) {
+        updateFields.price = input.new_price;
+      }
+      await DataLayer.update("products", input.product_id, updateFields);
 
       return result.data!;
     },
