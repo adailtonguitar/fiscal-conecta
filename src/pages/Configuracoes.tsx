@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Download, Clock, HardDrive, Percent, Save, Loader2, Crown, Check, ArrowRight, MessageCircle, Pencil } from "lucide-react";
+import { Download, Clock, HardDrive, Percent, Save, Loader2, Crown, Check, ArrowRight, MessageCircle, Pencil, Calculator, Send, Mail } from "lucide-react";
 import { TEFConfigSection } from "@/components/settings/TEFConfigSection";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -326,6 +326,184 @@ function MyPlanSection() {
   );
 }
 
+function AccountantSection() {
+  const { role } = usePermissions();
+  const { companyId } = useCompany();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [crc, setCrc] = useState("");
+  const [autoSend, setAutoSend] = useState(false);
+  const [sendDay, setSendDay] = useState(5);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [hasSaved, setHasSaved] = useState(false);
+
+  useEffect(() => {
+    if (!companyId) return;
+    const load = async () => {
+      const { data } = await supabase.from("companies").select("accountant_name, accountant_email, accountant_phone, accountant_crc, accountant_auto_send, accountant_send_day").eq("id", companyId).single();
+      if (data) {
+        setName((data as any).accountant_name || "");
+        setEmail((data as any).accountant_email || "");
+        setPhone((data as any).accountant_phone || "");
+        setCrc((data as any).accountant_crc || "");
+        setAutoSend((data as any).accountant_auto_send || false);
+        setSendDay((data as any).accountant_send_day || 5);
+        setHasSaved(!!(data as any).accountant_email);
+      }
+      setLoading(false);
+    };
+    load();
+  }, [companyId]);
+
+  const handleSave = async () => {
+    if (!companyId) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("companies").update({
+        accountant_name: name || null,
+        accountant_email: email || null,
+        accountant_phone: phone || null,
+        accountant_crc: crc || null,
+        accountant_auto_send: autoSend,
+        accountant_send_day: sendDay,
+      } as any).eq("id", companyId);
+      if (error) throw error;
+      setHasSaved(!!email);
+      setEditing(false);
+      toast.success("Dados do contador salvos!");
+    } catch {
+      toast.error("Erro ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSendReport = async () => {
+    if (!email) { toast.error("Configure o e-mail do contador primeiro"); return; }
+    setSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-accountant-report", { body: { email } });
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(`Relatório enviado para ${data.sent_to} (${data.period})`);
+      } else {
+        toast.error(data?.error || "Erro ao enviar relatório");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao enviar relatório");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (role !== "admin" && role !== "gerente") return null;
+
+  const isReadOnly = hasSaved && !editing;
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden">
+      <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+        <Calculator className="w-4 h-4 text-primary" />
+        <h2 className="text-base font-semibold text-foreground">Integração com Contador</h2>
+      </div>
+      <div className="p-5 space-y-4">
+        <p className="text-sm text-muted-foreground">Configure os dados do seu contador para envio automático de relatórios fiscais mensais.</p>
+        {loading ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Nome do Contador</label>
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: João Silva" disabled={isReadOnly}
+                  className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-60 disabled:cursor-not-allowed" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">E-mail do Contador *</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contador@exemplo.com" disabled={isReadOnly}
+                  className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-60 disabled:cursor-not-allowed" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Telefone</label>
+                <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(11) 99999-9999" disabled={isReadOnly}
+                  className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-60 disabled:cursor-not-allowed" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">CRC</label>
+                <input type="text" value={crc} onChange={(e) => setCrc(e.target.value)} placeholder="CRC-SP 123456" disabled={isReadOnly}
+                  className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:opacity-60 disabled:cursor-not-allowed" />
+              </div>
+            </div>
+
+            {!isReadOnly && (
+              <div className="flex items-center gap-4 pt-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={autoSend} onChange={(e) => setAutoSend(e.target.checked)}
+                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20" />
+                  <span className="text-sm text-foreground">Envio automático mensal</span>
+                </label>
+                {autoSend && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Dia</span>
+                    <input type="number" min={1} max={28} value={sendDay} onChange={(e) => setSendDay(Number(e.target.value))}
+                      className="w-16 px-2 py-1.5 rounded-lg bg-background border border-border text-sm font-mono text-center focus:outline-none focus:ring-1 focus:ring-primary/40" />
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex gap-3 flex-wrap pt-2">
+              {isReadOnly ? (
+                <>
+                  <button onClick={() => setEditing(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-90 transition-all">
+                    <Pencil className="w-4 h-4" /> Editar
+                  </button>
+                  <button onClick={handleSendReport} disabled={sending}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50">
+                    {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    {sending ? "Enviando..." : "Enviar Relatório Agora"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={handleSave} disabled={saving || !email}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50">
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Salvar
+                  </button>
+                  {hasSaved && (
+                    <button onClick={() => setEditing(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-muted text-muted-foreground text-sm font-medium hover:opacity-90 transition-all">
+                      Cancelar
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+
+            {hasSaved && isReadOnly && (
+              <div className="flex items-center gap-2 pt-1">
+                <Mail className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">
+                  Relatório fiscal mensal será enviado para <strong>{email}</strong>
+                  {autoSend ? ` automaticamente no dia ${sendDay} de cada mês` : " quando você clicar em enviar"}
+                </span>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
 export default function Configuracoes() {
   const [exporting, setExporting] = useState(false);
 
@@ -381,6 +559,9 @@ export default function Configuracoes() {
 
       {/* TEF Config */}
       <TEFConfigSection />
+
+      {/* Accountant Integration */}
+      <AccountantSection />
 
       {/* Backup / Export */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden">

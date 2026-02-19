@@ -492,6 +492,12 @@ export type Database = {
       }
       companies: {
         Row: {
+          accountant_auto_send: boolean | null
+          accountant_crc: string | null
+          accountant_email: string | null
+          accountant_name: string | null
+          accountant_phone: string | null
+          accountant_send_day: number | null
           address_city: string | null
           address_complement: string | null
           address_ibge_code: string | null
@@ -522,6 +528,12 @@ export type Database = {
           whatsapp_support: string | null
         }
         Insert: {
+          accountant_auto_send?: boolean | null
+          accountant_crc?: string | null
+          accountant_email?: string | null
+          accountant_name?: string | null
+          accountant_phone?: string | null
+          accountant_send_day?: number | null
           address_city?: string | null
           address_complement?: string | null
           address_ibge_code?: string | null
@@ -552,6 +564,12 @@ export type Database = {
           whatsapp_support?: string | null
         }
         Update: {
+          accountant_auto_send?: boolean | null
+          accountant_crc?: string | null
+          accountant_email?: string | null
+          accountant_name?: string | null
+          accountant_phone?: string | null
+          accountant_send_day?: number | null
           address_city?: string | null
           address_complement?: string | null
           address_ibge_code?: string | null
