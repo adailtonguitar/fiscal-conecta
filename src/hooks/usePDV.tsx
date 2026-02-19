@@ -83,11 +83,27 @@ export function usePDV() {
 
   const total = Math.max(0, subtotal - globalDiscountValue - promoSavings);
 
-  // Load products from local SQLite (offline-first)
+  // Load products — cache in sessionStorage for instant re-mount
   const loadProducts = useCallback(async () => {
     if (!companyId) return;
-    setLoadingProducts(true);
-    // 1. Try local SQLite first (only on native platforms)
+
+    // 1. Instant: load from sessionStorage cache first
+    const cacheKey = `pdv_products_${companyId}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached) as PDVProduct[];
+        if (parsed.length > 0) {
+          setProducts(parsed);
+          setLoadingProducts(false);
+          // Continue to background refresh below
+        }
+      } catch { /* ignore corrupt cache */ }
+    } else {
+      setLoadingProducts(true);
+    }
+
+    // 2. Try local SQLite (only on native platforms)
     if (isNativePlatform()) {
       try {
         const result = await DataLayer.raw<PDVProduct>(
@@ -97,6 +113,7 @@ export function usePDV() {
         );
         if (!result.error && result.data.length > 0) {
           setProducts(result.data);
+          sessionStorage.setItem(cacheKey, JSON.stringify(result.data));
           setLoadingProducts(false);
           return;
         }
@@ -105,7 +122,7 @@ export function usePDV() {
       }
     }
 
-    // 2. Load from Supabase (primary source for web)
+    // 3. Load from Supabase (primary source for web)
     try {
       const { data, error } = await supabase
         .from("products")
@@ -116,6 +133,7 @@ export function usePDV() {
 
       if (!error && data) {
         setProducts(data as PDVProduct[]);
+        sessionStorage.setItem(cacheKey, JSON.stringify(data));
       } else {
         console.error("[PDV] Erro ao carregar produtos:", error?.message);
       }
