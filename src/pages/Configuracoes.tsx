@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Download, Clock, HardDrive, Percent, Save, Loader2, Crown, Check, ArrowRight, MessageCircle, Pencil, Calculator, Send, Mail } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Download, Upload, Clock, HardDrive, Percent, Save, Loader2, Crown, Check, ArrowRight, MessageCircle, Pencil, Calculator, Send, Mail } from "lucide-react";
 import { TEFConfigSection } from "@/components/settings/TEFConfigSection";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -506,6 +506,8 @@ function AccountantSection() {
 
 export default function Configuracoes() {
   const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
     setExporting(true);
@@ -541,6 +543,68 @@ export default function Configuracoes() {
     } catch { toast.error("Erro ao baixar backup"); } finally { setExporting(false); }
   };
 
+  const handleImportBackup = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    if (!file.name.endsWith(".json")) {
+      toast.error("Selecione um arquivo .json válido");
+      return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error("Arquivo muito grande (máx. 50MB)");
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const text = await file.text();
+      let backup: any;
+      try {
+        backup = JSON.parse(text);
+      } catch {
+        toast.error("Arquivo JSON inválido");
+        setImporting(false);
+        return;
+      }
+
+      if (!backup.version || !backup.data) {
+        toast.error("Este arquivo não parece ser um backup válido do sistema");
+        setImporting(false);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("import-company-data", {
+        body: { backup },
+      });
+
+      if (error) {
+        toast.error("Erro ao importar: " + error.message);
+        return;
+      }
+
+      if (data?.success) {
+        const totalImported = data.total_imported || 0;
+        const totalErrors = data.total_errors || 0;
+        if (totalErrors > 0) {
+          toast.warning(`Importação concluída: ${totalImported} registros importados, ${totalErrors} erros`);
+        } else {
+          toast.success(`Backup restaurado com sucesso! ${totalImported} registros importados.`);
+        }
+      } else {
+        toast.error(data?.error || "Erro ao importar backup");
+      }
+    } catch {
+      toast.error("Erro ao processar arquivo de backup");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6 max-w-3xl mx-auto">
       <div>
@@ -570,15 +634,43 @@ export default function Configuracoes() {
           <h2 className="text-base font-semibold text-foreground">Backup & Exportação</h2>
         </div>
         <div className="p-5 space-y-4">
-          <p className="text-sm text-muted-foreground">Exporte todos os dados da empresa em formato JSON.</p>
+          <p className="text-sm text-muted-foreground">Exporte ou restaure todos os dados da empresa em formato JSON.</p>
           <div className="flex gap-3 flex-wrap">
-            <button onClick={handleExport} disabled={exporting} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50">
+            <button onClick={handleExport} disabled={exporting || importing} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50">
               <Clock className={`w-4 h-4 ${exporting ? "animate-spin" : ""}`} />
               {exporting ? "Exportando..." : "Salvar Backup no Cloud"}
             </button>
-            <button onClick={handleDownloadExport} disabled={exporting} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50">
+            <button onClick={handleDownloadExport} disabled={exporting || importing} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50">
               <Download className="w-4 h-4" />
               Baixar Backup (JSON)
+            </button>
+          </div>
+
+          {/* Restore section */}
+          <div className="border-t border-border pt-4 mt-4">
+            <h3 className="text-sm font-semibold text-foreground mb-2">Restaurar Backup</h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              Faça upload de um arquivo <strong>.json</strong> exportado anteriormente pelo sistema. Os dados serão importados sem sobrescrever registros existentes.
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImportBackup}
+              className="hidden"
+              id="backup-file-input"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importing || exporting}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50"
+            >
+              {importing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4" />
+              )}
+              {importing ? "Importando..." : "Restaurar Backup (JSON)"}
             </button>
           </div>
         </div>
