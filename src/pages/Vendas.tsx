@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { FileText, RefreshCw, RotateCcw, Loader2 } from "lucide-react";
+import { FileText, RefreshCw, RotateCcw, Loader2, Send } from "lucide-react";
 import { formatCurrency } from "@/lib/mock-data";
 import { motion } from "framer-motion";
 import { useSales, type Sale } from "@/hooks/useSales";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTEFConfig } from "@/hooks/useTEFConfig";
 import { MercadoPagoTEFService } from "@/services/MercadoPagoTEFService";
+import { FiscalEmissionService } from "@/services/FiscalEmissionService";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -32,6 +33,7 @@ export default function Vendas() {
   const { data: sales = [], isLoading, refetch } = useSales(100);
   const { config } = useTEFConfig();
   const [refundingSaleId, setRefundingSaleId] = useState<string | null>(null);
+  const [emittingSaleId, setEmittingSaleId] = useState<string | null>(null);
   const [confirmRefund, setConfirmRefund] = useState<{ saleId: string; paymentId: string; amount: number } | null>(null);
 
   const getTefPayments = (sale: Sale) => {
@@ -61,6 +63,47 @@ export default function Vendas() {
       toast.error(result.errorMessage || "Erro ao estornar");
     }
     setRefundingSaleId(null);
+  };
+
+  const handleEmitNfce = async (sale: Sale) => {
+    setEmittingSaleId(sale.id);
+    try {
+      const items = Array.isArray(sale.items_json)
+        ? sale.items_json
+        : sale.items_json
+        ? JSON.parse(String(sale.items_json))
+        : [];
+
+      const mappedItems = (items as any[]).map((item: any) => ({
+        product_id: item.product_id || item.id || "",
+        name: item.name || "Produto",
+        sku: item.sku || item.barcode || "",
+        quantity: item.quantity || 1,
+        unit_price: item.price || item.unit_price || 0,
+        unit: item.unit || "UN",
+        ncm: item.ncm || "",
+      }));
+
+      const result = await FiscalEmissionService.emitirNfce({
+        fiscalDocumentId: sale.id,
+        items: mappedItems,
+        total: sale.total_value,
+        paymentMethod: sale.payment_method || "dinheiro",
+        customerCpf: sale.customer_cpf_cnpj || undefined,
+        customerName: sale.customer_name || undefined,
+      });
+
+      if (result?.success || result?.status === "autorizada") {
+        toast.success("NFC-e emitida com sucesso!");
+        refetch();
+      } else {
+        toast.error(result?.error || "Erro ao emitir NFC-e. Verifique a configuração fiscal.");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao emitir NFC-e");
+    } finally {
+      setEmittingSaleId(null);
+    }
   };
 
   return (
@@ -174,9 +217,23 @@ export default function Vendas() {
                             NFC-e Emitida
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-warning/10 text-warning">
-                            Pendente NFC-e
-                          </span>
+                          <>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-warning/10 text-warning">
+                              Pendente NFC-e
+                            </span>
+                            <button
+                              disabled={emittingSaleId === sale.id}
+                              onClick={(e) => { e.stopPropagation(); handleEmitNfce(sale); }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary text-primary-foreground text-[10px] font-medium hover:opacity-90 transition-all disabled:opacity-50"
+                            >
+                              {emittingSaleId === sale.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Send className="w-3 h-3" />
+                              )}
+                              Emitir NFC-e
+                            </button>
+                          </>
                         )
                       )}
                     </div>
