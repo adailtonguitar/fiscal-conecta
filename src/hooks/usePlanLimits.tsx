@@ -1,4 +1,5 @@
 import { useSubscription } from "@/hooks/useSubscription";
+import { useAdminRole } from "@/hooks/useAdminRole";
 
 export interface PlanLimits {
   maxTerminals: number;
@@ -59,11 +60,15 @@ const TRIAL_LIMITS = PROFISSIONAL_LIMITS;
 
 export function usePlanLimits() {
   const { subscribed, planKey, trialActive, loading } = useSubscription();
+  const { isSuperAdmin, loading: adminLoading } = useAdminRole();
 
   let limits: PlanLimits;
 
-  if (loading) {
+  if (loading || adminLoading) {
     // While loading, give full access to avoid flickering
+    limits = PROFISSIONAL_LIMITS;
+  } else if (isSuperAdmin) {
+    // Super admin always gets full access
     limits = PROFISSIONAL_LIMITS;
   } else if (trialActive) {
     limits = TRIAL_LIMITS;
@@ -74,7 +79,7 @@ export function usePlanLimits() {
     limits = ESSENCIAL_LIMITS;
   }
 
-  const isProfissional = planKey === "profissional" || trialActive;
+  const isProfissional = isSuperAdmin || planKey === "profissional" || trialActive;
 
   const canAccessFeature = (feature: keyof PlanLimits): boolean => {
     const value = limits[feature];
