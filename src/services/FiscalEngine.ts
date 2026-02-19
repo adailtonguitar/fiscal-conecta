@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { isValidNcmFormat, isNcmInOfficialTable, isNcmExpired } from "@/lib/ncm-validator";
 import { validateCstCsosn, type TaxRegime } from "@/lib/cst-csosn-validator";
 import { isTypicalStNcm } from "@/lib/icms-st-engine";
+import { isValidCpf, isValidCnpj } from "@/lib/cpf-cnpj-validator";
 
 export interface FiscalValidationItem {
   product_id: string;
@@ -29,6 +30,8 @@ export interface FiscalValidationContext {
   companyUf: string;
   clientUf?: string;
   clientType?: "pf" | "pj"; // pessoa física ou jurídica
+  clientCpfCnpj?: string;
+  clientName?: string;
   modoSeguro: boolean;
   items: FiscalValidationItem[];
   fiscalCategories: Array<{
@@ -100,7 +103,13 @@ export class FiscalEngine {
 
       // REGRA 9 — Tributação zerada suspeita
       this.validateZeroTax(ctx, item, warnings);
+
+      // REGRA 11 — Alíquota coerente com operação
+      this.validateAliquotaCoherence(ctx, item, errors, warnings);
     }
+
+    // REGRA 10 — Cliente válido (CPF/CNPJ)
+    this.validateClient(ctx, errors, warnings);
 
     // REGRA 7 — DIFAL para consumidor final interestadual
     if (ctx.clientUf && ctx.companyUf && ctx.clientUf !== ctx.companyUf && ctx.clientType === "pf") {
@@ -375,8 +384,93 @@ export class FiscalEngine {
   }
 
   /**
-   * Log all validation results to fiscal_audit_logs.
+   * REGRA 10: Validar CPF/CNPJ do cliente quando informado
    */
+  private static validateClient(
+    ctx: FiscalValidationContext,
+    errors: FiscalError[],
+    warnings: FiscalError[]
+  ) {
+    const doc = ctx.clientCpfCnpj?.replace(/\D/g, "");
+    if (!doc) return; // NFC-e pode não ter CPF — não bloqueia
+
+    if (doc.length === 11) {
+      if (!isValidCpf(doc)) {
+        errors.push({
+          rule: "CLIENTE_CPF_INVALIDO",
+          message: `CPF do cliente "${ctx.clientName || doc}" é inválido (dígitos verificadores não conferem)`,
+          severity: "error",
+        });
+      }
+    } else if (doc.length === 14) {
+      if (!isValidCnpj(doc)) {
+        errors.push({
+          rule: "CLIENTE_CNPJ_INVALIDO",
+          message: `CNPJ do cliente "${ctx.clientName || doc}" é inválido (dígitos verificadores não conferem)`,
+          severity: "error",
+        });
+      }
+    } else {
+      errors.push({
+        rule: "CLIENTE_DOC_FORMATO",
+        message: `CPF/CNPJ do cliente "${ctx.clientName || doc}" tem formato inválido (${doc.length} dígitos)`,
+        severity: "error",
+      });
+    }
+  }
+
+  /**
+   * REGRA 11: Alíquota coerente — verificar se taxas da categoria fazem sentido com CFOP/CST
+   */
+  private static validateAliquotaCoherence(
+    ctx: FiscalValidationContext,
+    item: FiscalValidationItem,
+    errors: FiscalError[],
+    warnings: FiscalError[]
+  ) {
+    const category = item.fiscal_category_id
+      ? ctx.fiscalCategories.find(c => c.id === item.fiscal_category_id)
+      : null;
+
+    if (!category) return;
+
+    const icms = Number((category as any).icms_rate) || 0;
+    const cfop = item.cfop || category.cfop || "";
+
+    // CFOP 5405/6404 = ICMS cobrado anteriormente por ST → ICMS próprio deve ser 0
+    if ((cfop === "5405" || cfop === "6404") && icms > 0) {
+      warnings.push({
+        rule: "ALIQUOTA_ICMS_ST_INCOERENTE",
+        product: item.name,
+        message: `Produto "${item.name}": CFOP ${cfop} (ST já cobrado) mas ICMS próprio ${icms}% — deveria ser 0%`,
+        severity: "warning",
+      });
+    }
+
+    // CFOP de venda normal (5102/6102) com ICMS > 25% é suspeito
+    if ((cfop === "5102" || cfop === "6102") && icms > 25) {
+      warnings.push({
+        rule: "ALIQUOTA_ICMS_ALTA",
+        product: item.name,
+        message: `Produto "${item.name}": Alíquota ICMS ${icms}% muito alta para CFOP ${cfop} — verifique`,
+        severity: "warning",
+      });
+    }
+
+    // Interestadual com alíquota diferente de 4%, 7% ou 12% é suspeita
+    if (ctx.clientUf && ctx.companyUf && ctx.clientUf !== ctx.companyUf && cfop.startsWith("6")) {
+      if (icms > 0 && icms !== 4 && icms !== 7 && icms !== 12) {
+        warnings.push({
+          rule: "ALIQUOTA_INTERESTADUAL_INCOERENTE",
+          product: item.name,
+          message: `Produto "${item.name}": Alíquota ICMS interestadual ${icms}% — esperado 4%, 7% ou 12%`,
+          severity: "warning",
+        });
+      }
+    }
+  }
+
+
   static async logValidation(params: {
     companyId: string;
     userId: string;

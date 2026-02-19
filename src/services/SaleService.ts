@@ -218,6 +218,8 @@ export class SaleService {
         companyUf: company?.address_state || "SP",
         clientUf: params.clientUf,
         clientType: params.clientType,
+        clientCpfCnpj: customerCpf,
+        clientName: customerName,
         modoSeguro: (company as any)?.modo_seguro_fiscal ?? true,
         items: validationItems,
         fiscalCategories: (fiscalCats || []) as any,
