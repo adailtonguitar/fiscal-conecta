@@ -311,7 +311,7 @@ export default function PDV() {
         case "F5": e.preventDefault(); setShowLoyaltyClientSelector(true); break;
         case "F6":
           e.preventDefault();
-          if (pdv.cartItems.length > 0) { pdv.clearCart(); setSelectedClient(null); toast.info("Venda limpa"); }
+          if (pdv.cartItems.length > 0) { pdv.clearCart(); setSelectedClient(null); setSelectedCartItemId(null); toast.info("Venda cancelada"); }
           break;
         case "F7":
           e.preventDefault();
@@ -339,21 +339,13 @@ export default function PDV() {
           }
           break;
         case "Escape":
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          // Re-enter fullscreen if browser exited it due to ESC
-          if (isFullscreen && !document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(() => {});
-          }
-          if (showShortcuts) setShowShortcuts(false);
-          else if (showPriceLookup) setShowPriceLookup(false);
-          else if (showProductList) setShowProductList(false);
-          else if (editingQtyItemId) setEditingQtyItemId(null);
-          else if (editingItemDiscountId) setEditingItemDiscountId(null);
-          else if (editingGlobalDiscount) setEditingGlobalDiscount(false);
-          else if (pdv.cartItems.length > 0) {
-            pdv.clearCart(); setSelectedClient(null); toast.info("Venda cancelada");
-          }
+          if (showShortcuts) { e.preventDefault(); setShowShortcuts(false); }
+          else if (showPriceLookup) { e.preventDefault(); setShowPriceLookup(false); }
+          else if (showProductList) { e.preventDefault(); setShowProductList(false); }
+          else if (editingQtyItemId) { e.preventDefault(); setEditingQtyItemId(null); }
+          else if (editingItemDiscountId) { e.preventDefault(); setEditingItemDiscountId(null); }
+          else if (editingGlobalDiscount) { e.preventDefault(); setEditingGlobalDiscount(false); }
+          // ESC sem modal aberto: deixa o browser sair da tela cheia normalmente
           break;
       }
     };
@@ -823,12 +815,12 @@ export default function PDV() {
           {[
             { key: "F3", label: "Buscar" },
             { key: "F5", label: "Cliente" },
-            { key: "F6", label: "Limpar" },
-            { key: "F7", label: "Desc.Item" },
-            { key: "F8", label: "Desc.Total" },
-            { key: "F9", label: "Qtd" },
-            { key: "DEL", label: "Remover" },
-            { key: "ESC", label: "Cancelar" },
+             { key: "F6", label: "Cancelar" },
+             { key: "F7", label: "Desc.Item" },
+             { key: "F8", label: "Desc.Total" },
+             { key: "F9", label: "Qtd" },
+             { key: "↑↓", label: "Navegar" },
+             { key: "DEL", label: "Remover" },
           ].map(({ key, label }) => (
             <span key={key} className="flex items-center gap-0.5 text-muted-foreground">
               <span className="font-mono font-black bg-muted px-1 py-0.5 rounded text-[9px]">{key}</span>
