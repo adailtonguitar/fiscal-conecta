@@ -168,6 +168,71 @@ export type Database = {
           },
         ]
       }
+      card_administrators: {
+        Row: {
+          antecipation_rate: number | null
+          cnpj: string | null
+          company_id: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          credit_installment_rate: number
+          credit_rate: number
+          credit_settlement_days: number
+          debit_rate: number
+          debit_settlement_days: number
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          antecipation_rate?: number | null
+          cnpj?: string | null
+          company_id: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          credit_installment_rate?: number
+          credit_rate?: number
+          credit_settlement_days?: number
+          debit_rate?: number
+          debit_settlement_days?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          antecipation_rate?: number | null
+          cnpj?: string | null
+          company_id?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          credit_installment_rate?: number
+          credit_rate?: number
+          credit_settlement_days?: number
+          debit_rate?: number
+          debit_settlement_days?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_administrators_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       carriers: {
         Row: {
           address_city: string | null
