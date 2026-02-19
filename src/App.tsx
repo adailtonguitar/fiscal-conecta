@@ -47,6 +47,7 @@ const Instalar = lazy(() => import("./pages/Instalar"));
 const Termos = lazy(() => import("./pages/Termos"));
 const Privacidade = lazy(() => import("./pages/Privacidade"));
 const PainelLucro = lazy(() => import("./pages/PainelLucro"));
+const LucroDiario = lazy(() => import("./pages/LucroDiario"));
 const AlertaFinanceiro = lazy(() => import("./pages/AlertaFinanceiro"));
 const Empresas = lazy(() => import("./pages/Empresas"));
 const DRE = lazy(() => import("./pages/DRE"));
@@ -209,6 +210,7 @@ function AppRoutes() {
                   <Routes>
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/painel-lucro" element={<PlanGate feature="hasProfitPanel" featureName="Painel de Lucro"><PainelLucro /></PlanGate>} />
+                    <Route path="/lucro-diario" element={<LucroDiario />} />
                     <Route path="/alertas" element={<PlanGate feature="hasFinancialAlerts" featureName="Alertas Financeiros"><AlertaFinanceiro /></PlanGate>} />
                     <Route path="/produtos" element={<Produtos />} />
                     <Route path="/vendas" element={<Vendas />} />
