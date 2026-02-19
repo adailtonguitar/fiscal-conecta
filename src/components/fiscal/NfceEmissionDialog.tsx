@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { Loader2, Plus, Send, Trash2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Loader2, Plus, Send, Trash2, Search } from "lucide-react";
 import { formatCurrency } from "@/lib/mock-data";
 import { FiscalEmissionService } from "@/services/FiscalEmissionService";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useCompany } from "@/hooks/useCompany";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type { Sale } from "@/hooks/useSales";
 
 type DocType = "nfce" | "nfe";
@@ -66,6 +73,129 @@ interface Props {
   onSuccess: () => void;
 }
 
+function ProductSearchPopover({ onSelect }: { onSelect: (product: any) => void }) {
+  const { companyId } = useCompany();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [results, setResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!searchOpen) {
+      setSearch("");
+      setResults([]);
+      return;
+    }
+    // Focus input when popover opens
+    setTimeout(() => inputRef.current?.focus(), 100);
+  }, [searchOpen]);
+
+  useEffect(() => {
+    if (!companyId || !searchOpen) return;
+    const term = search.trim();
+    if (term.length < 1) {
+      // Load recent products
+      const load = async () => {
+        setLoading(true);
+        const { data } = await supabase
+          .from("products")
+          .select("id, name, sku, barcode, price, unit, ncm, stock_quantity")
+          .eq("company_id", companyId)
+          .eq("is_active", true)
+          .order("name")
+          .limit(20);
+        setResults(data || []);
+        setLoading(false);
+      };
+      load();
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from("products")
+        .select("id, name, sku, barcode, price, unit, ncm, stock_quantity")
+        .eq("company_id", companyId)
+        .eq("is_active", true)
+        .or(`name.ilike.%${term}%,sku.ilike.%${term}%,barcode.ilike.%${term}%`)
+        .order("name")
+        .limit(20);
+      setResults(data || []);
+      setLoading(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [search, companyId, searchOpen]);
+
+  return (
+    <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="w-full mt-1">
+          <Plus className="w-4 h-4 mr-1" />
+          Adicionar Item
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-2" align="start">
+        <div className="relative mb-2">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            ref={inputRef}
+            placeholder="Buscar produto por nome, SKU ou código..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-9 text-sm"
+          />
+        </div>
+        <div className="max-h-52 overflow-y-auto space-y-0.5">
+          {loading && (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            </div>
+          )}
+          {!loading && results.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center py-4">
+              {search ? "Nenhum produto encontrado" : "Nenhum produto cadastrado"}
+            </p>
+          )}
+          {!loading &&
+            results.map((p) => (
+              <button
+                key={p.id}
+                className="w-full text-left px-2 py-1.5 rounded hover:bg-accent text-sm flex items-center justify-between gap-2"
+                onClick={() => {
+                  onSelect(p);
+                  setSearchOpen(false);
+                }}
+              >
+                <div className="min-w-0">
+                  <span className="block truncate font-medium">{p.name}</span>
+                  {p.sku && <span className="text-xs text-muted-foreground">SKU: {p.sku}</span>}
+                </div>
+                <span className="text-xs font-mono text-primary whitespace-nowrap">
+                  {formatCurrency(p.price || 0)}
+                </span>
+              </button>
+            ))}
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full mt-1 text-xs"
+          onClick={() => {
+            onSelect({ id: "", name: "Novo Produto", sku: "", price: 0, unit: "UN", ncm: "" });
+            setSearchOpen(false);
+          }}
+        >
+          <Plus className="w-3 h-3 mr-1" />
+          Adicionar manualmente
+        </Button>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function NfceEmissionDialog({ sale, open, onOpenChange, onSuccess }: Props) {
   const [items, setItems] = useState<NfceItem[]>([]);
   const [customerCpf, setCustomerCpf] = useState("");
@@ -92,10 +222,18 @@ export function NfceEmissionDialog({ sale, open, onOpenChange, onSuccess }: Prop
     setItems((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const addItem = () => {
+  const addProductFromSearch = (product: any) => {
     setItems((prev) => [
       ...prev,
-      { product_id: "", name: "Novo Produto", sku: "", quantity: 1, unit_price: 0, unit: "UN", ncm: "" },
+      {
+        product_id: product.id || "",
+        name: product.name || "Novo Produto",
+        sku: product.sku || product.barcode || "",
+        quantity: 1,
+        unit_price: product.price || 0,
+        unit: product.unit || "UN",
+        ncm: product.ncm || "",
+      },
     ]);
   };
 
@@ -107,7 +245,6 @@ export function NfceEmissionDialog({ sale, open, onOpenChange, onSuccess }: Prop
     setEmitting(true);
     try {
       const docLabel = docType === "nfce" ? "NFC-e" : "NF-e";
-      // Both NFC-e and NF-e use the same emission endpoint with doc_type parameter
       const result = await FiscalEmissionService.emitirNfce({
         fiscalDocumentId: sale.id,
         items,
@@ -205,10 +342,7 @@ export function NfceEmissionDialog({ sale, open, onOpenChange, onSuccess }: Prop
             </div>
           ))}
 
-          <Button variant="outline" size="sm" className="w-full mt-1" onClick={addItem}>
-            <Plus className="w-4 h-4 mr-1" />
-            Adicionar Item
-          </Button>
+          <ProductSearchPopover onSelect={addProductFromSearch} />
         </div>
 
         {/* Total */}
