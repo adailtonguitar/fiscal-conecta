@@ -196,6 +196,23 @@ export default function Categorias() {
       result.warnings.forEach((w) => toast.warning(w.message));
     }
 
+    // REGRA: Tributação zerada suspeita
+    const icms = Number(data.icms_rate) || 0;
+    const pis = Number(data.pis_rate) || 0;
+    const cofins = Number(data.cofins_rate) || 0;
+    if (icms === 0 && pis === 0 && cofins === 0) {
+      const csosn = data.csosn || "";
+      const cst = data.cst_icms || "";
+      const exemptCodes = ["40", "41", "50", "300", "400"];
+      const hasExemptCode = exemptCodes.some((c) => csosn === c || cst === c);
+      if (!hasExemptCode) {
+        toast.warning(
+          "⚠️ ICMS, PIS e COFINS todos em 0% — produto realmente possui isenção fiscal? Verifique o CST/CSOSN adequado para evitar sonegação acidental.",
+          { duration: 8000 }
+        );
+      }
+    }
+
     return null;
   };
 
