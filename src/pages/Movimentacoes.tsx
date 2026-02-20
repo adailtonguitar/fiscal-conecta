@@ -168,11 +168,13 @@ export default function Movimentacoes() {
                 .map(p => (
                   <button
                     key={p.id}
-                    onClick={() => {
-                      setMovementProduct(p);
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
                       setShowNewEntry(false);
+                      setTimeout(() => setMovementProduct(p), 50);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted/50 text-sm text-foreground flex justify-between items-center"
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted/50 text-sm text-foreground flex justify-between items-center cursor-pointer"
                   >
                     <span>{p.name}</span>
                     <span className="text-xs text-muted-foreground">Estoque: {p.stock_quantity}</span>
