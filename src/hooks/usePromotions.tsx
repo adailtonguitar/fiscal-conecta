@@ -7,7 +7,7 @@ import { useCompany } from "@/hooks/useCompany";
 import type { Promotion } from "@/services/PromotionEngine";
 import { toast } from "sonner";
 
-export function usePromotions() {
+export function usePromotions(options?: { onlyActive?: boolean }) {
   const { companyId } = useCompany();
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,11 +17,18 @@ export function usePromotions() {
     setLoading(true);
     try {
       // Load promotions
-      const { data: promos, error } = await supabase
+      let query = supabase
         .from("promotions")
         .select("*")
         .eq("company_id", companyId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(200);
+
+      if (options?.onlyActive) {
+        query = query.eq("is_active", true);
+      }
+
+      const { data: promos, error } = await query;
 
       if (error) throw error;
 

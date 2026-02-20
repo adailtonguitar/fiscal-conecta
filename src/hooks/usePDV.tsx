@@ -40,7 +40,7 @@ export function usePDV() {
   const { user } = useAuth();
   const { companyId } = useCompany();
   const sync = useSync();
-  const { activePromotions } = usePromotions();
+  const { activePromotions } = usePromotions({ onlyActive: true });
 
   const [products, setProducts] = useState<PDVProduct[]>([]);
   const [cartItems, setCartItems] = useState<PDVCartItem[]>([]);
@@ -130,7 +130,8 @@ export function usePDV() {
         .select("id, name, price, category, sku, ncm, unit, stock_quantity, barcode, image_url, reorder_point")
         .eq("company_id", companyId)
         .eq("is_active", true)
-        .order("name");
+        .order("name")
+        .limit(2000);
 
       if (!error && data) {
         setProducts(data as PDVProduct[]);

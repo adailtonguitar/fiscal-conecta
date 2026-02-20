@@ -27,11 +27,11 @@ export interface Quote {
   updated_at: string;
 }
 
-export function useQuotes() {
+export function useQuotes(options?: { skipInitialFetch?: boolean }) {
   const { companyId } = useCompany();
   const { user } = useAuth();
   const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!options?.skipInitialFetch);
 
   const fetchQuotes = useCallback(async () => {
     if (!companyId) return;
@@ -41,7 +41,8 @@ export function useQuotes() {
         .from("quotes")
         .select("*")
         .eq("company_id", companyId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(500);
       if (!error && data) setQuotes(data as unknown as Quote[]);
     } catch {
       // ignore
@@ -51,8 +52,10 @@ export function useQuotes() {
   }, [companyId]);
 
   useEffect(() => {
-    fetchQuotes();
-  }, [fetchQuotes]);
+    if (!options?.skipInitialFetch) {
+      fetchQuotes();
+    }
+  }, [fetchQuotes, options?.skipInitialFetch]);
 
   const createQuote = useCallback(async (params: {
     items: any[];
