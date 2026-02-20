@@ -67,9 +67,9 @@ export default function Etiquetas() {
         <div className="flex items-center gap-3">
           <Tag className="w-6 h-6 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Etiquetas de Gôndola</h1>
+            <h1 className="text-2xl font-bold text-foreground">Etiquetas</h1>
             <p className="text-sm text-muted-foreground">
-              Gerencie e imprima etiquetas de preço
+              Gôndola, adesiva, prateleira e balança
             </p>
           </div>
         </div>
