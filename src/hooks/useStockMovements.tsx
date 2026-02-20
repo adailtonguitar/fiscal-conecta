@@ -96,6 +96,7 @@ export function useCreateStockMovement() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["stock_movements"] });
+      qc.invalidateQueries({ queryKey: ["reorder_suggestions"] });
       toast.success("Movimentação registrada");
     },
     onError: (e: Error) => toast.error(`Erro: ${e.message}`),
