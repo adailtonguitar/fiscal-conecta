@@ -109,7 +109,15 @@ export function useCreatePurchaseOrder() {
 export function useUpdatePurchaseOrderStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (params: { id: string; status: string; received_by?: string }) => {
+    mutationFn: async (params: {
+      id: string;
+      status: string;
+      received_by?: string;
+      supplierEmail?: string;
+      supplierName?: string;
+      totalValue?: number;
+      orderId?: string;
+    }) => {
       const updates: any = { status: params.status };
       if (params.status === "enviado") updates.sent_at = new Date().toISOString();
       if (params.status === "recebido") {
@@ -121,10 +129,52 @@ export function useUpdatePurchaseOrderStatus() {
         .update(updates)
         .eq("id", params.id);
       if (error) throw error;
+
+      // Send email to supplier when status is "enviado"
+      if (params.status === "enviado" && params.supplierEmail) {
+        const shortId = params.id.slice(0, 8);
+        const html = `
+          <div style="font-family:sans-serif;padding:24px;max-width:600px;margin:0 auto">
+            <h1 style="font-size:20px;color:#333">Pedido de Compra #${shortId}</h1>
+            <p>Olá <strong>${params.supplierName || "Fornecedor"}</strong>,</p>
+            <p>Gostaríamos de realizar o seguinte pedido de compra:</p>
+            <table style="width:100%;border-collapse:collapse;margin:16px 0">
+              <tr style="background:#f5f5f5">
+                <td style="padding:10px;border:1px solid #ddd"><strong>Pedido</strong></td>
+                <td style="padding:10px;border:1px solid #ddd">#${shortId}</td>
+              </tr>
+              <tr>
+                <td style="padding:10px;border:1px solid #ddd"><strong>Valor Total</strong></td>
+                <td style="padding:10px;border:1px solid #ddd">R$ ${(params.totalValue || 0).toFixed(2).replace(".", ",")}</td>
+              </tr>
+            </table>
+            <p>Por favor, confirme o recebimento deste pedido.</p>
+            <p style="color:#888;font-size:12px;margin-top:32px">Enviado automaticamente pelo sistema.</p>
+          </div>
+        `;
+
+        try {
+          await supabase.functions.invoke("send-email", {
+            body: {
+              to: params.supplierEmail,
+              subject: `Pedido de Compra #${shortId}`,
+              html,
+              type: "purchase_order",
+            },
+          });
+        } catch (emailErr) {
+          console.error("Erro ao enviar e-mail:", emailErr);
+          // Don't throw - order was already updated
+        }
+      }
     },
-    onSuccess: () => {
+    onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["purchase_orders"] });
-      toast.success("Status atualizado!");
+      if (vars.status === "enviado" && vars.supplierEmail) {
+        toast.success("Pedido enviado e e-mail enviado ao fornecedor!");
+      } else {
+        toast.success("Status atualizado!");
+      }
     },
     onError: (e: Error) => toast.error(`Erro: ${e.message}`),
   });

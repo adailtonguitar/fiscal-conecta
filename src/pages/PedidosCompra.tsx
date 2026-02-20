@@ -362,7 +362,16 @@ export default function PedidosCompra() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => updateStatus.mutate({ id: order.id, status: "enviado" })}
+                          onClick={() => {
+                            const supplier = suppliers.find(s => s.id === order.supplier_id);
+                            updateStatus.mutate({
+                              id: order.id,
+                              status: "enviado",
+                              supplierEmail: supplier?.email || undefined,
+                              supplierName: supplier?.name || undefined,
+                              totalValue: Number(order.total_value),
+                            });
+                          }}
                         >
                           <Send className="w-3.5 h-3.5 mr-1" />
                           Enviar
