@@ -186,6 +186,13 @@ function UsersTab({
 
     // Toggle active if changed (not self)
     if (!isSelf && editForm.is_active !== editingUser.is_active) {
+      if (!editForm.is_active) {
+        const nome = editingUser.profile?.full_name || editingUser.profile?.email || "este usuário";
+        const confirmed = window.confirm(
+          `⚠️ Inativar ${nome}?\n\nO acesso ao sistema será bloqueado imediatamente e o funcionário não conseguirá mais fazer login.\n\nDeseja continuar?`
+        );
+        if (!confirmed) return;
+      }
       await toggleActive(editingUser.id, editingUser.is_active);
     }
 
