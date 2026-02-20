@@ -49,6 +49,7 @@ export function usePDV() {
   const [trainingMode, setTrainingMode] = useState(false);
   const [lastSaleItems, setLastSaleItems] = useState<PDVCartItem[]>([]);
   const [loadingSession, setLoadingSession] = useState(true);
+  const [sessionEverLoaded, setSessionEverLoaded] = useState(false);
 
   // Discount state: per-item discounts stored as { [productId]: percentValue }
   const [itemDiscounts, setItemDiscounts] = useState<Record<string, number>>({});
@@ -167,6 +168,7 @@ export function usePDV() {
       setCurrentSession(null);
     } finally {
       setLoadingSession(false);
+      setSessionEverLoaded(true);
     }
   }, [companyId]);
 
@@ -399,6 +401,7 @@ export function usePDV() {
     // Session
     currentSession,
     loadingSession,
+    sessionEverLoaded,
     reloadSession: loadSession,
 
     // Barcode
