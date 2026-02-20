@@ -7,45 +7,29 @@ import { supabase } from "@/integrations/supabase/client";
 const FUNCTION_NAME = "nuvem-fiscal";
 
 async function callFunction(action: string, method: "GET" | "POST", body?: unknown, extraParams?: Record<string, string>) {
+  const session = await supabase.auth.getSession();
+  const token = session.data.session?.access_token;
+  const projectUrl = import.meta.env.VITE_SUPABASE_URL;
+
   const params = new URLSearchParams({ action, ...extraParams });
+  const url = `${projectUrl}/functions/v1/${FUNCTION_NAME}?${params.toString()}`;
 
-  if (method === "GET") {
-    const { data, error } = await supabase.functions.invoke(FUNCTION_NAME, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      body: undefined,
-      // @ts-ignore - pass query params via URL workaround
-    });
-
-    // For GET requests we need to use fetch directly
-    const session = await supabase.auth.getSession();
-    const token = session.data.session?.access_token;
-    const projectUrl = import.meta.env.VITE_SUPABASE_URL;
-
-    const resp = await fetch(`${projectUrl}/functions/v1/${FUNCTION_NAME}?${params.toString()}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      },
-    });
-
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({ error: resp.statusText }));
-      throw new Error(err.error || `Erro ${resp.status}`);
-    }
-
-    return resp.json();
-  }
-
-  // POST
-  const { data, error } = await supabase.functions.invoke(`${FUNCTION_NAME}?${params.toString()}`, {
-    body,
+  const resp = await fetch(url, {
+    method,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    },
+    body: method === "POST" && body ? JSON.stringify(body) : undefined,
   });
 
-  if (error) throw new Error(error.message || "Erro ao chamar função fiscal");
-  return data;
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({ error: resp.statusText }));
+    throw new Error(err.error || `Erro ${resp.status}`);
+  }
+
+  return resp.json();
 }
 
 export class FiscalEmissionService {
