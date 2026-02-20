@@ -23,9 +23,9 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "pwa-icon-512.png", "pwa-icon-192.png"],
       manifest: {
-        name: "PDV Fiscal - Sistema de Vendas",
-        short_name: "PDV Fiscal",
-        description: "Sistema de PDV Fiscal completo com operação offline e sincronização em nuvem",
+        name: "AnthóSystem - Sistema de Vendas",
+        short_name: "AnthóSystem",
+        description: "AnthóSystem - Sistema completo de vendas com operação offline e sincronização em nuvem",
         theme_color: "#1e40af",
         background_color: "#0f172a",
         display: "standalone",
