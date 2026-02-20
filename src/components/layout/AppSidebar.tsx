@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useSync } from "@/hooks/useSync";
-import { useIsReseller } from "@/hooks/useIsReseller";
+
 import { useAdminRole } from "@/hooks/useAdminRole";
 
 interface NavItem {
@@ -125,7 +125,7 @@ const navItems: NavEntry[] = [
   { icon: Download, label: "Instalar App", path: "/install" },
 ];
 
-const resellerNavItem: NavItem = { icon: Building2, label: "Revendas", path: "/revendas" };
+
 const adminNavItem: NavItem = { icon: ShieldCheck, label: "Admin", path: "/admin" };
 
 export function AppSidebar() {
@@ -133,7 +133,7 @@ export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { isOnline, pendingCount, syncing, syncAll } = useSync();
   const { signOut, user } = useAuth();
-  const { isReseller } = useIsReseller();
+  
   const { isSuperAdmin } = useAdminRole();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     // Auto-open groups that have an active child on initial load
@@ -146,9 +146,7 @@ export function AppSidebar() {
     return initial;
   });
 
-  let visibleNavItems: NavEntry[] = isReseller
-    ? [...navItems.slice(0, -1), resellerNavItem, navItems[navItems.length - 1]]
-    : navItems;
+  let visibleNavItems: NavEntry[] = navItems;
   if (isSuperAdmin) {
     visibleNavItems = [...visibleNavItems, adminNavItem];
   }

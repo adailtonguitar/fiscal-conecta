@@ -56,7 +56,7 @@ const plans = [
       "Terminais ilimitados",
       "Multi-loja centralizada",
       "API dedicada",
-      "Personalização (white label)",
+      "Personalização avançada",
       "Gerente de conta exclusivo",
     ],
     highlighted: false,
