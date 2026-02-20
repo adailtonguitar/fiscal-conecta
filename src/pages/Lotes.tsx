@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { useProductLots, useExpiringLots, useCreateProductLot, useDeleteProductLot } from "@/hooks/useProductLots";
-import { useLocalProducts } from "@/hooks/useLocalProducts";
+import { useProducts } from "@/hooks/useProducts";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -22,8 +22,8 @@ import {
 export default function Lotes() {
   const { data: lots = [], isLoading } = useProductLots();
   const { data: expiringLots = [] } = useExpiringLots(30);
-  const { data: rawProducts = [] } = useLocalProducts();
-  const products = rawProducts.map(p => ({ ...p, is_active: !!p.is_active }));
+  const { data: rawProducts = [] } = useProducts();
+  const products = rawProducts.filter(p => p.is_active);
   const createLot = useCreateProductLot();
   const deleteLot = useDeleteProductLot();
 
