@@ -46,7 +46,7 @@ export function LandingFooter() {
             © {new Date().getFullYear()} AnthoSystem. Todos os direitos reservados.
           </span>
           <span className="text-xs text-muted-foreground">
-            Feito com 💚 para o varejo brasileiro
+            Desenvolvido por <span className="font-semibold text-foreground">Adailton Paulo</span>
           </span>
         </div>
       </div>
