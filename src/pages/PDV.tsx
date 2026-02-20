@@ -92,12 +92,12 @@ export default function PDV() {
     pdv.reloadSession(terminalId);
   }, [terminalId]);
 
-  // Auto-open cash register dialog if no session is open
+  // Auto-open cash register dialog if no session is open (only after first load completes)
   useEffect(() => {
-    if (!pdv.loadingSession && !pdv.currentSession && !showCashRegister) {
+    if (pdv.sessionEverLoaded && !pdv.loadingSession && !pdv.currentSession && !showCashRegister) {
       setShowCashRegister(true);
     }
-  }, [pdv.loadingSession, pdv.currentSession]);
+  }, [pdv.sessionEverLoaded, pdv.loadingSession, pdv.currentSession]);
 
   // Always re-focus barcode input when no modal is open
   useEffect(() => {
