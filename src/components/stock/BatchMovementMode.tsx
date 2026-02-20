@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, Save, PackagePlus, DollarSign, X, ArrowUpDown } from "lucide-react";
+import { Search, Save, PackagePlus, PackageMinus, DollarSign, X, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,7 @@ interface Props {
   onClose: () => void;
 }
 
-type TabMode = "entrada" | "preco";
+type TabMode = "entrada" | "saida" | "preco";
 
 interface StockEntry {
   quantity: number;
@@ -53,7 +53,7 @@ export function BatchMovementMode({ products, onClose }: Props) {
   const priceCount = Object.values(priceEntries).filter(
     (e) => e.price !== undefined || e.cost_price !== undefined
   ).length;
-  const pendingCount = tab === "entrada" ? stockCount : priceCount;
+  const pendingCount = tab === "preco" ? priceCount : stockCount;
 
   const updateStockEntry = (productId: string, field: keyof StockEntry, value: string) => {
     setStockEntries((prev) => ({
@@ -76,10 +76,10 @@ export function BatchMovementMode({ products, onClose }: Props) {
     }));
   };
 
-  const handleSaveStock = async () => {
+  const handleSaveStock = async (type: "entrada" | "saida") => {
     const entries = Object.entries(stockEntries).filter(([, e]) => e.quantity > 0);
     if (entries.length === 0) {
-      toast.warning("Nenhuma entrada de estoque para salvar");
+      toast.warning("Nenhuma movimentação para salvar");
       return;
     }
 
@@ -91,9 +91,9 @@ export function BatchMovementMode({ products, onClose }: Props) {
       try {
         await createMovement.mutateAsync({
           product_id: productId,
-          type: "entrada",
+          type,
           quantity: entry.quantity,
-          unit_cost: entry.unit_cost,
+          unit_cost: type === "entrada" ? entry.unit_cost : undefined,
           reference: entry.reference,
         });
         success++;
@@ -105,8 +105,9 @@ export function BatchMovementMode({ products, onClose }: Props) {
     setSaving(false);
     setStockEntries({});
 
+    const label = type === "entrada" ? "entrada(s)" : "saída(s)";
     if (errors === 0) {
-      toast.success(`${success} entrada(s) de estoque registrada(s)`);
+      toast.success(`${success} ${label} de estoque registrada(s)`);
     } else {
       toast.warning(`${success} registradas, ${errors} com erro`);
     }
@@ -149,7 +150,8 @@ export function BatchMovementMode({ products, onClose }: Props) {
   };
 
   const handleSave = () => {
-    if (tab === "entrada") handleSaveStock();
+    if (tab === "entrada") handleSaveStock("entrada");
+    else if (tab === "saida") handleSaveStock("saida");
     else handleSavePrices();
   };
 
@@ -188,11 +190,15 @@ export function BatchMovementMode({ products, onClose }: Props) {
       </div>
 
       {/* Tabs */}
-      <Tabs value={tab} onValueChange={(v) => setTab(v as TabMode)}>
-        <TabsList className="grid w-full max-w-sm grid-cols-2">
+      <Tabs value={tab} onValueChange={(v) => { setTab(v as TabMode); setStockEntries({}); }}>
+        <TabsList className="grid w-full max-w-lg grid-cols-3">
           <TabsTrigger value="entrada" className="gap-2">
             <PackagePlus className="w-4 h-4" />
-            Entrada de Estoque
+            Entrada
+          </TabsTrigger>
+          <TabsTrigger value="saida" className="gap-2">
+            <PackageMinus className="w-4 h-4" />
+            Saída
           </TabsTrigger>
           <TabsTrigger value="preco" className="gap-2">
             <DollarSign className="w-4 h-4" />
@@ -228,14 +234,16 @@ export function BatchMovementMode({ products, onClose }: Props) {
                 <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Estoque Atual
                 </th>
-                {tab === "entrada" ? (
+                {tab === "entrada" || tab === "saida" ? (
                   <>
                     <th className="text-center px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Qtd. Entrada
+                      {tab === "entrada" ? "Qtd. Entrada" : "Qtd. Saída"}
                     </th>
-                    <th className="text-center px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Custo Unit.
-                    </th>
+                    {tab === "entrada" && (
+                      <th className="text-center px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Custo Unit.
+                      </th>
+                    )}
                     <th className="text-center px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Ref. / NF
                     </th>
@@ -265,7 +273,7 @@ export function BatchMovementMode({ products, onClose }: Props) {
                 const hasStockChange = stockEntry && stockEntry.quantity > 0;
                 const hasPriceChange =
                   priceEntry && (priceEntry.price !== undefined || priceEntry.cost_price !== undefined);
-                const isChanged = tab === "entrada" ? hasStockChange : hasPriceChange;
+                const isChanged = (tab === "entrada" || tab === "saida") ? hasStockChange : hasPriceChange;
 
                 return (
                   <tr
@@ -280,7 +288,7 @@ export function BatchMovementMode({ products, onClose }: Props) {
                       {product.stock_quantity} {product.unit.toLowerCase()}
                     </td>
 
-                    {tab === "entrada" ? (
+                    {tab === "entrada" || tab === "saida" ? (
                       <>
                         <td className="px-4 py-2.5">
                           <Input
@@ -293,17 +301,19 @@ export function BatchMovementMode({ products, onClose }: Props) {
                             onChange={(e) => updateStockEntry(product.id, "quantity", e.target.value)}
                           />
                         </td>
-                        <td className="px-4 py-2.5">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="R$"
-                            className="w-24 mx-auto text-center h-8"
-                            value={stockEntry?.unit_cost || ""}
-                            onChange={(e) => updateStockEntry(product.id, "unit_cost", e.target.value)}
-                          />
-                        </td>
+                        {tab === "entrada" && (
+                          <td className="px-4 py-2.5">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="R$"
+                              className="w-24 mx-auto text-center h-8"
+                              value={stockEntry?.unit_cost || ""}
+                              onChange={(e) => updateStockEntry(product.id, "unit_cost", e.target.value)}
+                            />
+                          </td>
+                        )}
                         <td className="px-4 py-2.5">
                           <Input
                             type="text"
@@ -351,7 +361,7 @@ export function BatchMovementMode({ products, onClose }: Props) {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={tab === "entrada" ? 6 : 7} className="px-4 py-12 text-center text-muted-foreground">
+                  <td colSpan={tab === "entrada" ? 6 : tab === "saida" ? 5 : 7} className="px-4 py-12 text-center text-muted-foreground">
                     Nenhum produto encontrado.
                   </td>
                 </tr>
