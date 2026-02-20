@@ -9,6 +9,7 @@ import {
   Scale,
   CalendarClock,
   Users,
+  Tag,
 } from "lucide-react";
 
 const features = [
@@ -59,6 +60,12 @@ const features = [
     title: "Multi-caixa",
     desc: "Vários terminais, perfis de acesso e trilha de auditoria completa.",
     color: "bg-cyan-500/10 text-cyan-600",
+  },
+  {
+    icon: Tag,
+    title: "Etiquetas Inteligentes",
+    desc: "Gôndola, adesiva, trilho de prateleira e balança. Impressão em lote com código de barras e preço.",
+    color: "bg-pink-500/10 text-pink-600",
   },
   {
     icon: Shield,
