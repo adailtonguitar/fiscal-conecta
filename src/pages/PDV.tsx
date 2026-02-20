@@ -33,7 +33,7 @@ export default function PDV() {
   const { config: tefConfigData } = useTEFConfig();
   const { maxDiscountPercent } = usePermissions();
   const { earnPoints, isActive: loyaltyActive } = useLoyalty();
-  const { createQuote } = useQuotes();
+  const { createQuote, updateQuoteStatus } = useQuotes();
   const [showSaveQuote, setShowSaveQuote] = useState(false);
   const [quoteNotes, setQuoteNotes] = useState("");
   const [showTEF, setShowTEF] = useState(false);
@@ -70,6 +70,7 @@ export default function PDV() {
   const [saleNumber, setSaleNumber] = useState(() => Number(localStorage.getItem("pdv_sale_number") || "1"));
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedCartItemId, setSelectedCartItemId] = useState<string | null>(null);
+  const [pendingQuoteId, setPendingQuoteId] = useState<string | null>(null);
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -120,7 +121,8 @@ export default function PDV() {
     if (raw && pdv.products.length > 0) {
       sessionStorage.removeItem("pdv_load_quote");
       try {
-        const { items, clientName } = JSON.parse(raw);
+        const { quoteId, items, clientName } = JSON.parse(raw);
+        if (quoteId) setPendingQuoteId(quoteId);
         if (Array.isArray(items)) {
           items.forEach((item: any) => {
             const product = pdv.products.find((p) => p.id === item.product_id);
@@ -404,6 +406,11 @@ export default function PDV() {
         setSaleNumber(newNum);
         localStorage.setItem("pdv_sale_number", String(newNum));
         checkLowStockAfterSale(savedItems);
+        // Mark quote as converted if this sale came from a quote
+        if (pendingQuoteId) {
+          updateQuoteStatus(pendingQuoteId, "convertido").catch(() => {});
+          setPendingQuoteId(null);
+        }
         if (loyaltyActive && savedClient?.id) {
           const pts = await earnPoints(savedClient.id, savedTotal, result.fiscalDocId);
           if (pts > 0) toast.info(`🎁 ${savedClient.name} ganhou ${pts} pontos de fidelidade!`);
@@ -446,6 +453,11 @@ export default function PDV() {
       setSaleNumber(newNum);
       localStorage.setItem("pdv_sale_number", String(newNum));
       checkLowStockAfterSale(savedItems);
+      // Mark quote as converted if this sale came from a quote
+      if (pendingQuoteId) {
+        updateQuoteStatus(pendingQuoteId, "convertido").catch(() => {});
+        setPendingQuoteId(null);
+      }
       if (loyaltyActive && client.id) {
         const pts = await earnPoints(client.id, savedTotal, result.fiscalDocId);
         if (pts > 0) toast.info(`🎁 ${client.name} ganhou ${pts} pontos de fidelidade!`);
