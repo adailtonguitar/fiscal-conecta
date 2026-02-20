@@ -33,7 +33,7 @@ const Financeiro = lazy(() => import("./pages/Financeiro"));
 const Producao = lazy(() => import("./pages/Producao"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
-const Revendas = lazy(() => import("./pages/Revendas"));
+
 const Clientes = lazy(() => import("./pages/Clientes"));
 const Fornecedores = lazy(() => import("./pages/Fornecedores"));
 const Funcionarios = lazy(() => import("./pages/Funcionarios"));
@@ -241,7 +241,7 @@ function AppRoutes() {
                     <Route path="/conciliacao" element={<PlanGate feature="hasBankReconciliation" featureName="Conciliação Bancária"><ConciliacaoBancaria /></PlanGate>} />
                     <Route path="/configuracoes" element={<Configuracoes />} />
                     <Route path="/usuarios" element={<Usuarios />} />
-                    <Route path="/revendas" element={<Revendas />} />
+                    
                     <Route path="/cadastro/empresas" element={<Empresas />} />
                     <Route path="/cadastro/clientes" element={<Clientes />} />
                     <Route path="/cadastro/fornecedores" element={<Fornecedores />} />
