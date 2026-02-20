@@ -11,86 +11,98 @@ import {
   Users,
 } from "lucide-react";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.5 } }),
-};
-
 const features = [
   {
     icon: ShoppingCart,
     title: "PDV para Supermercado",
-    desc: "Caixa rápido com atalhos de teclado, leitor de código de barras, pesagem integrada e múltiplas formas de pagamento.",
+    desc: "Caixa rápido com atalhos, leitor de código de barras, pesagem e múltiplas formas de pagamento.",
+    color: "bg-primary/10 text-primary",
   },
   {
     icon: FileText,
-    title: "Emissão Fiscal NFC-e / NF-e",
-    desc: "Emissão automática de cupom fiscal integrado à SEFAZ. Contingência offline e DANFE inclusos.",
+    title: "Emissão Fiscal",
+    desc: "NFC-e e NF-e automáticas integradas à SEFAZ com contingência offline e DANFE.",
+    color: "bg-blue-500/10 text-blue-600",
   },
   {
     icon: Package,
-    title: "Estoque com Validade e Lotes",
-    desc: "Controle de lotes, datas de validade, alerta de produtos vencendo, importação por NF-e e CSV.",
+    title: "Estoque Inteligente",
+    desc: "Lotes, validade, alertas, importação por NF-e e CSV. Controle total do seu inventário.",
+    color: "bg-amber-500/10 text-amber-600",
   },
   {
     icon: Scale,
-    title: "Balança e Produtos por Peso",
-    desc: "Integração com balanças, leitura de etiquetas de peso, preço por kg/g com cálculo automático.",
+    title: "Balança Integrada",
+    desc: "Leitura de etiquetas de peso e preço por kg/g com cálculo automático na venda.",
+    color: "bg-violet-500/10 text-violet-600",
   },
   {
     icon: BarChart3,
     title: "Financeiro Completo",
-    desc: "Contas a pagar/receber, fluxo de caixa, DRE, fechamento diário e relatórios de lucratividade.",
+    desc: "Contas a pagar/receber, fluxo de caixa, DRE, fechamento diário e lucratividade.",
+    color: "bg-emerald-500/10 text-emerald-600",
   },
   {
     icon: WifiOff,
-    title: "Funciona Sem Internet",
-    desc: "Continue vendendo e emitindo mesmo offline. Tudo sincroniza automaticamente quando a conexão voltar.",
+    title: "Modo Offline",
+    desc: "Venda e emita notas mesmo sem internet. Sincroniza tudo quando reconectar.",
+    color: "bg-orange-500/10 text-orange-600",
   },
   {
     icon: CalendarClock,
-    title: "Controle de Perdas e Validade",
-    desc: "Registre perdas, quebras e avarias. Alertas automáticos de produtos próximos ao vencimento.",
+    title: "Controle de Validade",
+    desc: "Alertas de vencimento, registro de perdas e quebras. Zero desperdício.",
+    color: "bg-rose-500/10 text-rose-600",
   },
   {
     icon: Users,
-    title: "Multi-caixa e Permissões",
-    desc: "Vários terminais simultâneos, perfis de acesso (caixa, gerente, dono) e trilha de auditoria.",
+    title: "Multi-caixa",
+    desc: "Vários terminais, perfis de acesso e trilha de auditoria completa.",
+    color: "bg-cyan-500/10 text-cyan-600",
   },
   {
     icon: Shield,
-    title: "Segurança e Backup",
-    desc: "Dados criptografados na nuvem, backup automático diário e isolamento total entre filiais.",
+    title: "Segurança Total",
+    desc: "Dados criptografados, backup automático e isolamento total entre filiais.",
+    color: "bg-slate-500/10 text-slate-600",
   },
 ];
 
 export function LandingFeatures() {
   return (
-    <section id="recursos" className="py-24 bg-card/50">
-      <div className="max-w-6xl mx-auto px-6">
+    <section id="recursos" className="py-24 relative">
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-card/50 to-transparent pointer-events-none" />
+      <div className="relative max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tight">
-            Tudo que seu supermercado precisa em um só sistema
-          </h2>
-          <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
-            Do caixa à gestão financeira, cada módulo foi pensado para a realidade do varejo alimentar.
-          </p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <span className="text-primary text-sm font-semibold uppercase tracking-wider">Recursos</span>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">
+              Tudo que seu supermercado precisa
+            </h2>
+            <p className="mt-4 text-muted-foreground max-w-2xl mx-auto text-lg">
+              Do caixa à gestão financeira, cada módulo foi construído para a realidade do varejo alimentar.
+            </p>
+          </motion.div>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {features.map((f, i) => (
             <motion.div
               key={f.title}
-              custom={i}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
-              variants={fadeUp}
-              className="rounded-2xl bg-card border border-border p-6 hover:shadow-lg transition-shadow"
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.05 }}
+              className="group relative rounded-2xl border border-border bg-card p-6 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all"
             >
-              <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                <f.icon className="w-5 h-5 text-primary" />
+              <div className={`w-12 h-12 rounded-xl ${f.color} flex items-center justify-center mb-4`}>
+                <f.icon className="w-6 h-6" />
               </div>
-              <h3 className="font-semibold text-lg">{f.title}</h3>
+              <h3 className="font-bold text-lg">{f.title}</h3>
               <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
             </motion.div>
           ))}
