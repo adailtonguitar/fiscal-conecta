@@ -1,13 +1,11 @@
 /**
  * SQLite connection manager.
- * Handles initialization for both native (Capacitor) and web (jeep-sqlite) platforms.
+ * All imports are dynamic to prevent crashes on web when WASM fails to load.
  */
-import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from "@capacitor-community/sqlite";
-import { Capacitor } from "@capacitor/core";
 import { DB_NAME, DB_VERSION, SCHEMA_SQL } from "./schema";
 
-let sqlite: SQLiteConnection | null = null;
-let db: SQLiteDBConnection | null = null;
+let sqlite: any = null;
+let db: any = null;
 let initialized = false;
 
 /**
@@ -15,10 +13,16 @@ let initialized = false;
  * On web, loads jeep-sqlite web component.
  * On native, uses the Capacitor plugin directly.
  */
-export async function initLocalDB(): Promise<SQLiteDBConnection | null> {
+export async function initLocalDB(): Promise<any | null> {
   if (db && initialized) return db;
 
-  const platform = Capacitor.getPlatform();
+  let platform = "web";
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    platform = Capacitor.getPlatform();
+  } catch {
+    platform = "web";
+  }
 
   // On web, jeep-sqlite WASM can fail or be very slow — use a timeout
   if (platform === "web") {
@@ -43,7 +47,8 @@ export async function initLocalDB(): Promise<SQLiteDBConnection | null> {
   }
 }
 
-async function initWebDB(): Promise<SQLiteDBConnection> {
+async function initWebDB(): Promise<any> {
+  const { CapacitorSQLite, SQLiteConnection } = await import("@capacitor-community/sqlite");
   sqlite = new SQLiteConnection(CapacitorSQLite);
 
   const jeepEl = document.querySelector("jeep-sqlite");
@@ -73,7 +78,8 @@ async function initWebDB(): Promise<SQLiteDBConnection> {
   return db;
 }
 
-async function initNativeDB(): Promise<SQLiteDBConnection> {
+async function initNativeDB(): Promise<any> {
+  const { CapacitorSQLite, SQLiteConnection } = await import("@capacitor-community/sqlite");
   sqlite = new SQLiteConnection(CapacitorSQLite);
 
   const ret = await sqlite.checkConnectionsConsistency();
@@ -96,7 +102,7 @@ async function initNativeDB(): Promise<SQLiteDBConnection> {
 /**
  * Get the current database connection. Initializes if needed.
  */
-export async function getDB(): Promise<SQLiteDBConnection | null> {
+export async function getDB(): Promise<any | null> {
   if (!db || !initialized) {
     return initLocalDB();
   }
