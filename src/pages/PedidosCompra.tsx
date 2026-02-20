@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Package, AlertTriangle, Plus, Send, Check, ShoppingCart, Truck, Search, X } from "lucide-react";
 import { useReorderSuggestions, usePurchaseOrders, useCreatePurchaseOrder, useUpdatePurchaseOrderStatus } from "@/hooks/usePurchaseOrders";
+import { useProducts } from "@/hooks/useProducts";
 import { useSuppliers } from "@/hooks/useSuppliers";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCurrency } from "@/lib/mock-data";
@@ -28,6 +29,7 @@ const statusLabels: Record<string, { label: string; color: string }> = {
 export default function PedidosCompra() {
   const { user } = useAuth();
   const { data: suggestions = [] } = useReorderSuggestions();
+  const { data: allProducts = [] } = useProducts();
   const { data: orders = [] } = usePurchaseOrders();
   const { data: suppliers = [] } = useSuppliers();
   const createOrder = useCreatePurchaseOrder();
@@ -39,12 +41,27 @@ export default function PedidosCompra() {
   const [search, setSearch] = useState("");
 
   // Group suggestions by supplier
+  // When searching, show all matching products; otherwise show only reorder suggestions
   const filteredSuggestions = useMemo(() => {
+    const searchLower = search.toLowerCase().trim();
+    if (searchLower) {
+      return allProducts
+        .filter(p => p.is_active)
+        .filter(p =>
+          p.name.toLowerCase().includes(searchLower) ||
+          p.sku?.toLowerCase().includes(searchLower)
+        )
+        .map(p => ({
+          ...p,
+          reorder_point: p.reorder_point ?? 0,
+          reorder_quantity: p.reorder_quantity ?? 0,
+        }));
+    }
     return suggestions.filter(p =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku?.toLowerCase().includes(search.toLowerCase())
+      p.name.toLowerCase().includes(searchLower) ||
+      p.sku?.toLowerCase().includes(searchLower)
     );
-  }, [suggestions, search]);
+  }, [suggestions, allProducts, search]);
 
   const toggleItem = (id: string, qty: number, cost: number) => {
     setSelectedItems(prev => {
