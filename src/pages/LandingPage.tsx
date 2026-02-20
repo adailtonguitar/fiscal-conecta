@@ -3,18 +3,20 @@ import { LandingNav } from "@/components/landing/LandingNav";
 import { LandingHero } from "@/components/landing/LandingHero";
 import { LandingFeatures } from "@/components/landing/LandingFeatures";
 import { LandingAdvantages } from "@/components/landing/LandingAdvantages";
+import { LandingWhiteLabel } from "@/components/landing/LandingWhiteLabel";
 import { LandingPricing } from "@/components/landing/LandingPricing";
 import { LandingCTA } from "@/components/landing/LandingCTA";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
 export default function LandingPage() {
   return (
-    <div className="h-screen overflow-y-auto bg-background text-foreground">
+    <div className="landing-animated h-screen overflow-y-auto bg-background text-foreground scroll-smooth">
       <UpdateNoticeModal />
       <LandingNav />
       <LandingHero />
       <LandingFeatures />
       <LandingAdvantages />
+      <LandingWhiteLabel />
       <LandingPricing />
       <LandingCTA />
       <LandingFooter />
