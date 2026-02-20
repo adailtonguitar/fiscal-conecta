@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { useRegisterLocalStockMovement } from "@/hooks/useLocalStock";
+import { useCreateStockMovement } from "@/hooks/useStockMovements";
+import { supabase } from "@/integrations/supabase/client";
 import type { LocalProduct } from "@/hooks/useLocalProducts";
 
 const schema = z.object({
@@ -35,7 +36,7 @@ const typeLabels: Record<string, { label: string; color: string }> = {
 };
 
 export function StockMovementDialog({ open, onOpenChange, product }: Props) {
-  const createMovement = useRegisterLocalStockMovement();
+  const createMovement = useCreateStockMovement();
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -57,10 +58,16 @@ export function StockMovementDialog({ open, onOpenChange, product }: Props) {
       type: data.type,
       quantity: data.quantity,
       unit_cost: data.unit_cost,
-      new_price: data.new_price,
       reason: data.reason,
       reference: data.reference,
     });
+    // Update price/cost if provided
+    const updateFields: Record<string, unknown> = {};
+    if (data.unit_cost && data.unit_cost > 0) updateFields.cost_price = data.unit_cost;
+    if (data.new_price && data.new_price > 0) updateFields.price = data.new_price;
+    if (Object.keys(updateFields).length > 0) {
+      await supabase.from("products").update(updateFields).eq("id", product.id);
+    }
     onOpenChange(false);
     form.reset();
   };
