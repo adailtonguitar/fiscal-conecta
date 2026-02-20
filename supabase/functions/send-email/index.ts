@@ -36,7 +36,7 @@ serve(async (req) => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "PDV Fiscal <noreply@resend.dev>",
+        from: "AnthóSystem <noreply@resend.dev>",
         to: [to],
         subject,
         html,
