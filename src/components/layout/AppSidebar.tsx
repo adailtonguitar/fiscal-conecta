@@ -8,6 +8,7 @@ import {
   Users, Building2, ClipboardList, UserCheck, Factory, Truck, Tags, BarChart3, ArrowUpDown, User,
   Download, Tag, TrendingUp, AlertTriangle as AlertTriangleIcon, FileSpreadsheet, GitGraph,
   Percent, ArrowRightLeft, TrendingDown, Gift, Brain, Monitor, ShieldCheck, CreditCard, ChefHat,
+  HelpCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -120,6 +121,7 @@ const navItems: NavEntry[] = [
     ],
   },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
+  { icon: HelpCircle, label: "Ajuda", path: "/ajuda" },
   { icon: Download, label: "Instalar App", path: "/install" },
 ];
 

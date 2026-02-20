@@ -69,6 +69,7 @@ const Fiado = lazy(() => import("./pages/Fiado"));
 const PedidosCompra = lazy(() => import("./pages/PedidosCompra"));
 const Terminais = lazy(() => import("./pages/Terminais"));
 const Admin = lazy(() => import("./pages/Admin"));
+const Ajuda = lazy(() => import("./pages/Ajuda"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -263,6 +264,7 @@ function AppRoutes() {
                     <Route path="/pedidos-compra" element={<PedidosCompra />} />
                     <Route path="/terminais" element={<Terminais />} />
                     <Route path="/admin" element={<Admin />} />
+                    <Route path="/ajuda" element={<Ajuda />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
