@@ -4,6 +4,7 @@ import { useReorderSuggestions, usePurchaseOrders, useCreatePurchaseOrder, useUp
 import { useProducts } from "@/hooks/useProducts";
 import { useSuppliers } from "@/hooks/useSuppliers";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/mock-data";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
@@ -104,23 +105,54 @@ export default function PedidosCompra() {
     setTab("orders");
   };
 
-  const handlePrint = (order: any) => {
+  const handlePrint = async (order: any) => {
+    // Fetch order items with product details
+    const { data: items } = await supabase
+      .from("purchase_order_items")
+      .select("*, products(name, sku, unit)")
+      .eq("order_id", order.id);
+
     const w = window.open("", "_blank", "width=600,height=800");
     if (!w) return;
     const supplier = suppliers.find(s => s.id === order.supplier_id);
+    const itemsRows = (items || []).map((item: any) => `
+      <tr>
+        <td style="border:1px solid #ddd;padding:8px">${item.products?.name || "—"}</td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:center">${item.quantity} ${item.products?.unit || "un"}</td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:right">R$ ${Number(item.unit_cost || 0).toFixed(2).replace(".", ",")}</td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:right">R$ ${Number(item.total || 0).toFixed(2).replace(".", ",")}</td>
+      </tr>
+    `).join("");
+
     w.document.write(`
       <html><head><title>Pedido de Compra</title>
       <style>body{font-family:sans-serif;padding:24px;font-size:14px}
       h1{font-size:18px}table{width:100%;border-collapse:collapse;margin-top:16px}
       th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f5f5f5}</style></head>
       <body>
-      <h1>Pedido de Compra</h1>
+      <h1>Pedido de Compra #${order.id.slice(0, 8)}</h1>
       <p><strong>Fornecedor:</strong> ${supplier?.name || "Não especificado"}</p>
       <p><strong>Data:</strong> ${format(new Date(order.created_at), "dd/MM/yyyy")}</p>
       <p><strong>Status:</strong> ${statusLabels[order.status]?.label || order.status}</p>
-      <p><strong>Total:</strong> ${formatCurrency(Number(order.total_value))}</p>
       ${order.notes ? `<p><strong>Observações:</strong> ${order.notes}</p>` : ""}
-      <hr/><p style="margin-top:32px;text-align:center;font-size:12px;color:#888">Gerado pelo sistema</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th style="text-align:center">Qtd</th>
+            <th style="text-align:right">Custo Unit.</th>
+            <th style="text-align:right">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>${itemsRows}</tbody>
+        <tfoot>
+          <tr style="font-weight:bold;background:#f9f9f9">
+            <td colspan="3" style="border:1px solid #ddd;padding:8px;text-align:right">Total:</td>
+            <td style="border:1px solid #ddd;padding:8px;text-align:right">R$ ${Number(order.total_value || 0).toFixed(2).replace(".", ",")}</td>
+          </tr>
+        </tfoot>
+      </table>
+      <hr style="margin-top:24px"/><p style="margin-top:16px;text-align:center;font-size:12px;color:#888">Gerado pelo sistema</p>
       </body></html>
     `);
     w.document.close();
