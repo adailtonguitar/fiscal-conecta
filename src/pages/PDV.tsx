@@ -33,7 +33,7 @@ export default function PDV() {
   const { config: tefConfigData } = useTEFConfig();
   const { maxDiscountPercent } = usePermissions();
   const { earnPoints, isActive: loyaltyActive } = useLoyalty();
-  const { createQuote, updateQuoteStatus } = useQuotes();
+  const { createQuote, updateQuoteStatus } = useQuotes({ skipInitialFetch: true });
   const [showSaveQuote, setShowSaveQuote] = useState(false);
   const [quoteNotes, setQuoteNotes] = useState("");
   const [showTEF, setShowTEF] = useState(false);

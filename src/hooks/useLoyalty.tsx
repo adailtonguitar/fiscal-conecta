@@ -51,6 +51,7 @@ export function useLoyalty() {
       return data as LoyaltyConfig | null;
     },
     enabled: !!companyId,
+    staleTime: 5 * 60 * 1000, // 5 min cache
   });
 
   const { data: topClients = [], isLoading: clientsLoading } = useQuery({
@@ -67,6 +68,7 @@ export function useLoyalty() {
       return (data || []) as ClientWithPoints[];
     },
     enabled: !!companyId,
+    staleTime: 2 * 60 * 1000, // 2 min cache
   });
 
   const { data: recentTransactions = [], isLoading: transactionsLoading } = useQuery({
@@ -82,6 +84,7 @@ export function useLoyalty() {
       return (data || []) as LoyaltyTransaction[];
     },
     enabled: !!companyId,
+    staleTime: 2 * 60 * 1000, // 2 min cache
   });
 
   const saveConfig = async (values: Partial<LoyaltyConfig>) => {
