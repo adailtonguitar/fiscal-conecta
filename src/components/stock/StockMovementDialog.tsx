@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -53,23 +53,29 @@ export function StockMovementDialog({ open, onOpenChange, product }: Props) {
   const selectedType = form.watch("type");
 
   const onSubmit = async (data: FormData) => {
-    await createMovement.mutateAsync({
-      product_id: product.id,
-      type: data.type,
-      quantity: data.quantity,
-      unit_cost: data.unit_cost,
-      reason: data.reason,
-      reference: data.reference,
-    });
-    // Update price/cost if provided
-    const updateFields: Record<string, unknown> = {};
-    if (data.unit_cost && data.unit_cost > 0) updateFields.cost_price = data.unit_cost;
-    if (data.new_price && data.new_price > 0) updateFields.price = data.new_price;
-    if (Object.keys(updateFields).length > 0) {
-      await supabase.from("products").update(updateFields).eq("id", product.id);
+    try {
+      await createMovement.mutateAsync({
+        product_id: product.id,
+        type: data.type,
+        quantity: data.quantity,
+        unit_cost: data.unit_cost,
+        reason: data.reason,
+        reference: data.reference,
+      });
+      // Update price/cost if provided
+      const updateFields: Record<string, unknown> = {};
+      if (data.unit_cost && data.unit_cost > 0) updateFields.cost_price = data.unit_cost;
+      if (data.new_price && data.new_price > 0) updateFields.price = data.new_price;
+      if (Object.keys(updateFields).length > 0) {
+        const { error } = await supabase.from("products").update(updateFields).eq("id", product.id);
+        if (error) console.error("Erro ao atualizar preço:", error);
+      }
+      onOpenChange(false);
+      form.reset();
+    } catch (error: any) {
+      console.error("Erro ao registrar movimentação:", error);
+      toast.error(`Erro ao salvar: ${error?.message || "Tente novamente"}`);
     }
-    onOpenChange(false);
-    form.reset();
   };
 
   return (
