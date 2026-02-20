@@ -48,6 +48,8 @@ const navItems: NavEntry[] = [
       { icon: Tags, label: "Lotes & Validade", path: "/estoque/lotes" },
       { icon: TrendingDown, label: "Perdas", path: "/estoque/perdas" },
       { icon: ShoppingCart, label: "Pedidos Compra", path: "/pedidos-compra" },
+      { icon: Tag, label: "Etiquetas", path: "/etiquetas" },
+      { icon: ChefHat, label: "Produção", path: "/producao" },
     ],
   },
   {
@@ -57,6 +59,8 @@ const navItems: NavEntry[] = [
       { icon: FileText, label: "Histórico", path: "/vendas" },
       { icon: Tag, label: "Promoções", path: "/promocoes" },
       { icon: CreditCard, label: "Fiado", path: "/fiado" },
+      { icon: ScrollText, label: "Orçamentos", path: "/orcamentos" },
+      { icon: Gift, label: "Fidelidade", path: "/fidelidade" },
     ],
   },
   {
@@ -74,10 +78,8 @@ const navItems: NavEntry[] = [
       { icon: ArrowUpDown, label: "Estoque", path: "/estoque/movimentacoes" },
       { icon: DollarSign, label: "Caixa", path: "/caixa" },
       { icon: Landmark, label: "Financeiro", path: "/financeiro" },
-      { icon: ScrollText, label: "Orçamentos", path: "/orcamentos" },
     ],
   },
-  { icon: Monitor, label: "Terminais", path: "/terminais" },
   {
     icon: Landmark,
     label: "Financeiro",
@@ -106,9 +108,6 @@ const navItems: NavEntry[] = [
       { icon: Users, label: "Usuários", path: "/usuarios" },
     ],
   },
-  { icon: Gift, label: "Fidelidade", path: "/fidelidade" },
-  { icon: ChefHat, label: "Produção", path: "/producao" },
-  { icon: Tag, label: "Etiquetas", path: "/etiquetas" },
   {
     icon: Receipt,
     label: "Fiscal",
@@ -121,6 +120,7 @@ const navItems: NavEntry[] = [
     ],
   },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
+  { icon: Monitor, label: "Terminais", path: "/terminais" },
   { icon: HelpCircle, label: "Ajuda", path: "/ajuda" },
   { icon: Download, label: "Instalar App", path: "/install" },
 ];
