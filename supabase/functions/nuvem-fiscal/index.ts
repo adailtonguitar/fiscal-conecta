@@ -316,6 +316,28 @@ Deno.serve(async (req: Request) => {
 
       if (!fiscalConfig) throw new Error("Configuração fiscal de NFC-e não encontrada. Configure em Fiscal > Configurações.");
 
+      // Pre-flight checks — give clear feedback about what's missing
+      const missing: string[] = [];
+      if (!fiscalConfig.certificate_path && fiscalConfig.certificate_type !== "a3") {
+        missing.push("Certificado digital A1 (.PFX) não cadastrado");
+      }
+      if (fiscalConfig.certificate_type === "a3" && !fiscalConfig.a3_thumbprint) {
+        missing.push("Certificado A3 não configurado (thumbprint ausente)");
+      }
+      if (!Deno.env.get("NUVEM_FISCAL_CLIENT_ID") || !Deno.env.get("NUVEM_FISCAL_CLIENT_SECRET")) {
+        missing.push("Credenciais da API fiscal (Client ID/Secret) não configuradas");
+      }
+      if (missing.length > 0) {
+        return new Response(JSON.stringify({ 
+          error: "Configuração fiscal incompleta", 
+          missing,
+          message: missing.join(". ") + ". Acesse Configurações > Fiscal para completar."
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       // Build payload
       const nfceBody = buildNfceBody({
         company,
@@ -332,7 +354,21 @@ Deno.serve(async (req: Request) => {
       nfceBody.referencia = fiscal_document_id;
 
       // Get Nuvem Fiscal token
-      const nfToken = await getAccessToken("empresa nfce");
+      let nfToken: string;
+      try {
+        nfToken = await getAccessToken("empresa nfce");
+      } catch (tokenErr) {
+        const tokenMsg = tokenErr instanceof Error ? tokenErr.message : String(tokenErr);
+        const isInvalidClient = tokenMsg.includes("invalid_client") || tokenMsg.includes("401");
+        return new Response(JSON.stringify({ 
+          error: isInvalidClient 
+            ? "Credenciais da API fiscal inválidas ou expiradas. Atualize o Client ID e Client Secret da Nuvem Fiscal." 
+            : `Erro de autenticação fiscal: ${tokenMsg}`,
+        }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
       // Emit NFC-e
       const result = await nuvemFiscalRequest("POST", "/nfce", nfToken, nfceBody);

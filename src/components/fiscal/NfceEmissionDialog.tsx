@@ -261,11 +261,17 @@ export function NfceEmissionDialog({ sale, open, onOpenChange, onSuccess }: Prop
         onOpenChange(false);
         onSuccess();
       } else {
-        toast.error(result?.error || `Erro ao emitir ${docLabel}. Verifique a configuração fiscal.`);
+        const errorMsg = result?.message || result?.error || `Erro ao emitir ${docLabel}. Verifique a configuração fiscal.`;
+        toast.error(errorMsg, { duration: 8000 });
       }
     } catch (err: any) {
       console.error("[NfceEmission] Error:", err);
-      toast.error(err?.message || `Erro ao emitir ${docType === "nfce" ? "NFC-e" : "NF-e"}`);
+      const msg = err?.message || "";
+      if (msg.includes("invalid_client")) {
+        toast.error("Credenciais da API fiscal inválidas ou expiradas. Atualize nas configurações.", { duration: 8000 });
+      } else {
+        toast.error(msg || `Erro ao emitir ${docType === "nfce" ? "NFC-e" : "NF-e"}`);
+      }
     } finally {
       setEmitting(false);
     }
