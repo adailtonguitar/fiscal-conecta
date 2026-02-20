@@ -245,6 +245,7 @@ export function NfceEmissionDialog({ sale, open, onOpenChange, onSuccess }: Prop
     setEmitting(true);
     try {
       const docLabel = docType === "nfce" ? "NFC-e" : "NF-e";
+      console.log("[NfceEmission] Starting emission:", { docType, saleId: sale.id, itemsCount: items.length, total });
       const result = await FiscalEmissionService.emitirNfce({
         fiscalDocumentId: sale.id,
         items,
@@ -253,6 +254,7 @@ export function NfceEmissionDialog({ sale, open, onOpenChange, onSuccess }: Prop
         customerCpf: customerCpf || undefined,
         customerName: customerName || undefined,
       });
+      console.log("[NfceEmission] Result:", result);
 
       if (result?.success || result?.status === "autorizada") {
         toast.success(`${docLabel} emitida com sucesso!`);
@@ -262,7 +264,8 @@ export function NfceEmissionDialog({ sale, open, onOpenChange, onSuccess }: Prop
         toast.error(result?.error || `Erro ao emitir ${docLabel}. Verifique a configuração fiscal.`);
       }
     } catch (err: any) {
-      toast.error(err.message || `Erro ao emitir ${docType === "nfce" ? "NFC-e" : "NF-e"}`);
+      console.error("[NfceEmission] Error:", err);
+      toast.error(err?.message || `Erro ao emitir ${docType === "nfce" ? "NFC-e" : "NF-e"}`);
     } finally {
       setEmitting(false);
     }
