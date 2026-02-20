@@ -116,9 +116,15 @@ export default function PedidosCompra() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="px-6 py-5 border-b border-border">
-        <h1 className="text-2xl font-bold text-foreground">Pedidos de Compra</h1>
-        <p className="text-sm text-muted-foreground mt-1">Sugestões automáticas e gestão de pedidos para fornecedores</p>
+      <div className="px-6 py-5 border-b border-border flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Pedidos de Compra</h1>
+          <p className="text-sm text-muted-foreground mt-1">Sugestões automáticas e gestão de pedidos para fornecedores</p>
+        </div>
+        <Button onClick={() => setTab("suggestions")}>
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Pedido
+        </Button>
       </div>
 
       {/* Summary */}
