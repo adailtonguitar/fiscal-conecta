@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/mock-data";
-import { useUpdateLocalProduct, type LocalProduct } from "@/hooks/useLocalProducts";
-import { useRegisterLocalStockMovement } from "@/hooks/useLocalStock";
+import { type LocalProduct } from "@/hooks/useLocalProducts";
+import { useCreateStockMovement } from "@/hooks/useStockMovements";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -35,8 +36,7 @@ export function BatchMovementMode({ products, onClose }: Props) {
   const [priceEntries, setPriceEntries] = useState<Record<string, PriceEntry>>({});
   const [saving, setSaving] = useState(false);
 
-  const createMovement = useRegisterLocalStockMovement();
-  const updateProduct = useUpdateLocalProduct();
+  const createMovement = useCreateStockMovement();
 
   const filtered = useMemo(
     () =>
@@ -130,7 +130,8 @@ export function BatchMovementMode({ products, onClose }: Props) {
         const updates: Record<string, number> = {};
         if (entry.price !== undefined) updates.price = entry.price;
         if (entry.cost_price !== undefined) updates.cost_price = entry.cost_price;
-        await updateProduct.mutateAsync({ id: productId, ...updates });
+        const { error } = await supabase.from("products").update(updates).eq("id", productId);
+        if (error) throw error;
         success++;
       } catch {
         errors++;
