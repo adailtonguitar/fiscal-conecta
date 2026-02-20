@@ -12,7 +12,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Shield, Activity, Search, Ban, CheckCircle } from "lucide-react";
+import { Shield, Activity, Search, Ban, CheckCircle, LayoutDashboard, Users, CreditCard, FileText } from "lucide-react";
+import { AdminDashboard } from "@/components/admin/AdminDashboard";
+import { AdminSubscriptions } from "@/components/admin/AdminSubscriptions";
+import { AdminCompanyUsers } from "@/components/admin/AdminCompanyUsers";
+import { AdminGlobalLogs } from "@/components/admin/AdminGlobalLogs";
 
 interface CompanyRow {
   id: string;
@@ -56,14 +60,30 @@ export default function Admin() {
         <h1 className="text-2xl font-bold">Painel Administrativo</h1>
       </div>
 
-      <Tabs defaultValue="companies">
-        <TabsList>
+      <Tabs defaultValue="dashboard">
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="dashboard"><LayoutDashboard className="h-4 w-4 mr-1" /> Resumo</TabsTrigger>
           <TabsTrigger value="companies"><Ban className="h-4 w-4 mr-1" /> Empresas</TabsTrigger>
+          <TabsTrigger value="subscriptions"><CreditCard className="h-4 w-4 mr-1" /> Assinaturas</TabsTrigger>
+          <TabsTrigger value="users"><Users className="h-4 w-4 mr-1" /> Usuários</TabsTrigger>
+          <TabsTrigger value="logs"><FileText className="h-4 w-4 mr-1" /> Logs</TabsTrigger>
           <TabsTrigger value="telemetry"><Activity className="h-4 w-4 mr-1" /> Telemetria</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="dashboard">
+          <AdminDashboard />
+        </TabsContent>
         <TabsContent value="companies">
           <CompaniesTab />
+        </TabsContent>
+        <TabsContent value="subscriptions">
+          <AdminSubscriptions />
+        </TabsContent>
+        <TabsContent value="users">
+          <AdminCompanyUsers />
+        </TabsContent>
+        <TabsContent value="logs">
+          <AdminGlobalLogs />
         </TabsContent>
         <TabsContent value="telemetry">
           <TelemetryTab />
