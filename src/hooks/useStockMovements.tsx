@@ -90,13 +90,7 @@ export function useCreateStockMovement() {
         .single();
       if (error) throw error;
 
-      // Update product stock_quantity
-      const { error: updateErr } = await supabase
-        .from("products")
-        .update({ stock_quantity: newStock })
-        .eq("id", movement.product_id);
-      if (updateErr) throw updateErr;
-
+      // stock_quantity is updated automatically by DB trigger (update_product_stock)
       return data;
     },
     onSuccess: () => {
