@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ArrowUpDown, Search, Package, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLocalStockMovements, type LocalStockMovement } from "@/hooks/useLocalStock";
 import { useLocalProducts, type LocalProduct } from "@/hooks/useLocalProducts";
+import { useProducts } from "@/hooks/useProducts";
 import { BatchMovementMode } from "@/components/stock/BatchMovementMode";
 import { StockMovementDialog } from "@/components/stock/StockMovementDialog";
 
@@ -19,7 +20,15 @@ const typeLabels: Record<string, { label: string; variant: "default" | "secondar
 
 export default function Movimentacoes() {
   const { data: movements = [], isLoading } = useLocalStockMovements();
-  const { data: products = [] } = useLocalProducts();
+  const { data: localProducts = [] } = useLocalProducts();
+  const { data: supabaseProducts = [] } = useProducts();
+  const products = useMemo(() => {
+    return localProducts.length > 0 ? localProducts : supabaseProducts.map(p => ({
+      ...p,
+      is_active: p.is_active ? 1 : 0,
+      sku: p.sku || '',
+    })) as unknown as LocalProduct[];
+  }, [localProducts, supabaseProducts]);
   const [search, setSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [batchMode, setBatchMode] = useState(false);
