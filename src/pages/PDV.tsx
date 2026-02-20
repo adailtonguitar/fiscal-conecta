@@ -179,7 +179,7 @@ export default function PDV() {
       return;
     }
     handleCheckout(method);
-  }, [pdv.cartItems.length]);
+  }, [pdv.cartItems.length, handleCheckout]);
 
   // Barcode manual input with multiplication support (e.g. 5*789123456789)
   const handleBarcodeSubmit = () => {
