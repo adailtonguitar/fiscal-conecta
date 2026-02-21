@@ -635,11 +635,11 @@ export default function PDV() {
                         key={item.id}
                         ref={isLast ? tableEndRef : undefined}
                         onClick={(e) => { e.stopPropagation(); setSelectedCartItemId(item.id); }}
-                        className={`border-b border-border cursor-pointer ${
+                        className={`border-b border-border cursor-pointer transition-all duration-200 ${
                           selectedCartItemId === item.id
                             ? "bg-primary/20 ring-2 ring-primary ring-inset font-bold"
                             : isLast && !selectedCartItemId
-                            ? "bg-primary/10 font-bold"
+                            ? "bg-primary/10 font-bold animate-pulse-once"
                             : idx % 2 === 0
                             ? "bg-card"
                             : "bg-muted/30"
@@ -884,17 +884,17 @@ export default function PDV() {
 
           {/* TOTAL — BIG DISPLAY */}
           <div
-            className="p-1.5 lg:p-3 xl:p-4 mt-auto border-t-4 transition-colors duration-300 flex-shrink-0"
+            className="p-2 lg:p-4 xl:p-6 mt-auto border-t-4 transition-colors duration-300 flex-shrink-0"
             style={{
               backgroundColor: totalFinal > 0 ? "hsl(0, 72%, 40%)" : "hsl(142, 72%, 32%)",
               borderTopColor: totalFinal > 0 ? "hsl(0, 72%, 50%)" : "hsl(142, 72%, 45%)",
             }}
           >
             <div className="text-center">
-              <span className="text-[9px] lg:text-xs font-bold uppercase tracking-[0.25em] block mb-0 lg:mb-1" style={{ color: "rgba(255,255,255,0.75)" }}>
+              <span className="text-[10px] lg:text-sm font-bold uppercase tracking-[0.3em] block mb-0.5 lg:mb-2" style={{ color: "rgba(255,255,255,0.8)" }}>
                 {totalFinal > 0 ? "TOTAL A PAGAR" : "TOTAL DA VENDA"}
               </span>
-              <span className="text-2xl lg:text-5xl xl:text-6xl font-black font-mono tracking-tight block" style={{ color: "#ffffff", textShadow: "0 3px 12px rgba(0,0,0,0.4)" }}>
+              <span className="text-3xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-black font-mono tracking-tight block leading-none" style={{ color: "#ffffff", textShadow: "0 4px 16px rgba(0,0,0,0.5)" }}>
                 {formatCurrency(totalFinal)}
               </span>
             </div>
@@ -999,15 +999,15 @@ export default function PDV() {
               key={id}
               onClick={() => handleDirectPayment(id)}
               disabled={pdv.cartItems.length === 0}
-              className={`flex-1 min-w-[52px] flex flex-col items-center justify-center gap-0.5 lg:gap-1 xl:gap-1.5 py-2 lg:py-3 xl:py-4 rounded-xl text-sm font-extrabold tracking-wide transition-all disabled:opacity-30 disabled:cursor-not-allowed ${colorClass}`}
+              className={`flex-1 min-w-[56px] flex flex-col items-center justify-center gap-1 lg:gap-1.5 xl:gap-2 py-2.5 lg:py-4 xl:py-5 rounded-xl text-sm font-extrabold tracking-wide transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed ${colorClass}`}
             >
-              <Icon className="w-4 h-4 lg:w-5 lg:h-5 xl:w-7 xl:h-7" />
-              <span className="text-[10px] lg:text-[11px] xl:text-[13px]">{label}</span>
+              <Icon className="w-5 h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8" />
+              <span className="text-[11px] lg:text-xs xl:text-sm font-bold">{label}</span>
             </button>
           ))}
         </div>
         {/* Shortcut hints row */}
-        <div className="hidden lg:flex items-center justify-center gap-2 px-2 py-1.5 bg-muted/70 border-t border-border">
+        <div className="hidden lg:flex items-center justify-center gap-3 xl:gap-4 px-3 py-2 xl:py-2.5 bg-muted/70 border-t border-border flex-wrap">
           {[
             { key: "F3", label: "Buscar", color: "bg-blue-600 text-white" },
             { key: "F5", label: "Cliente", color: "bg-teal-600 text-white" },
@@ -1018,8 +1018,8 @@ export default function PDV() {
              { key: "↑↓", label: "Navegar", color: "bg-slate-600 text-white" },
              { key: "DEL", label: "Remover", color: "bg-rose-600 text-white" },
           ].map(({ key, label, color }) => (
-            <span key={key} className="flex items-center gap-1.5 text-foreground font-semibold text-sm">
-              <span className={`font-mono font-black px-2.5 py-1.5 rounded-lg text-xs shadow-md ${color}`}>{key}</span>
+            <span key={key} className="flex items-center gap-2 text-foreground font-bold text-sm xl:text-base">
+              <span className={`font-mono font-black px-3 py-2 rounded-lg text-sm xl:text-base shadow-lg border border-white/20 ${color}`}>{key}</span>
               {label}
             </span>
           ))}
