@@ -105,7 +105,7 @@ serve(async (req) => {
           const email = userData.user.email;
           const userName = userData.user.user_metadata?.full_name || email.split("@")[0];
           const planName = sub.plan_key === "profissional" ? "Profissional" : "Essencial";
-          const renewUrl = "https://cloud-ponto-magico.lovable.app/dashboard";
+          const renewUrl = "https://cloud-ponto-magico.lovable.app/renovar";
 
           const subject = days <= 1
             ? "⚠️ Sua assinatura expira hoje — AnthoSystem"
