@@ -58,7 +58,7 @@ export default function Produtos() {
 
   if (showForm) {
     return (
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="p-3 sm:p-6 max-w-7xl mx-auto">
         <ProductFormDialog
           key={adaptedEditing?.id ?? "new"}
           open={showForm}
@@ -70,26 +70,26 @@ export default function Produtos() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Produtos & Estoque</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Produtos & Estoque</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             {products.length} produtos cadastrados
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={() => setShowNFeImport(true)}>
-            <FileText className="w-4 h-4 mr-2" />
-            Importar NF-e
+            <FileText className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Importar NF-e</span>
           </Button>
           <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
-            <Upload className="w-4 h-4 mr-2" />
-            Importar CSV
+            <Upload className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Importar CSV</span>
           </Button>
           <Button size="sm" onClick={() => setShowForm(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Produto
+            <Plus className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Novo Produto</span>
           </Button>
         </div>
       </div>
@@ -108,11 +108,11 @@ export default function Produtos() {
         />
       </div>
 
-      {/* Products table */}
+      {/* Desktop table */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="bg-card rounded-xl card-shadow border border-border overflow-hidden"
+        className="hidden sm:block bg-card rounded-xl card-shadow border border-border overflow-hidden"
       >
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -173,32 +173,16 @@ export default function Produtos() {
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => setMovementProduct(product)}
-                            title="Movimentar estoque"
-                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                          >
+                          <button onClick={() => setMovementProduct(product)} title="Movimentar estoque" className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                             <ArrowUpDown className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => setHistoryProduct(product)}
-                            title="Histórico"
-                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                          >
+                          <button onClick={() => setHistoryProduct(product)} title="Histórico" className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                             <History className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => handleEdit(product)}
-                            title="Editar"
-                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                          >
+                          <button onClick={() => handleEdit(product)} title="Editar" className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                             <Edit className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => setDeleteTarget(product)}
-                            title="Excluir"
-                            className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                          >
+                          <button onClick={() => setDeleteTarget(product)} title="Excluir" className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -211,6 +195,58 @@ export default function Produtos() {
           </table>
         </div>
       </motion.div>
+
+      {/* Mobile cards */}
+      <div className="sm:hidden space-y-2">
+        {isLoading ? (
+          [...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground text-sm">
+            {products.length === 0 ? "Nenhum produto cadastrado." : "Nenhum produto encontrado."}
+          </div>
+        ) : (
+          filtered.map((product) => {
+            const isLow = product.min_stock != null && product.min_stock > 0 && product.stock_quantity <= product.min_stock;
+            return (
+              <div key={product.id} className="bg-card rounded-xl border border-border p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
+                      <Package className="w-4 h-4 text-accent-foreground" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground text-sm truncate">{product.name}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{product.sku}</p>
+                    </div>
+                  </div>
+                  <span className="font-mono font-semibold text-primary text-sm shrink-0">
+                    {formatCurrency(product.price)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-border">
+                  <div className="flex gap-3 text-xs text-muted-foreground">
+                    <span className={`font-mono font-semibold ${isLow ? "text-destructive" : "text-foreground"}`}>
+                      Est: {product.stock_quantity} {product.unit.toLowerCase()}
+                    </span>
+                    {product.category && <span>{product.category}</span>}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => setMovementProduct(product)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted">
+                      <ArrowUpDown className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleEdit(product)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted">
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => setDeleteTarget(product)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
 
 
       {movementProduct && (
