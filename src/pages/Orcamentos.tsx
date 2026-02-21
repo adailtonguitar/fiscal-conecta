@@ -38,8 +38,8 @@ export default function Orcamentos() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <FileText className="w-6 h-6 text-primary" />
@@ -73,80 +73,118 @@ export default function Orcamentos() {
           <p className="text-xs text-muted-foreground mt-1">Crie orçamentos no PDV usando o atalho ou botão "Orçamento".</p>
         </div>
       ) : (
-        <div className="bg-card rounded-xl border border-border overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/50">
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">#</th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Cliente</th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Itens</th>
-                <th className="text-right px-4 py-3 font-semibold text-muted-foreground">Total</th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Status</th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Data</th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Validade</th>
-                <th className="text-right px-4 py-3 font-semibold text-muted-foreground">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((q) => {
-                const st = statusLabels[q.status] || statusLabels.pendente;
-                const StatusIcon = st.icon;
-                const items = Array.isArray(q.items_json) ? q.items_json : [];
-                return (
-                  <tr key={q.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3 font-mono font-bold text-foreground">{q.quote_number}</td>
-                    <td className="px-4 py-3 text-foreground">{q.client_name || "—"}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{items.length} produto(s)</td>
-                    <td className="px-4 py-3 text-right font-bold font-mono text-foreground">{fmt(q.total)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${st.color}`}>
-                        <StatusIcon className="w-3 h-3" />
-                        {st.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs">
-                      {new Date(q.created_at).toLocaleDateString("pt-BR")}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs">
-                      {q.valid_until ? new Date(q.valid_until + "T00:00:00").toLocaleDateString("pt-BR") : "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => setViewQuote(q)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Visualizar">
-                          <Eye className="w-4 h-4 text-muted-foreground" />
+        <>
+          {/* Mobile cards */}
+          <div className="sm:hidden space-y-2">
+            {filtered.map((q) => {
+              const st = statusLabels[q.status] || statusLabels.pendente;
+              const StatusIcon = st.icon;
+              const items = Array.isArray(q.items_json) ? q.items_json : [];
+              return (
+                <div key={q.id} className="bg-card rounded-xl border border-border p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        #{q.quote_number} — {q.client_name || "Sem cliente"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{items.length} produto(s)</p>
+                    </div>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 ${st.color}`}>
+                      <StatusIcon className="w-3 h-3" />
+                      {st.label}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-border">
+                    <p className="text-sm font-bold font-mono text-foreground">{fmt(q.total)}</p>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => setViewQuote(q)} className="p-1.5 rounded-lg hover:bg-muted" title="Ver">
+                        <Eye className="w-4 h-4 text-muted-foreground" />
+                      </button>
+                      {q.status === "pendente" && (
+                        <button onClick={() => handleConvertToSale(q)} className="p-1.5 rounded-lg hover:bg-primary/10" title="Converter">
+                          <ShoppingCart className="w-4 h-4 text-primary" />
                         </button>
-                        {q.status === "pendente" && (
-                          <>
-                            <button
-                              onClick={() => handleConvertToSale(q)}
-                              className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors" title="Converter em Venda"
-                            >
-                              <ShoppingCart className="w-4 h-4 text-primary" />
-                            </button>
-                            <button
-                              onClick={async () => { await updateQuoteStatus(q.id, "cancelado"); toast.info("Orçamento cancelado"); }}
-                              className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors" title="Cancelar"
-                            >
-                              <XCircle className="w-4 h-4 text-destructive" />
-                            </button>
-                          </>
-                        )}
-                        {q.status === "cancelado" && (
-                          <button
-                            onClick={async () => { await deleteQuote(q.id); toast.info("Orçamento excluído"); }}
-                            className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors" title="Excluir"
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden sm:block bg-card rounded-xl border border-border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">#</th>
+                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Cliente</th>
+                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Itens</th>
+                  <th className="text-right px-4 py-3 font-semibold text-muted-foreground">Total</th>
+                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Status</th>
+                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Data</th>
+                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Validade</th>
+                  <th className="text-right px-4 py-3 font-semibold text-muted-foreground">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((q) => {
+                  const st = statusLabels[q.status] || statusLabels.pendente;
+                  const StatusIcon = st.icon;
+                  const items = Array.isArray(q.items_json) ? q.items_json : [];
+                  return (
+                    <tr key={q.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3 font-mono font-bold text-foreground">{q.quote_number}</td>
+                      <td className="px-4 py-3 text-foreground">{q.client_name || "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{items.length} produto(s)</td>
+                      <td className="px-4 py-3 text-right font-bold font-mono text-foreground">{fmt(q.total)}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${st.color}`}>
+                          <StatusIcon className="w-3 h-3" />
+                          {st.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs">
+                        {new Date(q.created_at).toLocaleDateString("pt-BR")}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs">
+                        {q.valid_until ? new Date(q.valid_until + "T00:00:00").toLocaleDateString("pt-BR") : "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => setViewQuote(q)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Visualizar">
+                            <Eye className="w-4 h-4 text-muted-foreground" />
                           </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                          {q.status === "pendente" && (
+                            <>
+                              <button onClick={() => handleConvertToSale(q)} className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors" title="Converter em Venda">
+                                <ShoppingCart className="w-4 h-4 text-primary" />
+                              </button>
+                              <button
+                                onClick={async () => { await updateQuoteStatus(q.id, "cancelado"); toast.info("Orçamento cancelado"); }}
+                                className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors" title="Cancelar"
+                              >
+                                <XCircle className="w-4 h-4 text-destructive" />
+                              </button>
+                            </>
+                          )}
+                          {q.status === "cancelado" && (
+                            <button
+                              onClick={async () => { await deleteQuote(q.id); toast.info("Orçamento excluído"); }}
+                              className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors" title="Excluir"
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* View quote detail modal */}
