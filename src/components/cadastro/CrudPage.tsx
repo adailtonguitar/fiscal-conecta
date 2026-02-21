@@ -190,29 +190,75 @@ export function CrudPage<T extends { id: string }>({
         />
       </div>
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden">
+      {/* Mobile cards */}
+      <div className="sm:hidden space-y-2">
+        {isLoading ? (
+          [...Array(3)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground text-sm">
+            {data.length === 0 ? 'Nenhum registro cadastrado.' : 'Nenhum resultado encontrado.'}
+          </div>
+        ) : (
+          filtered.map((item) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="bg-card rounded-xl border border-border p-3 space-y-1.5"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  {tableFields.map((f, idx) => (
+                    <div key={f.key} className={idx === 0 ? "text-sm font-medium text-foreground truncate" : "text-xs text-muted-foreground truncate"}>
+                      {idx === 0 ? (
+                        (item as any)[f.key] || "—"
+                      ) : (
+                        <>
+                          <span className="text-muted-foreground/70">{f.label}: </span>
+                          {(item as any)[f.key] || "—"}
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-0.5 flex-shrink-0">
+                  <button onClick={() => openEdit(item)} title="Editar" className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => setDeleteTarget(item)} title="Excluir" className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden hidden sm:block">
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[500px]">
             <thead>
               <tr className="border-b border-border">
                 {tableFields.map((f) => (
-                  <th key={f.key} className="text-left px-3 sm:px-5 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                  <th key={f.key} className="text-left px-5 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                     {f.label}
                   </th>
                 ))}
-                <th className="text-center px-3 sm:px-5 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">Ações</th>
+                <th className="text-center px-5 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">Ações</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 [...Array(5)].map((_, i) => (
                   <tr key={i} className="border-b border-border">
-                    <td className="px-3 sm:px-5 py-3" colSpan={tableFields.length + 1}><Skeleton className="h-8 w-full" /></td>
+                    <td className="px-5 py-3" colSpan={tableFields.length + 1}><Skeleton className="h-8 w-full" /></td>
                   </tr>
                 ))
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={tableFields.length + 1} className="px-3 sm:px-5 py-12 text-center text-muted-foreground">
+                  <td colSpan={tableFields.length + 1} className="px-5 py-12 text-center text-muted-foreground">
                     {data.length === 0 ? 'Nenhum registro cadastrado.' : 'Nenhum resultado encontrado.'}
                   </td>
                 </tr>
@@ -220,11 +266,11 @@ export function CrudPage<T extends { id: string }>({
                 filtered.map((item) => (
                   <tr key={item.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                     {tableFields.map((f) => (
-                      <td key={f.key} className="px-3 sm:px-5 py-3 text-foreground max-w-[150px] sm:max-w-none truncate">
+                      <td key={f.key} className="px-5 py-3 text-foreground max-w-[200px] truncate">
                         {(item as any)[f.key] || "—"}
                       </td>
                     ))}
-                    <td className="px-3 sm:px-5 py-3">
+                    <td className="px-5 py-3">
                       <div className="flex items-center justify-center gap-1">
                         <button onClick={() => openEdit(item)} title="Editar" className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                           <Edit className="w-4 h-4" />
