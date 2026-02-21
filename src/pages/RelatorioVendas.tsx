@@ -160,7 +160,7 @@ export default function RelatorioVendas() {
   const inputClass = "px-3 py-2 rounded-lg bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all";
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
@@ -247,8 +247,45 @@ export default function RelatorioVendas() {
         </motion.div>
       )}
 
-      {/* Product Profit Table */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden">
+      {/* Product Profit - Mobile Cards */}
+      <div className="sm:hidden space-y-2">
+        <div className="flex items-center gap-2 px-1">
+          <Package className="w-4 h-4 text-primary" />
+          <h2 className="text-sm font-semibold text-foreground">Lucro por Produto</h2>
+          <span className="text-xs text-muted-foreground ml-auto">{productProfits.length} produtos</span>
+        </div>
+        {isLoading ? (
+          [...Array(3)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
+        ) : productProfits.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground text-sm">Nenhuma venda no período.</div>
+        ) : (
+          productProfits.map((p) => (
+            <div key={p.product_id} className="bg-card rounded-xl border border-border p-3 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{p.name}</p>
+                  <p className="text-xs text-muted-foreground font-mono">{p.sku}</p>
+                </div>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${
+                  p.margin_percent >= 30 ? "bg-emerald-500/10 text-emerald-500"
+                    : p.margin_percent >= 10 ? "bg-amber-500/10 text-amber-500"
+                    : "bg-destructive/10 text-destructive"
+                }`}>
+                  {p.margin_percent.toFixed(1)}%
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-2 border-t border-border">
+                <span>Qtd: <strong className="text-foreground font-mono">{p.total_quantity}</strong></span>
+                <span>Receita: <strong className="text-foreground font-mono">{formatCurrency(p.total_revenue)}</strong></span>
+                <span>Lucro: <strong className={`font-mono ${p.total_profit >= 0 ? "text-emerald-500" : "text-destructive"}`}>{formatCurrency(p.total_profit)}</strong></span>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Product Profit - Desktop Table */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="hidden sm:block bg-card rounded-xl card-shadow border border-border overflow-hidden">
         <div className="px-5 py-4 border-b border-border flex items-center gap-2">
           <Package className="w-4 h-4 text-primary" />
           <h2 className="text-base font-semibold text-foreground">Lucro por Produto</h2>
@@ -281,7 +318,7 @@ export default function RelatorioVendas() {
                 </tr>
               ) : (
                 <>
-                  {productProfits.map((p, i) => (
+                  {productProfits.map((p) => (
                     <tr key={p.product_id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                       <td className="px-5 py-3">
                         <div>
@@ -297,10 +334,8 @@ export default function RelatorioVendas() {
                       </td>
                       <td className="px-5 py-3 text-right">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          p.margin_percent >= 30
-                            ? "bg-emerald-500/10 text-emerald-500"
-                            : p.margin_percent >= 10
-                            ? "bg-amber-500/10 text-amber-500"
+                          p.margin_percent >= 30 ? "bg-emerald-500/10 text-emerald-500"
+                            : p.margin_percent >= 10 ? "bg-amber-500/10 text-amber-500"
                             : "bg-destructive/10 text-destructive"
                         }`}>
                           {p.margin_percent.toFixed(1)}%
@@ -308,7 +343,6 @@ export default function RelatorioVendas() {
                       </td>
                     </tr>
                   ))}
-                  {/* Totals row */}
                   <tr className="bg-muted/30 font-semibold">
                     <td className="px-5 py-3 text-foreground">TOTAL</td>
                     <td className="px-5 py-3 text-right font-mono text-foreground">{totals.quantity}</td>
