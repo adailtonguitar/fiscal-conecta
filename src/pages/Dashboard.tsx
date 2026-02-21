@@ -6,6 +6,7 @@ import { useAdminRole } from "@/hooks/useAdminRole";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { Link } from "react-router-dom";
 import { QuickAccessCards } from "@/components/dashboard/QuickAccessCards";
+import { AiInsightWidget } from "@/components/dashboard/AiInsightWidget";
 
 export default function Dashboard() {
   const { trialActive, trialDaysLeft, subscribed } = useSubscription();
@@ -151,6 +152,9 @@ export default function Dashboard() {
               </motion.div>
             ))}
           </div>
+
+          {/* AI Insight Widget */}
+          <AiInsightWidget />
 
           {/* Recent sales table */}
           <motion.div
