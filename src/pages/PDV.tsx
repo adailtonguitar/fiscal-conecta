@@ -1212,6 +1212,150 @@ export default function PDV() {
           </div>
         </div>
       )}
+      {/* ════════ MOBILE MODAL: Item Discount ════════ */}
+      {editingItemDiscountId && (
+        <div className="fixed inset-0 z-50 flex items-end lg:hidden bg-black/50" onClick={() => setEditingItemDiscountId(null)}>
+          <div className="w-full bg-card rounded-t-2xl border-t border-border shadow-2xl p-5 space-y-4 animate-in slide-in-from-bottom" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-foreground">Desconto do Item</h3>
+              <button onClick={() => setEditingItemDiscountId(null)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {pdv.cartItems.find(i => i.id === editingItemDiscountId)?.name || "Item"} — Máx: {maxDiscountPercent}%
+            </p>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min={0}
+                max={maxDiscountPercent}
+                step={0.5}
+                autoFocus
+                defaultValue={pdv.itemDiscounts[editingItemDiscountId] || 0}
+                className="flex-1 px-4 py-3 rounded-xl bg-background border-2 border-border text-xl font-mono text-center focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value)), maxDiscountPercent);
+                    pdv.setItemDiscount(editingItemDiscountId!, val);
+                    setEditingItemDiscountId(null);
+                  }
+                }}
+                id="mobile-item-discount-input"
+              />
+              <span className="text-lg font-bold text-muted-foreground">%</span>
+            </div>
+            <button
+              onClick={() => {
+                const input = document.getElementById("mobile-item-discount-input") as HTMLInputElement;
+                const val = Math.min(Math.max(0, Number(input?.value || 0)), maxDiscountPercent);
+                pdv.setItemDiscount(editingItemDiscountId!, val);
+                setEditingItemDiscountId(null);
+              }}
+              className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold"
+            >
+              Aplicar Desconto
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ════════ MOBILE MODAL: Global Discount ════════ */}
+      {editingGlobalDiscount && (
+        <div className="fixed inset-0 z-50 flex items-end lg:hidden bg-black/50" onClick={() => setEditingGlobalDiscount(false)}>
+          <div className="w-full bg-card rounded-t-2xl border-t border-border shadow-2xl p-5 space-y-4 animate-in slide-in-from-bottom" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-foreground">Desconto Total</h3>
+              <button onClick={() => setEditingGlobalDiscount(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-muted-foreground">Máx: {maxDiscountPercent}%</p>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min={0}
+                max={maxDiscountPercent}
+                step={0.5}
+                autoFocus
+                defaultValue={pdv.globalDiscountPercent}
+                className="flex-1 px-4 py-3 rounded-xl bg-background border-2 border-border text-xl font-mono text-center focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value)), maxDiscountPercent);
+                    pdv.setGlobalDiscountPercent(val);
+                    setEditingGlobalDiscount(false);
+                  }
+                }}
+                id="mobile-global-discount-input"
+              />
+              <span className="text-lg font-bold text-muted-foreground">%</span>
+            </div>
+            <button
+              onClick={() => {
+                const input = document.getElementById("mobile-global-discount-input") as HTMLInputElement;
+                const val = Math.min(Math.max(0, Number(input?.value || 0)), maxDiscountPercent);
+                pdv.setGlobalDiscountPercent(val);
+                setEditingGlobalDiscount(false);
+              }}
+              className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold"
+            >
+              Aplicar Desconto
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ════════ MOBILE MODAL: Change Quantity ════════ */}
+      {editingQtyItemId && (
+        <div className="fixed inset-0 z-50 flex items-end lg:hidden bg-black/50" onClick={() => setEditingQtyItemId(null)}>
+          <div className="w-full bg-card rounded-t-2xl border-t border-border shadow-2xl p-5 space-y-4 animate-in slide-in-from-bottom" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-foreground">Alterar Quantidade</h3>
+              <button onClick={() => setEditingQtyItemId(null)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {pdv.cartItems.find(i => i.id === editingQtyItemId)?.name || "Item"}
+            </p>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              autoFocus
+              value={editingQtyValue}
+              onChange={(e) => setEditingQtyValue(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-background border-2 border-border text-xl font-mono text-center focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const newQty = Math.max(1, parseInt(editingQtyValue) || 1);
+                  const item = pdv.cartItems.find(i => i.id === editingQtyItemId);
+                  if (item) {
+                    const delta = newQty - item.quantity;
+                    pdv.updateQuantity(editingQtyItemId!, delta);
+                  }
+                  setEditingQtyItemId(null);
+                }
+              }}
+            />
+            <button
+              onClick={() => {
+                const newQty = Math.max(1, parseInt(editingQtyValue) || 1);
+                const item = pdv.cartItems.find(i => i.id === editingQtyItemId);
+                if (item) {
+                  const delta = newQty - item.quantity;
+                  pdv.updateQuantity(editingQtyItemId!, delta);
+                }
+                setEditingQtyItemId(null);
+              }}
+              className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold"
+            >
+              Confirmar
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );
