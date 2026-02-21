@@ -187,23 +187,23 @@ export default function DRE() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">DRE</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">DRE</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Demonstrativo de Resultado do Exercício
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <Button variant="outline" size="sm" onClick={handleExportCSV}>
-            <Download className="w-4 h-4 mr-2" />
-            CSV
+            <Download className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">CSV</span>
           </Button>
           <Button variant="outline" size="sm" onClick={handlePrint}>
-            <Printer className="w-4 h-4 mr-2" />
-            Imprimir
+            <Printer className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Imprimir</span>
           </Button>
         </div>
       </div>

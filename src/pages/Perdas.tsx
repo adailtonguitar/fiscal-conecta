@@ -288,8 +288,46 @@ export default function Perdas() {
         </Select>
       </div>
 
-      {/* Table */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden">
+      {/* Mobile Cards */}
+      <div className="sm:hidden space-y-3">
+        {isLoading ? (
+          [...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <TrendingDown className="w-8 h-8 mx-auto mb-2 opacity-40" />
+            Nenhuma perda registrada.
+          </div>
+        ) : (
+          filtered.map((m: any) => {
+            const product = products.find((p) => p.id === m.product_id);
+            const unitValue = product?.cost_price || product?.price || 0;
+            const totalLoss = (m.quantity || 0) * unitValue;
+            const reasonText = (m.reason || "").replace(/^Perda:\s*\w+\s*-?\s*/i, "").trim();
+            return (
+              <div key={m.id} className="bg-card rounded-xl border border-border p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Package className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <span className="font-medium text-foreground text-sm truncate">{m.products?.name ?? "—"}</span>
+                  </div>
+                  {getCategoryBadge(m.reason)}
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground text-xs">{new Date(m.created_at).toLocaleDateString("pt-BR")}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono font-semibold text-destructive">-{m.quantity}</span>
+                    <span className="font-mono text-destructive">{formatCurrency(totalLoss)}</span>
+                  </div>
+                </div>
+                {reasonText && <p className="text-xs text-muted-foreground">{reasonText}</p>}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop Table */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="hidden sm:block bg-card rounded-xl card-shadow border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -321,7 +359,6 @@ export default function Perdas() {
                   const product = products.find((p) => p.id === m.product_id);
                   const unitValue = product?.cost_price || product?.price || 0;
                   const totalLoss = (m.quantity || 0) * unitValue;
-                  // Extract notes after category prefix
                   const reasonText = (m.reason || "").replace(/^Perda:\s*\w+\s*-?\s*/i, "").trim();
                   return (
                     <tr key={m.id} className="border-b border-border last:border-0 hover:bg-muted/50">
