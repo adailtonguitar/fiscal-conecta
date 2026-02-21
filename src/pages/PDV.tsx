@@ -1065,20 +1065,22 @@ export default function PDV() {
         {/* Shortcut hints row */}
         <div className="hidden lg:flex items-center justify-center gap-3 xl:gap-4 px-3 py-2 xl:py-2.5 bg-muted/70 border-t border-border flex-wrap">
           {[
-            { key: "F3", label: "Buscar", color: "bg-blue-600 text-white" },
-            { key: "F5", label: "Cliente", color: "bg-teal-600 text-white" },
-             { key: "F6", label: "Cancelar", color: "bg-red-600 text-white" },
-             { key: "F7", label: "Desc.Item", color: "bg-amber-600 text-white" },
-             { key: "F8", label: "Desc.Total", color: "bg-orange-600 text-white" },
-             { key: "F9", label: "Qtd", color: "bg-purple-600 text-white" },
-             { key: "↑↓", label: "Navegar", color: "bg-slate-600 text-white" },
-             { key: "DEL", label: "Remover", color: "bg-rose-600 text-white" },
-             { key: "+", label: "Repetir Último", color: "bg-emerald-700 text-white" },
-          ].map(({ key, label, color }) => (
-            <span key={key} className="flex items-center gap-2 text-foreground font-bold text-sm xl:text-base">
-              <span className={`font-mono font-black px-3 py-2 rounded-lg text-sm xl:text-base shadow-lg border border-white/20 ${color}`}>{key}</span>
+            { key: "F3", label: "Buscar", color: "bg-blue-600 hover:bg-blue-700 text-white", action: () => setShowProductList((p) => !p) },
+            { key: "F5", label: "Cliente", color: "bg-teal-600 hover:bg-teal-700 text-white", action: () => setShowLoyaltyClientSelector(true) },
+            { key: "F6", label: "Cancelar", color: "bg-red-600 hover:bg-red-700 text-white", action: () => { if (pdv.cartItems.length > 0) { pdv.clearCart(); setSelectedClient(null); setSelectedCartItemId(null); toast.info("Venda cancelada"); } } },
+            { key: "F7", label: "Desc.Item", color: "bg-amber-600 hover:bg-amber-700 text-white", action: () => { if (selectedCartItemId) { setEditingItemDiscountId(selectedCartItemId); } else if (pdv.cartItems.length > 0) { const firstId = pdv.cartItems[0].id; setSelectedCartItemId(firstId); setEditingItemDiscountId(firstId); } } },
+            { key: "F8", label: "Desc.Total", color: "bg-orange-600 hover:bg-orange-700 text-white", action: () => setEditingGlobalDiscount(true) },
+            { key: "F9", label: "Qtd", color: "bg-purple-600 hover:bg-purple-700 text-white", action: () => { if (selectedCartItemId) { setEditingQtyItemId(selectedCartItemId); setEditingQtyValue(String(pdv.cartItems.find(i => i.id === selectedCartItemId)?.quantity || 1)); } else if (pdv.cartItems.length > 0) { const firstId = pdv.cartItems[0].id; setSelectedCartItemId(firstId); setEditingQtyItemId(firstId); setEditingQtyValue(String(pdv.cartItems.find(i => i.id === firstId)?.quantity || 1)); } } },
+            { key: "DEL", label: "Remover", color: "bg-rose-600 hover:bg-rose-700 text-white", action: () => { if (selectedCartItemId) { pdv.removeItem(selectedCartItemId); setSelectedCartItemId(null); } } },
+            { key: "+", label: "Repetir Último", color: "bg-emerald-700 hover:bg-emerald-800 text-white", action: () => { if (pdv.cartItems.length > 0) { const lastItem = pdv.cartItems[pdv.cartItems.length - 1]; const product = pdv.products.find(p => p.id === lastItem.id); if (product) pdv.addToCart(product); } } },
+            { key: "F10", label: "Consulta", color: "bg-indigo-600 hover:bg-indigo-700 text-white", action: () => { setShowPriceLookup(true); setPriceLookupQuery(""); } },
+            { key: "F11", label: "Rep.Venda", color: "bg-cyan-600 hover:bg-cyan-700 text-white", action: () => pdv.repeatLastSale() },
+            { key: "F12", label: "Finalizar", color: "bg-green-600 hover:bg-green-700 text-white", action: () => handleCheckout() },
+          ].map(({ key, label, color, action }) => (
+            <button key={key} onClick={action} className={`flex items-center gap-2 font-bold text-sm xl:text-base cursor-pointer rounded-lg px-2 py-1.5 transition-all active:scale-95 ${color} shadow-md hover:shadow-lg`}>
+              <span className="font-mono font-black px-2 py-1 rounded bg-black/20 text-xs xl:text-sm border border-white/30">{key}</span>
               {label}
-            </span>
+            </button>
           ))}
         </div>
       </div>
