@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { motion } from "framer-motion";
 import { isScaleBarcode } from "@/lib/scale-barcode";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useLoyalty } from "@/hooks/useLoyalty";
@@ -16,7 +17,7 @@ import { useQuotes } from "@/hooks/useQuotes";
 import { useCompany } from "@/hooks/useCompany";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { useTEFConfig } from "@/hooks/useTEFConfig";
-import { Wifi, WifiOff, Keyboard, X, Search, Monitor, FileText, User, PackageX, PackagePlus, Maximize, Minimize, Banknote, CreditCard, QrCode, Smartphone, Ticket, MoreHorizontal, Clock as ClockIcon, Trash2, Hash, Percent } from "lucide-react";
+import { Wifi, WifiOff, Keyboard, X, Search, Monitor, FileText, User, PackageX, PackagePlus, Maximize, Minimize, Banknote, CreditCard, QrCode, Smartphone, Ticket, MoreHorizontal, Clock as ClockIcon, Trash2, Hash, Percent, AlertTriangle, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { PaymentResult } from "@/services/types";
@@ -71,6 +72,8 @@ export default function PDV() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedCartItemId, setSelectedCartItemId] = useState<string | null>(null);
   const [pendingQuoteId, setPendingQuoteId] = useState<string | null>(null);
+  const [lastAddedItem, setLastAddedItem] = useState<{ name: string; price: number } | null>(null);
+  const lastAddedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -269,6 +272,10 @@ export default function PDV() {
     if (added) {
       playAddSound();
       toast.success(`${product.name} adicionado`);
+      // Show last added item highlight for 3s
+      setLastAddedItem({ name: product.name, price: product.price });
+      if (lastAddedTimerRef.current) clearTimeout(lastAddedTimerRef.current);
+      lastAddedTimerRef.current = setTimeout(() => setLastAddedItem(null), 3000);
     }
   }, [pdv]);
 
@@ -280,8 +287,9 @@ export default function PDV() {
       const isDelete = e.key === "Delete";
       const isEscape = e.key === "Escape";
       const isArrow = e.key === "ArrowUp" || e.key === "ArrowDown";
+      const isPlus = e.key === "+" && !(e.target instanceof HTMLInputElement);
       
-      if (!isFKey && !isDelete && !isEscape && !isArrow) return;
+      if (!isFKey && !isDelete && !isEscape && !isArrow && !isPlus) return;
 
       // Don't intercept in modals (TEF handles its own keys)
       if (showTEF) return;
@@ -356,6 +364,17 @@ export default function PDV() {
           else if (editingGlobalDiscount) { e.preventDefault(); setEditingGlobalDiscount(false); }
           // ESC sem modal aberto: deixa o browser sair da tela cheia normalmente
           break;
+        case "+":
+          e.preventDefault();
+          if (pdv.cartItems.length > 0) {
+            const lastItem = pdv.cartItems[pdv.cartItems.length - 1];
+            const product = pdv.products.find(p => p.id === lastItem.id);
+            if (product) {
+              pdv.addToCart(product);
+              playAddSound();
+              toast.success(`+1 ${lastItem.name}`);
+            }
+          }
       }
     };
     window.addEventListener("keydown", handler, true);
@@ -528,6 +547,12 @@ export default function PDV() {
           <span className="font-mono">Venda #{String(saleNumber).padStart(6, "0")}</span>
           <span className="opacity-60">|</span>
           <span className="font-mono">{new Date().toLocaleDateString("pt-BR")}</span>
+          {pdv.currentSession && (
+            <>
+              <span className="opacity-60">|</span>
+              <SessionTimer openedAt={pdv.currentSession.opened_at} />
+            </>
+          )}
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
           {pdv.trainingMode && (
@@ -648,15 +673,30 @@ export default function PDV() {
                         <td className="px-2 py-2 text-center text-muted-foreground font-mono">{idx + 1}</td>
                         <td className="px-2 py-2 font-mono text-muted-foreground">{item.sku}</td>
                         <td className="px-2 py-2 text-foreground">
-                          {item.name}
-                          {isWeighed && (
-                            <span className="ml-1.5 text-[10px] text-primary font-bold">
-                              {item.quantity.toFixed(3)}kg × {formatCurrency(item.price)}
-                            </span>
-                          )}
-                          {itemDiscount > 0 && (
-                            <span className="ml-1.5 text-[10px] text-destructive font-bold">-{itemDiscount}%</span>
-                          )}
+                          <div className="flex items-center gap-1">
+                            {item.name}
+                            {isWeighed && (
+                              <span className="ml-1.5 text-[10px] text-primary font-bold">
+                                {item.quantity.toFixed(3)}kg × {formatCurrency(item.price)}
+                              </span>
+                            )}
+                            {itemDiscount > 0 && (
+                              <span className="ml-1.5 text-[10px] text-destructive font-bold">-{itemDiscount}%</span>
+                            )}
+                            {(() => {
+                              const prod = pdv.products.find(p => p.id === item.id);
+                              const reorder = prod?.reorder_point || 0;
+                              const remaining = (prod?.stock_quantity || 0) - item.quantity;
+                              if (reorder > 0 && remaining <= reorder && remaining > 0) {
+                                return (
+                                  <span className="ml-1 flex items-center gap-0.5 text-[9px] text-warning font-bold" title={`Estoque: ${remaining} ${prod?.unit || 'un'}`}>
+                                    <AlertTriangle className="w-2.5 h-2.5" />
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
                         </td>
                         <td className="px-2 py-2 text-center font-mono font-bold text-foreground">
                           {isWeighed ? item.quantity.toFixed(3) : item.quantity}
@@ -697,6 +737,19 @@ export default function PDV() {
               <span className="text-xs font-bold text-muted-foreground uppercase">Subtotal</span>
               <span className="text-base lg:text-lg font-bold text-foreground font-mono">{formatCurrency(pdv.subtotal)}</span>
             </div>
+
+            {/* Last added item highlight */}
+            {lastAddedItem && (
+              <div className="flex justify-between items-center py-1.5 lg:py-2 border-b border-primary/30 bg-primary/5 rounded-lg px-2 animate-fade-in">
+                <span className="text-xs font-bold text-primary uppercase flex items-center gap-1">
+                  <Plus className="w-3 h-3" /> Último
+                </span>
+                <div className="text-right">
+                  <span className="text-xs font-bold text-foreground block truncate max-w-[140px]">{lastAddedItem.name}</span>
+                  <span className="text-xs font-bold text-primary font-mono">{formatCurrency(lastAddedItem.price)}</span>
+                </div>
+              </div>
+            )}
 
             {/* Desconto item (F7) — mobile: fixed overlay, desktop: inline */}
             {editingItemDiscountId && (
@@ -994,16 +1047,19 @@ export default function PDV() {
             { id: "voucher", label: "Voucher", icon: Ticket, shortcut: "", colorClass: "bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-600/30" },
             { id: "prazo", label: "A Prazo", icon: ClockIcon, shortcut: "", colorClass: "bg-orange-600 hover:bg-orange-500 text-white shadow-lg shadow-orange-600/30" },
             { id: "outros", label: "Outros", icon: MoreHorizontal, shortcut: "", colorClass: "bg-secondary hover:bg-secondary/80 text-secondary-foreground shadow-lg shadow-black/10" },
-          ].map(({ id, label, icon: Icon, shortcut, colorClass }) => (
-            <button
+          ].map(({ id, label, icon: Icon, shortcut, colorClass }, idx) => (
+            <motion.button
               key={id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05, duration: 0.25 }}
               onClick={() => handleDirectPayment(id)}
               disabled={pdv.cartItems.length === 0}
               className={`flex-1 min-w-[56px] flex flex-col items-center justify-center gap-1 lg:gap-1.5 xl:gap-2 py-2.5 lg:py-4 xl:py-5 rounded-xl text-sm font-extrabold tracking-wide transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed ${colorClass}`}
             >
               <Icon className="w-5 h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8" />
               <span className="text-[11px] lg:text-xs xl:text-sm font-bold">{label}</span>
-            </button>
+            </motion.button>
           ))}
         </div>
         {/* Shortcut hints row */}
@@ -1017,6 +1073,7 @@ export default function PDV() {
              { key: "F9", label: "Qtd", color: "bg-purple-600 text-white" },
              { key: "↑↓", label: "Navegar", color: "bg-slate-600 text-white" },
              { key: "DEL", label: "Remover", color: "bg-rose-600 text-white" },
+             { key: "+", label: "Repetir Último", color: "bg-emerald-700 text-white" },
           ].map(({ key, label, color }) => (
             <span key={key} className="flex items-center gap-2 text-foreground font-bold text-sm xl:text-base">
               <span className={`font-mono font-black px-3 py-2 rounded-lg text-sm xl:text-base shadow-lg border border-white/20 ${color}`}>{key}</span>
@@ -1448,6 +1505,27 @@ function LiveClock() {
   return (
     <span className="font-mono font-bold tracking-wider">
       {time.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+    </span>
+  );
+}
+
+/** Session duration timer for top bar */
+function SessionTimer({ openedAt }: { openedAt: string }) {
+  const [elapsed, setElapsed] = useState("");
+  useEffect(() => {
+    const update = () => {
+      const diff = Date.now() - new Date(openedAt).getTime();
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      setElapsed(`${h}h${String(m).padStart(2, "0")}m`);
+    };
+    update();
+    const interval = setInterval(update, 60000);
+    return () => clearInterval(interval);
+  }, [openedAt]);
+  return (
+    <span className="font-mono text-[10px] opacity-80" title="Tempo de caixa aberto">
+      🕐 {elapsed}
     </span>
   );
 }
