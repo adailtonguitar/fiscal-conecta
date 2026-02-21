@@ -150,15 +150,15 @@ export default function PDV() {
               }
             }
           });
-          if (clientName) toast.info(`Orçamento carregado — Cliente: ${clientName}`);
-          else toast.info("Orçamento carregado no carrinho");
+          if (clientName) toast.info(`Orçamento carregado — Cliente: ${clientName}`, { duration: 1500 });
+          else toast.info("Orçamento carregado no carrinho", { duration: 1500 });
         }
       } catch { /* ignore */ }
     }
   }, [pdv.products.length]);
 
   const handleSaveQuote = async () => {
-    if (pdv.cartItems.length === 0) { toast.warning("Carrinho vazio"); return; }
+    if (pdv.cartItems.length === 0) { toast.warning("Carrinho vazio", { duration: 1200 }); return; }
     try {
       const items = pdv.cartItems.map((item) => ({
         product_id: item.id, name: item.name, sku: item.sku,
@@ -170,7 +170,7 @@ export default function PDV() {
         clientName: selectedClient?.name, clientId: selectedClient?.id,
         notes: quoteNotes || undefined, validDays: 30,
       });
-      toast.success("Orçamento salvo com sucesso!");
+      toast.success("Orçamento salvo com sucesso!", { duration: 1500 });
       pdv.clearCart(); setSelectedClient(null); setShowSaveQuote(false); setQuoteNotes("");
     } catch (err: any) {
       toast.error(`Erro ao salvar orçamento: ${err.message}`);
@@ -179,7 +179,7 @@ export default function PDV() {
 
   const handleCheckout = useCallback((defaultMethod?: string) => {
     if (!pdv.currentSession) {
-      toast.warning("Abra o caixa antes de finalizar uma venda");
+      toast.warning("Abra o caixa antes de finalizar uma venda", { duration: 1500 });
       setShowCashRegister(true);
       return;
     }
@@ -191,7 +191,7 @@ export default function PDV() {
 
   const handleDirectPayment = useCallback((method: string) => {
     if (pdv.cartItems.length === 0) {
-      toast.warning("Adicione itens ao carrinho primeiro");
+      toast.warning("Adicione itens ao carrinho primeiro", { duration: 1200 });
       return;
     }
     if (method === "prazo") {
@@ -206,7 +206,7 @@ export default function PDV() {
     const raw = barcodeInput.trim();
     if (!raw) return;
     if (!pdv.currentSession) {
-      toast.warning("Abra o caixa antes de registrar produtos");
+      toast.warning("Abra o caixa antes de registrar produtos", { duration: 1500 });
       setShowCashRegister(true);
       setBarcodeInput("");
       return;
@@ -339,11 +339,11 @@ export default function PDV() {
         case "F1": e.preventDefault(); break;
         case "F2": e.preventDefault(); handleCheckout(); break;
         case "F3": e.preventDefault(); setShowProductList((p) => !p); break;
-        case "F4": e.preventDefault(); openCashDrawer(); toast.info("Sangria/Gaveta aberta"); break;
+        case "F4": e.preventDefault(); openCashDrawer(); toast.info("Sangria/Gaveta aberta", { duration: 1200 }); break;
         case "F5": e.preventDefault(); setShowLoyaltyClientSelector(true); break;
         case "F6":
           e.preventDefault();
-          if (pdv.cartItems.length > 0) { pdv.clearCart(); setSelectedClient(null); setSelectedCartItemId(null); toast.info("Venda cancelada"); }
+           if (pdv.cartItems.length > 0) { pdv.clearCart(); setSelectedClient(null); setSelectedCartItemId(null); toast.info("Venda cancelada", { duration: 1500 }); }
           break;
         case "F7":
           e.preventDefault();
@@ -367,7 +367,7 @@ export default function PDV() {
           e.preventDefault();
           if (pdv.cartItems.length > 0) {
             const targetItem = selectedCartItemId ? pdv.cartItems.find(i => i.id === selectedCartItemId) : pdv.cartItems[pdv.cartItems.length - 1];
-            if (targetItem) { pdv.removeItem(targetItem.id); setSelectedCartItemId(null); toast.info(`${targetItem.name} removido`); }
+            if (targetItem) { pdv.removeItem(targetItem.id); setSelectedCartItemId(null); toast.info(`${targetItem.name} removido`, { duration: 1200 }); }
           }
           break;
         case "Escape":
@@ -387,7 +387,7 @@ export default function PDV() {
             if (product) {
               pdv.addToCart(product);
               playAddSound();
-              toast.success(`+1 ${lastItem.name}`);
+              toast.success(`+1 ${lastItem.name}`, { duration: 1200 });
             }
           }
       }
@@ -447,7 +447,7 @@ export default function PDV() {
         }
         if (loyaltyActive && savedClient?.id) {
           const pts = await earnPoints(savedClient.id, savedTotal, result.fiscalDocId);
-          if (pts > 0) toast.info(`🎁 ${savedClient.name} ganhou ${pts} pontos de fidelidade!`);
+          if (pts > 0) toast.info(`🎁 ${savedClient.name} ganhou ${pts} pontos de fidelidade!`, { duration: 2000 });
         }
       } catch (err: any) {
         playErrorSound();
@@ -481,7 +481,7 @@ export default function PDV() {
         payments: [{ method: "prazo" as any, approved: true, amount: savedTotal }],
         nfceNumber: result.nfceNumber,
       });
-      toast.success(`Venda a prazo registrada para ${client.name}`);
+      toast.success(`Venda a prazo registrada para ${client.name}`, { duration: 1500 });
       setSelectedClient(null);
       const newNum = saleNumber + 1;
       setSaleNumber(newNum);
@@ -494,7 +494,7 @@ export default function PDV() {
       }
       if (loyaltyActive && client.id) {
         const pts = await earnPoints(client.id, savedTotal, result.fiscalDocId);
-        if (pts > 0) toast.info(`🎁 ${client.name} ganhou ${pts} pontos de fidelidade!`);
+        if (pts > 0) toast.info(`🎁 ${client.name} ganhou ${pts} pontos de fidelidade!`, { duration: 2000 });
       }
     } catch (err: any) {
       playErrorSound();
@@ -1025,7 +1025,7 @@ export default function PDV() {
               if (targetItem) {
                 pdv.removeItem(targetItem.id);
                 setSelectedCartItemId(null);
-                toast.info(`${targetItem.name} removido`);
+                toast.info(`${targetItem.name} removido`, { duration: 1200 });
               }
             }
           }}
@@ -1040,7 +1040,7 @@ export default function PDV() {
               pdv.clearCart();
               setSelectedClient(null);
               setSelectedCartItemId(null);
-              toast.info("Venda cancelada");
+              toast.info("Venda cancelada", { duration: 1500 });
             }
           }}
           disabled={pdv.cartItems.length === 0}
