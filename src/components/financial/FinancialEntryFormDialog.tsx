@@ -197,10 +197,10 @@ export function FinancialEntryFormDialog({ open, onOpenChange, entry, defaultTyp
             <FormField control={form.control} name="cost_center" render={({ field }) => (
               <FormItem>
                 <FormLabel>Centro de Custo</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={(v) => field.onChange(v === "none" ? "" : v)} defaultValue={field.value || "none"}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Selecione (opcional)" /></SelectTrigger></FormControl>
                   <SelectContent>
-                    <SelectItem value="">Nenhum</SelectItem>
+                    <SelectItem value="none">Nenhum</SelectItem>
                     {COST_CENTER_OPTIONS.map(cc => <SelectItem key={cc} value={cc}>{cc}</SelectItem>)}
                   </SelectContent>
                 </Select>
