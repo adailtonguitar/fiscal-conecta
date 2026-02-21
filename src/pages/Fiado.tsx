@@ -359,6 +359,7 @@ export default function Fiado() {
                       value={customAmount}
                       onChange={setCustomAmount}
                       placeholder="Valor a receber"
+                      className="text-foreground"
                     />
                   </div>
                   <Button
