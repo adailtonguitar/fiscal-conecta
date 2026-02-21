@@ -170,34 +170,28 @@ export function LandingPricing() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-16 text-center"
+          className="mt-16"
         >
-          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
+          <p className="text-center text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-8">
             Formas de pagamento aceitas
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto">
             {[
-              { label: "Pix", icon: "💠", highlight: true },
-              { label: "Cartão de Crédito", icon: "💳", highlight: false },
-              { label: "Cartão de Débito", icon: "💳", highlight: false },
-              { label: "Boleto", icon: "🧾", highlight: false },
+              { label: "Pix", icon: "💠", sub: "5% de desconto", color: "border-primary bg-primary/15 text-primary ring-2 ring-primary/30 shadow-lg shadow-primary/15" },
+              { label: "Crédito", icon: "💳", sub: "Até 12x", color: "border-blue-500/50 bg-blue-500/15 text-blue-600 ring-2 ring-blue-500/20 shadow-lg shadow-blue-500/10" },
+              { label: "Débito", icon: "💳", sub: "À vista", color: "border-amber-500/50 bg-amber-500/15 text-amber-600 ring-2 ring-amber-500/20 shadow-lg shadow-amber-500/10" },
+              { label: "Boleto", icon: "🧾", sub: "Venc. 3 dias", color: "border-violet-500/50 bg-violet-500/15 text-violet-600 ring-2 ring-violet-500/20 shadow-lg shadow-violet-500/10" },
             ].map((m) => (
               <div
                 key={m.label}
-                className={`flex items-center gap-2.5 px-5 py-3 rounded-xl border text-sm font-medium transition-all ${
-                  m.highlight
-                    ? "border-primary/40 bg-primary/10 text-primary shadow-sm shadow-primary/10"
-                    : "border-border bg-card text-foreground/80 hover:border-primary/20"
-                }`}
+                className={`flex flex-col items-center gap-2 px-4 py-5 rounded-2xl border font-medium transition-all hover:scale-105 ${m.color}`}
               >
-                <span className="text-lg">{m.icon}</span>
-                <span>{m.label}</span>
+                <span className="text-3xl">{m.icon}</span>
+                <span className="text-base font-bold">{m.label}</span>
+                <span className="text-[11px] font-semibold opacity-80">{m.sub}</span>
               </div>
             ))}
           </div>
-          <p className="mt-5 text-xs text-muted-foreground">
-            Parcele em até <strong className="text-foreground">12x</strong> no cartão de crédito • Pix com desconto de <strong className="text-primary">5%</strong>
-          </p>
         </motion.div>
       </div>
     </section>
