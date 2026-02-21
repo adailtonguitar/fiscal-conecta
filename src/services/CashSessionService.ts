@@ -5,6 +5,11 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const LOCAL_SESSION_KEY = "as_offline_cash_session";
+
+function isNetworkError(msg?: string): boolean {
+  if (!msg) return false;
+  return msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("TypeError") || msg.includes("fetch") || msg.includes("network");
+}
 const LOCAL_MOVEMENTS_KEY = "as_offline_cash_movements";
 
 function getOfflineSession(): any | null {
@@ -84,13 +89,21 @@ export class CashSessionService {
 
     try {
       // Check if there's already an open session for this terminal
-      const { data: existing } = await supabase
+      const { data: existing, error: checkErr } = await supabase
         .from("cash_sessions")
         .select("id")
         .eq("company_id", params.companyId)
         .eq("terminal_id", terminalId)
         .eq("status", "aberto")
         .maybeSingle();
+
+      // If the query itself failed due to network, go offline
+      if (checkErr) {
+        if (isNetworkError(checkErr.message)) {
+          console.warn("[CashSession] Network error on check, opening offline");
+          return openOffline();
+        }
+      }
 
       if (existing) {
         throw new Error(`Terminal ${terminalId} já possui um caixa aberto`);
@@ -108,7 +121,13 @@ export class CashSessionService {
         .select()
         .single();
 
-      if (error) throw new Error(`Erro ao abrir caixa: ${error.message}`);
+      if (error) {
+        if (isNetworkError(error.message)) {
+          console.warn("[CashSession] Network error on insert, opening offline");
+          return openOffline();
+        }
+        throw new Error(`Erro ao abrir caixa: ${error.message}`);
+      }
 
       // Register opening movement
       await supabase.from("cash_movements").insert({
@@ -126,7 +145,7 @@ export class CashSessionService {
       return data;
     } catch (err: any) {
       // Network error → fallback to offline
-      if (err?.message?.includes("Failed to fetch") || err?.message?.includes("NetworkError") || err?.name === "TypeError") {
+      if (isNetworkError(err?.message) || err?.name === "TypeError") {
         console.warn("[CashSession] Network error, opening offline", err.message);
         return openOffline();
       }
@@ -182,7 +201,13 @@ export class CashSessionService {
         .eq("id", params.sessionId)
         .single();
 
-      if (sErr) throw new Error(`Sessão não encontrada: ${sErr.message}`);
+      if (sErr) {
+        if (isNetworkError(sErr.message)) {
+          console.warn("[CashSession] Network error on close fetch, using offline");
+          return closeOffline();
+        }
+        throw new Error(`Sessão não encontrada: ${sErr.message}`);
+      }
 
       const totalCounted = params.countedDinheiro + params.countedDebito + params.countedCredito + params.countedPix;
       const totalExpected =
@@ -212,7 +237,13 @@ export class CashSessionService {
         .select()
         .single();
 
-      if (error) throw new Error(`Erro ao fechar caixa: ${error.message}`);
+      if (error) {
+        if (isNetworkError(error.message)) {
+          console.warn("[CashSession] Network error on close update, using offline");
+          return closeOffline();
+        }
+        throw new Error(`Erro ao fechar caixa: ${error.message}`);
+      }
 
       await supabase.from("cash_movements").insert({
         company_id: params.companyId,
@@ -226,7 +257,7 @@ export class CashSessionService {
       saveOfflineSession(null);
       return data;
     } catch (err: any) {
-      if (err?.message?.includes("Failed to fetch") || err?.message?.includes("NetworkError") || err?.name === "TypeError") {
+      if (isNetworkError(err?.message) || err?.name === "TypeError") {
         console.warn("[CashSession] Network error on close, using offline", err.message);
         return closeOffline();
       }
@@ -269,7 +300,13 @@ export class CashSessionService {
         .select()
         .single();
 
-      if (error) throw new Error(`Erro na movimentação: ${error.message}`);
+      if (error) {
+        if (isNetworkError(error.message)) {
+          console.warn("[CashSession] Network error on movement insert, using offline");
+          return moveOffline();
+        }
+        throw new Error(`Erro na movimentação: ${error.message}`);
+      }
 
       const field = params.type === "sangria" ? "total_sangria" : "total_suprimento";
       const { data: session } = await supabase
@@ -287,7 +324,7 @@ export class CashSessionService {
 
       return data;
     } catch (err: any) {
-      if (err?.message?.includes("Failed to fetch") || err?.message?.includes("NetworkError") || err?.name === "TypeError") {
+      if (isNetworkError(err?.message) || err?.name === "TypeError") {
         console.warn("[CashSession] Network error on movement, using offline", err.message);
         return moveOffline();
       }
@@ -313,7 +350,19 @@ export class CashSessionService {
         .limit(1)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        if (isNetworkError(error.message)) {
+          console.warn("[CashSession] Network error on getCurrentSession, using offline cache");
+          const offlineSession = getOfflineSession();
+          if (offlineSession && offlineSession.company_id === companyId && offlineSession.status === "aberto") {
+            if (!terminalId || offlineSession.terminal_id === terminalId) {
+              return offlineSession;
+            }
+          }
+          return null;
+        }
+        throw error;
+      }
 
       if (data) {
         saveOfflineSession(data);
@@ -321,7 +370,7 @@ export class CashSessionService {
 
       return data;
     } catch (err: any) {
-      if (err?.message?.includes("Failed to fetch") || err?.message?.includes("NetworkError") || err?.name === "TypeError") {
+      if (isNetworkError(err?.message) || err?.name === "TypeError") {
         console.warn("[CashSession] Network error on getCurrentSession, using offline cache");
         const offlineSession = getOfflineSession();
         if (offlineSession && offlineSession.company_id === companyId && offlineSession.status === "aberto") {
