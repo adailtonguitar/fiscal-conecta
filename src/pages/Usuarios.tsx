@@ -15,7 +15,9 @@ import {
   Plus,
   Trash2,
   Search,
+  ArrowLeft,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useCompanyUsers, type CompanyUser } from "@/hooks/useCompanyUsers";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useActionLogs, type ActionLog } from "@/hooks/useActionLogs";
@@ -50,6 +52,7 @@ const moduleLabels: Record<string, string> = {
 };
 
 export default function Usuarios() {
+  const navigate = useNavigate();
   const { users, isLoading, updateRole, toggleActive, removeUser, updateUserName } = useCompanyUsers();
   const { user: currentUser } = useAuth();
   const { canEdit } = usePermissions();
@@ -70,12 +73,21 @@ export default function Usuarios() {
 
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Controle de Usuários</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gerencie perfis, permissões e visualize logs de ações
-          </p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
+            title="Voltar"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">Controle de Usuários</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+              Gerencie perfis, permissões e logs
+            </p>
+          </div>
         </div>
         {canManage && (
           <button
