@@ -278,6 +278,16 @@ export function CashRegister({ onClose, terminalId = "01", preventClose = false,
                     </div>
                   </div>
 
+                  {preventClose && (
+                    <button
+                      onClick={onClose}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:opacity-90 transition-all"
+                    >
+                      <Unlock className="w-4 h-4" />
+                      Continuar para o PDV
+                    </button>
+                  )}
+
                   <div className="flex gap-3 pt-2">
                     <button
                       onClick={() => { setMovementType("sangria"); setView("movement"); }}
