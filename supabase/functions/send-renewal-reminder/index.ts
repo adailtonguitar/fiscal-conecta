@@ -120,7 +120,7 @@ serve(async (req) => {
               Authorization: `Bearer ${RESEND_API_KEY}`,
             },
             body: JSON.stringify({
-              from: "AnthóSystem <noreply@resend.dev>",
+              from: "AnthoSystem <noreply@resend.dev>",
               to: [email],
               subject,
               html,
