@@ -859,19 +859,19 @@ export default function PDV() {
           ))}
         </div>
         {/* Shortcut hints row */}
-        <div className="flex items-center justify-center gap-4 px-3 py-2 bg-muted/50 border-t border-border text-xs">
+        <div className="flex items-center justify-center gap-3 px-3 py-3 bg-muted/70 border-t-2 border-border">
           {[
-            { key: "F3", label: "Buscar" },
-            { key: "F5", label: "Cliente" },
-             { key: "F6", label: "Cancelar" },
-             { key: "F7", label: "Desc.Item" },
-             { key: "F8", label: "Desc.Total" },
-             { key: "F9", label: "Qtd" },
-             { key: "↑↓", label: "Navegar" },
-             { key: "DEL", label: "Remover" },
-          ].map(({ key, label }) => (
-            <span key={key} className="flex items-center gap-1 text-muted-foreground font-medium">
-              <span className="font-mono font-black bg-muted px-1.5 py-1 rounded text-[11px] border border-border">{key}</span>
+            { key: "F3", label: "Buscar", color: "bg-blue-600 text-white" },
+            { key: "F5", label: "Cliente", color: "bg-teal-600 text-white" },
+             { key: "F6", label: "Cancelar", color: "bg-red-600 text-white" },
+             { key: "F7", label: "Desc.Item", color: "bg-amber-600 text-white" },
+             { key: "F8", label: "Desc.Total", color: "bg-orange-600 text-white" },
+             { key: "F9", label: "Qtd", color: "bg-purple-600 text-white" },
+             { key: "↑↓", label: "Navegar", color: "bg-slate-600 text-white" },
+             { key: "DEL", label: "Remover", color: "bg-rose-600 text-white" },
+          ].map(({ key, label, color }) => (
+            <span key={key} className="flex items-center gap-1.5 text-foreground font-semibold text-sm">
+              <span className={`font-mono font-black px-2.5 py-1.5 rounded-lg text-xs shadow-md ${color}`}>{key}</span>
               {label}
             </span>
           ))}
