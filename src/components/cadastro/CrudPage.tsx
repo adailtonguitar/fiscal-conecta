@@ -162,15 +162,15 @@ export function CrudPage<T extends { id: string }>({
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{title}</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto min-w-0 overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">{title}</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             {subtitle ?? `${data.length} registros cadastrados`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {headerActions}
           <Button size="sm" onClick={openCreate}>
             <Plus className="w-4 h-4 mr-2" />
@@ -179,7 +179,7 @@ export function CrudPage<T extends { id: string }>({
         </div>
       </div>
 
-      <div className="relative max-w-md">
+      <div className="relative max-w-full sm:max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input
           type="text"
@@ -192,27 +192,27 @@ export function CrudPage<T extends { id: string }>({
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[500px]">
             <thead>
               <tr className="border-b border-border">
                 {tableFields.map((f) => (
-                  <th key={f.key} className="text-left px-5 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <th key={f.key} className="text-left px-3 sm:px-5 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                     {f.label}
                   </th>
                 ))}
-                <th className="text-center px-5 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Ações</th>
+                <th className="text-center px-3 sm:px-5 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">Ações</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 [...Array(5)].map((_, i) => (
                   <tr key={i} className="border-b border-border">
-                    <td className="px-5 py-3" colSpan={tableFields.length + 1}><Skeleton className="h-8 w-full" /></td>
+                    <td className="px-3 sm:px-5 py-3" colSpan={tableFields.length + 1}><Skeleton className="h-8 w-full" /></td>
                   </tr>
                 ))
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={tableFields.length + 1} className="px-5 py-12 text-center text-muted-foreground">
+                  <td colSpan={tableFields.length + 1} className="px-3 sm:px-5 py-12 text-center text-muted-foreground">
                     {data.length === 0 ? 'Nenhum registro cadastrado.' : 'Nenhum resultado encontrado.'}
                   </td>
                 </tr>
@@ -220,11 +220,11 @@ export function CrudPage<T extends { id: string }>({
                 filtered.map((item) => (
                   <tr key={item.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                     {tableFields.map((f) => (
-                      <td key={f.key} className="px-5 py-3 text-foreground">
+                      <td key={f.key} className="px-3 sm:px-5 py-3 text-foreground max-w-[150px] sm:max-w-none truncate">
                         {(item as any)[f.key] || "—"}
                       </td>
                     ))}
-                    <td className="px-5 py-3">
+                    <td className="px-3 sm:px-5 py-3">
                       <div className="flex items-center justify-center gap-1">
                         <button onClick={() => openEdit(item)} title="Editar" className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                           <Edit className="w-4 h-4" />

@@ -210,3 +210,32 @@
     color: hsl(var(--warning));
   }
 }
+
+/* Mobile-first: prevent horizontal overflow on all page containers */
+@media (max-width: 767px) {
+  main > div {
+    max-width: 100vw;
+    overflow-x: hidden;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  main > div > .flex.items-center.justify-between {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  main h1 {
+    font-size: 1.25rem;
+  }
+
+  /* Tables: allow horizontal scroll inside container */
+  main .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Ensure table wrapper doesn't expand beyond screen */
+  main table {
+    font-size: 0.75rem;
+  }
+}

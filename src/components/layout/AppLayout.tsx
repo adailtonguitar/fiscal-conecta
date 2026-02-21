@@ -38,10 +38,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden max-w-full">
       <UpdateNoticeModal />
       <AppSidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <SubscriptionBanner />
         <header className="h-12 border-b border-border bg-card flex items-center justify-between px-2 sm:px-4 shrink-0 gap-2">
           {isMobile ? (
@@ -57,7 +57,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           )}
           <HeaderWhatsAppButton />
         </header>
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main className="flex-1 overflow-auto min-w-0">{children}</main>
       </div>
     </div>
   );
