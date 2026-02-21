@@ -243,7 +243,7 @@ export default function PDV() {
       }
       for (let i = 0; i < multiplier; i++) pdv.addToCart(exactMatch);
       playAddSound();
-      toast.success(`${exactMatch.name}${multiplier > 1 ? ` x${multiplier}` : ""} adicionado`);
+      toast.success(`${exactMatch.name}${multiplier > 1 ? ` x${multiplier}` : ""} adicionado`, { duration: 1200 });
       setBarcodeInput("");
       return;
     }
@@ -264,7 +264,7 @@ export default function PDV() {
       }
       for (let i = 0; i < multiplier; i++) pdv.addToCart(searchMatch);
       playAddSound();
-      toast.success(`${searchMatch.name}${multiplier > 1 ? ` x${multiplier}` : ""} adicionado`);
+      toast.success(`${searchMatch.name}${multiplier > 1 ? ` x${multiplier}` : ""} adicionado`, { duration: 1200 });
     } else {
       playErrorSound();
       toast.error(`Produto não encontrado: ${query}`, {
@@ -286,7 +286,7 @@ export default function PDV() {
     const added = pdv.addToCart(product);
     if (added) {
       playAddSound();
-      toast.success(`${product.name} adicionado`);
+      toast.success(`${product.name} adicionado`, { duration: 1200 });
       // Show last added item highlight for 3s
       setLastAddedItem({ name: product.name, price: product.price });
       if (lastAddedTimerRef.current) clearTimeout(lastAddedTimerRef.current);
