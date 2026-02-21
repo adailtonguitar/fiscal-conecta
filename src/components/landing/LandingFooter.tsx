@@ -26,7 +26,6 @@ export function LandingFooter() {
             <div className="flex flex-col gap-2 text-sm text-muted-foreground">
               <a href="#recursos" className="hover:text-foreground transition-colors">Recursos</a>
               <a href="#planos" className="hover:text-foreground transition-colors">Planos</a>
-              <a href="#revenda" className="hover:text-foreground transition-colors">Programa de Revenda</a>
               <Link to="/install" className="hover:text-foreground transition-colors">Instalar App</Link>
             </div>
           </div>
