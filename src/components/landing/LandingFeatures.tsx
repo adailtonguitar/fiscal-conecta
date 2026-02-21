@@ -10,6 +10,7 @@ import {
   CalendarClock,
   Users,
   Tag,
+  Brain,
 } from "lucide-react";
 
 const features = [
@@ -72,6 +73,12 @@ const features = [
     title: "Segurança Total",
     desc: "Dados criptografados, backup automático e isolamento total entre filiais.",
     color: "bg-slate-500/10 text-slate-600",
+  },
+  {
+    icon: Brain,
+    title: "Relatórios por IA",
+    desc: "Inteligência artificial analisa vendas, estoque e finanças e gera insights prontos para decisão.",
+    color: "bg-purple-500/10 text-purple-600",
   },
 ];
 
