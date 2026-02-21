@@ -30,11 +30,11 @@ export default function Inventario() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Inventário</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Inventário</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Contagem e conferência de estoque físico
           </p>
         </div>
@@ -44,7 +44,8 @@ export default function Inventario() {
         </Button>
       </div>
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden">
+      {/* Desktop table */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="hidden sm:block bg-card rounded-xl card-shadow border border-border overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
@@ -101,6 +102,44 @@ export default function Inventario() {
           </tbody>
         </table>
       </motion.div>
+
+      {/* Mobile cards */}
+      <div className="sm:hidden space-y-2">
+        {isLoading ? (
+          [...Array(3)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
+        ) : inventories.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground text-sm">
+            Nenhum inventário realizado.
+          </div>
+        ) : (
+          inventories.map((inv) => (
+            <div key={inv.id} className="bg-card rounded-xl border border-border p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground text-sm truncate">{inv.name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {new Date(inv.started_at).toLocaleDateString("pt-BR")}
+                    {inv.finished_at && ` — ${new Date(inv.finished_at).toLocaleDateString("pt-BR")}`}
+                  </p>
+                </div>
+                <Badge variant={inv.status === "finalizado" ? "default" : "secondary"} className="shrink-0">
+                  {inv.status === "finalizado" ? "Finalizado" : "Aberto"}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-end gap-1 pt-1 border-t border-border">
+                <button onClick={() => setSelectedId(inv.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted">
+                  <Eye className="w-4 h-4" />
+                </button>
+                {inv.status === "aberto" && (
+                  <button onClick={() => finishInventory.mutate(inv.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10">
+                    <CheckCircle className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
