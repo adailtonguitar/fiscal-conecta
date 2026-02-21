@@ -556,8 +556,8 @@ export default function PDV() {
       </div>
 
       {/* ════════ BARCODE INPUT - LARGEST ELEMENT ════════ */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-card border-b-2 border-primary flex-shrink-0">
-        <span className="text-sm font-bold text-muted-foreground whitespace-nowrap">CÓDIGO:</span>
+      <div className="flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 bg-card border-b-2 border-primary flex-shrink-0">
+        <span className="text-xs lg:text-sm font-bold text-muted-foreground whitespace-nowrap">CÓDIGO:</span>
         <input
           ref={barcodeInputRef}
           type="text"
@@ -575,7 +575,7 @@ export default function PDV() {
             }
           }}
           placeholder="Leia ou digite o código de barras... (ex: 5*789123 para multiplicar)"
-          className="flex-1 px-4 py-3 rounded-lg bg-background border-2 border-border text-foreground text-xl font-mono font-bold focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/50 placeholder:text-sm placeholder:font-normal"
+          className="flex-1 px-3 lg:px-4 py-2 lg:py-3 rounded-lg bg-background border-2 border-border text-foreground text-lg lg:text-xl font-mono font-bold focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/50 placeholder:text-xs lg:placeholder:text-sm placeholder:font-normal"
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
@@ -680,19 +680,19 @@ export default function PDV() {
         <div className="shrink-0 lg:shrink lg:flex-[3] flex flex-col bg-card lg:min-w-[260px] lg:max-w-[400px]">
           {/* Info rows */}
           <div className="flex-1 flex flex-col p-2 lg:p-4 gap-1 lg:gap-3">
-            <div className="flex justify-between items-center py-2 border-b border-border">
+            <div className="flex justify-between items-center py-1.5 lg:py-2 border-b border-border">
               <span className="text-xs font-bold text-muted-foreground uppercase">Itens</span>
-              <span className="text-lg font-bold text-foreground font-mono">{totalItems}</span>
+              <span className="text-base lg:text-lg font-bold text-foreground font-mono">{totalItems}</span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-border">
+            <div className="flex justify-between items-center py-1.5 lg:py-2 border-b border-border">
               <span className="text-xs font-bold text-muted-foreground uppercase">Qtd Total</span>
-              <span className="text-lg font-bold text-foreground font-mono">
+              <span className="text-base lg:text-lg font-bold text-foreground font-mono">
                 {Number.isInteger(totalQty) ? totalQty : totalQty.toFixed(3)}
               </span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-border">
+            <div className="flex justify-between items-center py-1.5 lg:py-2 border-b border-border">
               <span className="text-xs font-bold text-muted-foreground uppercase">Subtotal</span>
-              <span className="text-lg font-bold text-foreground font-mono">{formatCurrency(pdv.subtotal)}</span>
+              <span className="text-base lg:text-lg font-bold text-foreground font-mono">{formatCurrency(pdv.subtotal)}</span>
             </div>
 
             {/* Desconto item (F7) */}
@@ -816,7 +816,7 @@ export default function PDV() {
 
           {/* TOTAL — BIG DISPLAY */}
           <div
-            className="p-2 lg:p-6 mt-auto border-t-4 transition-colors duration-300"
+            className="p-2 lg:p-4 xl:p-6 mt-auto border-t-4 transition-colors duration-300"
             style={{
               backgroundColor: totalFinal > 0 ? "hsl(0, 72%, 40%)" : "hsl(142, 72%, 32%)",
               borderTopColor: totalFinal > 0 ? "hsl(0, 72%, 50%)" : "hsl(142, 72%, 45%)",
@@ -826,7 +826,7 @@ export default function PDV() {
               <span className="text-[10px] lg:text-xs font-bold uppercase tracking-[0.25em] block mb-0.5 lg:mb-2" style={{ color: "rgba(255,255,255,0.75)" }}>
                 {totalFinal > 0 ? "TOTAL A PAGAR" : "TOTAL DA VENDA"}
               </span>
-              <span className="text-3xl lg:text-7xl font-black font-mono tracking-tight block" style={{ color: "#ffffff", textShadow: "0 3px 12px rgba(0,0,0,0.4)" }}>
+              <span className="text-3xl lg:text-6xl xl:text-7xl font-black font-mono tracking-tight block" style={{ color: "#ffffff", textShadow: "0 3px 12px rgba(0,0,0,0.4)" }}>
                 {formatCurrency(totalFinal)}
               </span>
             </div>
@@ -931,10 +931,10 @@ export default function PDV() {
               key={id}
               onClick={() => handleDirectPayment(id)}
               disabled={pdv.cartItems.length === 0}
-              className={`flex-1 min-w-[52px] flex flex-col items-center justify-center gap-0.5 lg:gap-1.5 py-2 lg:py-4 rounded-xl text-sm font-extrabold tracking-wide transition-all disabled:opacity-30 disabled:cursor-not-allowed ${colorClass}`}
+              className={`flex-1 min-w-[52px] flex flex-col items-center justify-center gap-0.5 lg:gap-1 xl:gap-1.5 py-2 lg:py-3 xl:py-4 rounded-xl text-sm font-extrabold tracking-wide transition-all disabled:opacity-30 disabled:cursor-not-allowed ${colorClass}`}
             >
-              <Icon className="w-4 h-4 lg:w-7 lg:h-7" />
-              <span className="text-[10px] lg:text-[13px]">{label}</span>
+              <Icon className="w-4 h-4 lg:w-5 lg:h-5 xl:w-7 xl:h-7" />
+              <span className="text-[10px] lg:text-[11px] xl:text-[13px]">{label}</span>
             </button>
           ))}
         </div>
