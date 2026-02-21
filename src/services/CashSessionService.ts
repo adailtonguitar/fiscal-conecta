@@ -6,9 +6,19 @@ import { supabase } from "@/integrations/supabase/client";
 
 const LOCAL_SESSION_KEY = "as_offline_cash_session";
 
-function isNetworkError(msg?: string): boolean {
-  if (!msg) return false;
-  return msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("TypeError") || msg.includes("fetch") || msg.includes("network");
+function isNetworkError(err: any): boolean {
+  if (!err) return false;
+  // Check all possible shapes: string message, Error object, Supabase error wrapper
+  const candidates = [
+    typeof err === "string" ? err : "",
+    err?.message,
+    err?.msg,
+    err?.error_description,
+    err?.name,
+    String(err),
+  ].filter(Boolean);
+  const patterns = ["Failed to fetch", "NetworkError", "TypeError", "network", "ECONNREFUSED", "ERR_INTERNET_DISCONNECTED", "Load failed"];
+  return candidates.some((c: string) => patterns.some((p) => c.includes(p)));
 }
 const LOCAL_MOVEMENTS_KEY = "as_offline_cash_movements";
 
@@ -99,8 +109,8 @@ export class CashSessionService {
 
       // If the query itself failed due to network, go offline
       if (checkErr) {
-        if (isNetworkError(checkErr.message)) {
-          console.warn("[CashSession] Network error on check, opening offline");
+        if (isNetworkError(checkErr)) {
+          console.warn("[CashSession] Network error on check, opening offline", checkErr);
           return openOffline();
         }
       }
@@ -122,8 +132,8 @@ export class CashSessionService {
         .single();
 
       if (error) {
-        if (isNetworkError(error.message)) {
-          console.warn("[CashSession] Network error on insert, opening offline");
+        if (isNetworkError(error)) {
+          console.warn("[CashSession] Network error on insert, opening offline", error);
           return openOffline();
         }
         throw new Error(`Erro ao abrir caixa: ${error.message}`);
@@ -144,9 +154,8 @@ export class CashSessionService {
 
       return data;
     } catch (err: any) {
-      // Network error → fallback to offline
-      if (isNetworkError(err?.message) || err?.name === "TypeError") {
-        console.warn("[CashSession] Network error, opening offline", err.message);
+      if (isNetworkError(err)) {
+        console.warn("[CashSession] Network error caught, opening offline", err);
         return openOffline();
       }
       throw err;
@@ -202,7 +211,7 @@ export class CashSessionService {
         .single();
 
       if (sErr) {
-        if (isNetworkError(sErr.message)) {
+        if (isNetworkError(sErr)) {
           console.warn("[CashSession] Network error on close fetch, using offline");
           return closeOffline();
         }
@@ -238,7 +247,7 @@ export class CashSessionService {
         .single();
 
       if (error) {
-        if (isNetworkError(error.message)) {
+        if (isNetworkError(error)) {
           console.warn("[CashSession] Network error on close update, using offline");
           return closeOffline();
         }
@@ -257,8 +266,8 @@ export class CashSessionService {
       saveOfflineSession(null);
       return data;
     } catch (err: any) {
-      if (isNetworkError(err?.message) || err?.name === "TypeError") {
-        console.warn("[CashSession] Network error on close, using offline", err.message);
+      if (isNetworkError(err)) {
+        console.warn("[CashSession] Network error on close, using offline", err);
         return closeOffline();
       }
       throw err;
@@ -301,7 +310,7 @@ export class CashSessionService {
         .single();
 
       if (error) {
-        if (isNetworkError(error.message)) {
+        if (isNetworkError(error)) {
           console.warn("[CashSession] Network error on movement insert, using offline");
           return moveOffline();
         }
@@ -324,8 +333,8 @@ export class CashSessionService {
 
       return data;
     } catch (err: any) {
-      if (isNetworkError(err?.message) || err?.name === "TypeError") {
-        console.warn("[CashSession] Network error on movement, using offline", err.message);
+      if (isNetworkError(err)) {
+        console.warn("[CashSession] Network error on movement, using offline", err);
         return moveOffline();
       }
       throw err;
@@ -351,7 +360,7 @@ export class CashSessionService {
         .maybeSingle();
 
       if (error) {
-        if (isNetworkError(error.message)) {
+        if (isNetworkError(error)) {
           console.warn("[CashSession] Network error on getCurrentSession, using offline cache");
           const offlineSession = getOfflineSession();
           if (offlineSession && offlineSession.company_id === companyId && offlineSession.status === "aberto") {
@@ -370,8 +379,8 @@ export class CashSessionService {
 
       return data;
     } catch (err: any) {
-      if (isNetworkError(err?.message) || err?.name === "TypeError") {
-        console.warn("[CashSession] Network error on getCurrentSession, using offline cache");
+      if (isNetworkError(err)) {
+        console.warn("[CashSession] Network error on getCurrentSession catch, using offline cache");
         const offlineSession = getOfflineSession();
         if (offlineSession && offlineSession.company_id === companyId && offlineSession.status === "aberto") {
           if (!terminalId || offlineSession.terminal_id === terminalId) {
