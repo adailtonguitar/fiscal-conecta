@@ -22,14 +22,18 @@ import type { Tables } from "@/integrations/supabase/types";
 
 const OFFLINE_SESSION_KEY = "as_offline_cash_session";
 
-/** Proactive connectivity check — avoids Supabase auth-refresh crashes */
+/** Proactive connectivity check — bypasses PWA service worker cache */
 async function canReachServer(): Promise<boolean> {
+  // First quick check: if browser says offline, trust it immediately
+  if (typeof navigator !== "undefined" && !navigator.onLine) return false;
   try {
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 3000);
-    await fetch(`${import.meta.env.VITE_SUPABASE_URL || ""}/rest/v1/`, {
+    const t = setTimeout(() => ctrl.abort(), 2500);
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL || ""}/rest/v1/`, {
       method: "HEAD",
       signal: ctrl.signal,
+      cache: "no-store",        // bypass service-worker / HTTP cache
+      mode: "no-cors",          // avoid CORS preflight that may also fail
       headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "" },
     });
     clearTimeout(t);
