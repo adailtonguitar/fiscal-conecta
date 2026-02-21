@@ -3346,6 +3346,25 @@ export type Database = {
           total_sales: number
         }[]
       }
+      get_decrypted_tef_config: {
+        Args: { p_company_id: string }
+        Returns: {
+          accepted_brands: string[]
+          api_key: string
+          api_secret: string
+          auto_confirm: boolean
+          company_id: string
+          connection_type: string
+          environment: string
+          hardware_model: string
+          id: string
+          is_active: boolean
+          max_installments: number
+          merchant_id: string
+          provider: string
+          terminal_id: string
+        }[]
+      }
       get_user_company_ids: { Args: never; Returns: string[] }
       has_role: {
         Args: {
