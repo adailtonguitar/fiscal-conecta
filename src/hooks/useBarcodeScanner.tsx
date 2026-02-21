@@ -12,8 +12,12 @@ export function useBarcodeScanner(onScan: (barcode: string) => void) {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       // Ignore if user is typing in an input/textarea
-      const tag = (e.target as HTMLElement)?.tagName;
+      const target = e.target as HTMLElement;
+      const tag = target?.tagName;
       if (tag === "TEXTAREA") return;
+
+      // Skip inputs marked as non-barcode (qty, discount, etc.)
+      if (tag === "INPUT" && target.dataset.noBarcodeCapture === "true") return;
 
       // If typing in search input, let it through but also capture for barcode
       const isInput = tag === "INPUT";
