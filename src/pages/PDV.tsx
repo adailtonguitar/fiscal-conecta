@@ -974,7 +974,7 @@ export default function PDV() {
       <div className="flex lg:hidden items-center gap-1 px-1.5 py-1 border-t border-border bg-muted/50 overflow-x-auto scrollbar-none flex-shrink-0">
         <button
           onClick={() => setShowProductList(true)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold whitespace-nowrap"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-sidebar-background text-sidebar-foreground border border-sidebar-border text-xs font-bold whitespace-nowrap"
         >
           <Search className="w-3.5 h-3.5" /> Buscar
         </button>
@@ -991,7 +991,7 @@ export default function PDV() {
             }
           }}
           disabled={pdv.cartItems.length === 0}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-purple-600 text-white text-xs font-bold whitespace-nowrap disabled:opacity-30"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-sidebar-background text-sidebar-foreground border border-sidebar-border text-xs font-bold whitespace-nowrap disabled:opacity-30"
         >
           <Hash className="w-3.5 h-3.5" /> Qtd
         </button>
@@ -1005,14 +1005,14 @@ export default function PDV() {
             }
           }}
           disabled={pdv.cartItems.length === 0}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-bold whitespace-nowrap disabled:opacity-30"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-sidebar-background text-sidebar-foreground border border-sidebar-border text-xs font-bold whitespace-nowrap disabled:opacity-30"
         >
           <Percent className="w-3.5 h-3.5" /> Desc.Item
         </button>
         <button
           onClick={() => maxDiscountPercent > 0 && setEditingGlobalDiscount(true)}
           disabled={pdv.cartItems.length === 0}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-orange-600 text-white text-xs font-bold whitespace-nowrap disabled:opacity-30"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-sidebar-background text-sidebar-foreground border border-sidebar-border text-xs font-bold whitespace-nowrap disabled:opacity-30"
         >
           <Percent className="w-3.5 h-3.5" /> Desc.Total
         </button>
@@ -1030,7 +1030,7 @@ export default function PDV() {
             }
           }}
           disabled={pdv.cartItems.length === 0}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-bold whitespace-nowrap disabled:opacity-30"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-destructive/80 text-white border border-destructive/50 text-xs font-bold whitespace-nowrap disabled:opacity-30"
         >
           <Trash2 className="w-3.5 h-3.5" /> Remover
         </button>
@@ -1044,7 +1044,7 @@ export default function PDV() {
             }
           }}
           disabled={pdv.cartItems.length === 0}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-600 text-white text-xs font-bold whitespace-nowrap disabled:opacity-30"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-destructive/80 text-white border border-destructive/50 text-xs font-bold whitespace-nowrap disabled:opacity-30"
         >
           <X className="w-3.5 h-3.5" /> Cancelar
         </button>
@@ -1055,13 +1055,13 @@ export default function PDV() {
         {/* Payment method buttons */}
         <div className="flex items-stretch gap-1 lg:gap-2 px-1.5 lg:px-3 py-1.5 lg:py-3 overflow-x-auto scrollbar-none">
           {[
-            { id: "dinheiro", label: "Dinheiro", icon: Banknote, shortcut: "F2", colorClass: "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30" },
-            { id: "debito", label: "Débito", icon: CreditCard, shortcut: "", colorClass: "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30" },
-            { id: "credito", label: "Crédito", icon: CreditCard, shortcut: "", colorClass: "bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/30" },
-            { id: "pix", label: "PIX", icon: QrCode, shortcut: "", colorClass: "bg-teal-600 hover:bg-teal-500 text-white shadow-lg shadow-teal-600/30" },
-            { id: "voucher", label: "Voucher", icon: Ticket, shortcut: "", colorClass: "bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-600/30" },
-            { id: "prazo", label: "A Prazo", icon: ClockIcon, shortcut: "", colorClass: "bg-orange-600 hover:bg-orange-500 text-white shadow-lg shadow-orange-600/30" },
-            { id: "outros", label: "Outros", icon: MoreHorizontal, shortcut: "", colorClass: "bg-secondary hover:bg-secondary/80 text-secondary-foreground shadow-lg shadow-black/10" },
+            { id: "dinheiro", label: "Dinheiro", icon: Banknote, shortcut: "F2", colorClass: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border shadow-lg shadow-black/20" },
+            { id: "debito", label: "Débito", icon: CreditCard, shortcut: "", colorClass: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border shadow-lg shadow-black/20" },
+            { id: "credito", label: "Crédito", icon: CreditCard, shortcut: "", colorClass: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border shadow-lg shadow-black/20" },
+            { id: "pix", label: "PIX", icon: QrCode, shortcut: "", colorClass: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border shadow-lg shadow-black/20" },
+            { id: "voucher", label: "Voucher", icon: Ticket, shortcut: "", colorClass: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border shadow-lg shadow-black/20" },
+            { id: "prazo", label: "A Prazo", icon: ClockIcon, shortcut: "", colorClass: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border shadow-lg shadow-black/20" },
+            { id: "outros", label: "Outros", icon: MoreHorizontal, shortcut: "", colorClass: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border shadow-lg shadow-black/20" },
           ].map(({ id, label, icon: Icon, shortcut, colorClass }, idx) => (
             <motion.button
               key={id}
@@ -1080,17 +1080,17 @@ export default function PDV() {
         {/* Shortcut hints row */}
         <div className="hidden lg:flex items-center justify-center gap-3 xl:gap-4 px-3 py-2 xl:py-2.5 bg-muted/70 border-t border-border flex-wrap">
           {[
-            { key: "F3", label: "Buscar", color: "bg-blue-600 hover:bg-blue-700 text-white", action: () => setShowProductList((p) => !p) },
-            { key: "F5", label: "Cliente", color: "bg-teal-600 hover:bg-teal-700 text-white", action: () => setShowLoyaltyClientSelector(true) },
-            { key: "F6", label: "Cancelar", color: "bg-red-600 hover:bg-red-700 text-white", action: () => { if (pdv.cartItems.length > 0) { pdv.clearCart(); setSelectedClient(null); setSelectedCartItemId(null); toast.info("Venda cancelada"); } } },
-            { key: "F7", label: "Desc.Item", color: "bg-amber-600 hover:bg-amber-700 text-white", action: () => { if (selectedCartItemId) { setEditingItemDiscountId(selectedCartItemId); } else if (pdv.cartItems.length > 0) { const firstId = pdv.cartItems[0].id; setSelectedCartItemId(firstId); setEditingItemDiscountId(firstId); } } },
-            { key: "F8", label: "Desc.Total", color: "bg-orange-600 hover:bg-orange-700 text-white", action: () => setEditingGlobalDiscount(true) },
-            { key: "F9", label: "Qtd", color: "bg-purple-600 hover:bg-purple-700 text-white", action: () => { if (selectedCartItemId) { setEditingQtyItemId(selectedCartItemId); setEditingQtyValue(String(pdv.cartItems.find(i => i.id === selectedCartItemId)?.quantity || 1)); } else if (pdv.cartItems.length > 0) { const firstId = pdv.cartItems[0].id; setSelectedCartItemId(firstId); setEditingQtyItemId(firstId); setEditingQtyValue(String(pdv.cartItems.find(i => i.id === firstId)?.quantity || 1)); } } },
-            { key: "DEL", label: "Remover", color: "bg-rose-600 hover:bg-rose-700 text-white", action: () => { if (selectedCartItemId) { pdv.removeItem(selectedCartItemId); setSelectedCartItemId(null); } } },
-            { key: "+", label: "Repetir Último", color: "bg-emerald-700 hover:bg-emerald-800 text-white", action: () => { if (pdv.cartItems.length > 0) { const lastItem = pdv.cartItems[pdv.cartItems.length - 1]; const product = pdv.products.find(p => p.id === lastItem.id); if (product) pdv.addToCart(product); } } },
-            { key: "F10", label: "Consulta", color: "bg-indigo-600 hover:bg-indigo-700 text-white", action: () => { setShowPriceLookup(true); setPriceLookupQuery(""); } },
-            { key: "F11", label: "Rep.Venda", color: "bg-cyan-600 hover:bg-cyan-700 text-white", action: () => pdv.repeatLastSale() },
-            { key: "F12", label: "Finalizar", color: "bg-green-600 hover:bg-green-700 text-white", action: () => handleCheckout() },
+            { key: "F3", label: "Buscar", color: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border", action: () => setShowProductList((p) => !p) },
+            { key: "F5", label: "Cliente", color: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border", action: () => setShowLoyaltyClientSelector(true) },
+            { key: "F6", label: "Cancelar", color: "bg-destructive/80 hover:bg-destructive text-white border border-destructive/50", action: () => { if (pdv.cartItems.length > 0) { pdv.clearCart(); setSelectedClient(null); setSelectedCartItemId(null); toast.info("Venda cancelada"); } } },
+            { key: "F7", label: "Desc.Item", color: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border", action: () => { if (selectedCartItemId) { setEditingItemDiscountId(selectedCartItemId); } else if (pdv.cartItems.length > 0) { const firstId = pdv.cartItems[0].id; setSelectedCartItemId(firstId); setEditingItemDiscountId(firstId); } } },
+            { key: "F8", label: "Desc.Total", color: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border", action: () => setEditingGlobalDiscount(true) },
+            { key: "F9", label: "Qtd", color: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border", action: () => { if (selectedCartItemId) { setEditingQtyItemId(selectedCartItemId); setEditingQtyValue(String(pdv.cartItems.find(i => i.id === selectedCartItemId)?.quantity || 1)); } else if (pdv.cartItems.length > 0) { const firstId = pdv.cartItems[0].id; setSelectedCartItemId(firstId); setEditingQtyItemId(firstId); setEditingQtyValue(String(pdv.cartItems.find(i => i.id === firstId)?.quantity || 1)); } } },
+            { key: "DEL", label: "Remover", color: "bg-destructive/80 hover:bg-destructive text-white border border-destructive/50", action: () => { if (selectedCartItemId) { pdv.removeItem(selectedCartItemId); setSelectedCartItemId(null); } } },
+            { key: "+", label: "Repetir Último", color: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border", action: () => { if (pdv.cartItems.length > 0) { const lastItem = pdv.cartItems[pdv.cartItems.length - 1]; const product = pdv.products.find(p => p.id === lastItem.id); if (product) pdv.addToCart(product); } } },
+            { key: "F10", label: "Consulta", color: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border", action: () => { setShowPriceLookup(true); setPriceLookupQuery(""); } },
+            { key: "F11", label: "Rep.Venda", color: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border", action: () => pdv.repeatLastSale() },
+            { key: "F12", label: "Finalizar", color: "bg-primary hover:bg-primary/90 text-primary-foreground border border-primary/50", action: () => handleCheckout() },
           ].map(({ key, label, color, action }) => (
             <button key={key} onClick={action} className={`flex items-center gap-2 font-bold text-sm xl:text-base cursor-pointer rounded-lg px-2 py-1.5 transition-all active:scale-95 ${color} shadow-md hover:shadow-lg`}>
               <span className="font-mono font-black px-2 py-1 rounded bg-black/20 text-xs xl:text-sm border border-white/30">{key}</span>
