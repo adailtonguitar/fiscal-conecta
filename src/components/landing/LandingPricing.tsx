@@ -69,7 +69,10 @@ export function LandingPricing() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
   const handlePlanClick = async (plan: (typeof plans)[0]) => {
-    if (!plan.planKey) return;
+    if (!plan.planKey) {
+      window.open("https://wa.me/5500000000000?text=Olá! Tenho interesse no plano Rede do AnthoSystem.", "_blank");
+      return;
+    }
     if (!user) {
       navigate("/auth");
       return;
