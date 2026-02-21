@@ -695,39 +695,55 @@ export default function PDV() {
               <span className="text-base lg:text-lg font-bold text-foreground font-mono">{formatCurrency(pdv.subtotal)}</span>
             </div>
 
-            {/* Desconto item (F7) */}
+            {/* Desconto item (F7) — mobile: fixed overlay, desktop: inline */}
             {editingItemDiscountId && (
-              <div className="flex justify-between items-center py-2 border-b border-border bg-muted/50 rounded px-2 -mx-2">
-                <span className="text-xs font-bold text-muted-foreground uppercase">Desc. Item (F7)</span>
-                <div className="flex items-center gap-1">
-                  <input
-                    data-no-barcode-capture="true"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    max={maxDiscountPercent}
-                    step={0.5}
-                    autoFocus
-                    defaultValue={pdv.itemDiscounts[editingItemDiscountId] || 0}
-                    onClick={(e) => e.stopPropagation()}
-                    onTouchEnd={(e) => e.stopPropagation()}
-                    onBlur={(e) => {
-                      const val = Math.min(Math.max(0, Number(e.target.value)), maxDiscountPercent);
-                      pdv.setItemDiscount(editingItemDiscountId!, val);
-                      setEditingItemDiscountId(null);
-                    }}
-                    onKeyDown={(e) => {
-                      e.stopPropagation();
-                      if (e.key === "Enter") {
-                        const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value)), maxDiscountPercent);
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 lg:relative lg:inset-auto lg:z-auto lg:bg-transparent lg:block">
+                <div className="bg-card rounded-2xl p-6 shadow-2xl w-[85vw] max-w-xs flex flex-col items-center gap-4 lg:flex-row lg:justify-between lg:items-center lg:py-2 lg:px-2 lg:-mx-2 lg:rounded lg:p-0 lg:shadow-none lg:w-auto lg:max-w-none lg:bg-muted/50 border border-border lg:border-b lg:border-t-0 lg:border-x-0">
+                  <span className="text-sm font-bold text-muted-foreground uppercase lg:text-xs">Desc. Item %</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      data-no-barcode-capture="true"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      max={maxDiscountPercent}
+                      step={0.5}
+                      autoFocus
+                      defaultValue={pdv.itemDiscounts[editingItemDiscountId] || 0}
+                      onClick={(e) => e.stopPropagation()}
+                      onTouchEnd={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Enter") {
+                          const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value)), maxDiscountPercent);
+                          pdv.setItemDiscount(editingItemDiscountId!, val);
+                          setEditingItemDiscountId(null);
+                        }
+                        if (e.key === "Escape") setEditingItemDiscountId(null);
+                      }}
+                      className="w-24 px-3 py-3 rounded-xl bg-background border-2 border-primary text-xl font-mono text-center focus:outline-none focus:ring-2 focus:ring-primary lg:w-20 lg:px-2 lg:py-2 lg:text-base lg:text-right lg:rounded lg:border"
+                    />
+                    <span className="text-sm text-muted-foreground font-bold">%</span>
+                  </div>
+                  <div className="flex gap-2 w-full lg:hidden">
+                    <button
+                      onClick={() => setEditingItemDiscountId(null)}
+                      className="flex-1 py-3 rounded-xl bg-muted text-foreground font-bold text-sm"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => {
+                        const input = document.querySelector<HTMLInputElement>('[data-no-barcode-capture="true"]');
+                        const val = Math.min(Math.max(0, Number(input?.value || 0)), maxDiscountPercent);
                         pdv.setItemDiscount(editingItemDiscountId!, val);
                         setEditingItemDiscountId(null);
-                      }
-                      if (e.key === "Escape") setEditingItemDiscountId(null);
-                    }}
-                    className="w-20 px-2 py-2 rounded bg-background border border-border text-base font-mono text-right focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                  <span className="text-xs text-muted-foreground">%</span>
+                      }}
+                      className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm"
+                    >
+                      Aplicar
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -736,35 +752,54 @@ export default function PDV() {
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-xs font-bold text-muted-foreground uppercase">Desconto</span>
               {editingGlobalDiscount ? (
-                <div className="flex items-center gap-1">
-                  <input
-                    data-no-barcode-capture="true"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    max={maxDiscountPercent}
-                    step={0.5}
-                    autoFocus
-                    defaultValue={pdv.globalDiscountPercent}
-                    onClick={(e) => e.stopPropagation()}
-                    onTouchEnd={(e) => e.stopPropagation()}
-                    onBlur={(e) => {
-                      const val = Math.min(Math.max(0, Number(e.target.value)), maxDiscountPercent);
-                      pdv.setGlobalDiscountPercent(val);
-                      setEditingGlobalDiscount(false);
-                    }}
-                    onKeyDown={(e) => {
-                      e.stopPropagation();
-                      if (e.key === "Enter") {
-                        const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value)), maxDiscountPercent);
-                        pdv.setGlobalDiscountPercent(val);
-                        setEditingGlobalDiscount(false);
-                      }
-                      if (e.key === "Escape") setEditingGlobalDiscount(false);
-                    }}
-                    className="w-20 px-2 py-2 rounded bg-background border border-border text-base font-mono text-right focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                  <span className="text-xs text-muted-foreground">%</span>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 lg:relative lg:inset-auto lg:z-auto lg:bg-transparent">
+                  <div className="bg-card rounded-2xl p-6 shadow-2xl w-[85vw] max-w-xs flex flex-col items-center gap-4 lg:flex-row lg:gap-1 lg:p-0 lg:shadow-none lg:w-auto lg:max-w-none lg:bg-transparent lg:rounded-none">
+                    <span className="text-sm font-bold text-muted-foreground uppercase lg:hidden">Desc. Total %</span>
+                    <div className="flex items-center gap-2 lg:gap-1">
+                      <input
+                        data-no-barcode-capture="true"
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        max={maxDiscountPercent}
+                        step={0.5}
+                        autoFocus
+                        defaultValue={pdv.globalDiscountPercent}
+                        onClick={(e) => e.stopPropagation()}
+                        onTouchEnd={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === "Enter") {
+                            const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value)), maxDiscountPercent);
+                            pdv.setGlobalDiscountPercent(val);
+                            setEditingGlobalDiscount(false);
+                          }
+                          if (e.key === "Escape") setEditingGlobalDiscount(false);
+                        }}
+                        className="w-24 px-3 py-3 rounded-xl bg-background border-2 border-primary text-xl font-mono text-center focus:outline-none focus:ring-2 focus:ring-primary lg:w-20 lg:px-2 lg:py-2 lg:text-base lg:text-right lg:rounded lg:border"
+                      />
+                      <span className="text-sm text-muted-foreground font-bold lg:text-xs">%</span>
+                    </div>
+                    <div className="flex gap-2 w-full lg:hidden">
+                      <button
+                        onClick={() => setEditingGlobalDiscount(false)}
+                        className="flex-1 py-3 rounded-xl bg-muted text-foreground font-bold text-sm"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={() => {
+                          const input = document.querySelector<HTMLInputElement>('[data-no-barcode-capture="true"]');
+                          const val = Math.min(Math.max(0, Number(input?.value || 0)), maxDiscountPercent);
+                          pdv.setGlobalDiscountPercent(val);
+                          setEditingGlobalDiscount(false);
+                        }}
+                        className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm"
+                      >
+                        Aplicar
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <button
@@ -786,32 +821,46 @@ export default function PDV() {
 
             {/* Alterar Quantidade (F9) */}
             {editingQtyItemId && (
-              <div className="flex justify-between items-center py-2 border-b border-border bg-muted/50 rounded px-2 -mx-2">
-                <span className="text-xs font-bold text-muted-foreground uppercase">Nova Qtd (F9)</span>
-                <div className="flex items-center gap-1">
-                  <input
-                    data-no-barcode-capture="true"
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    step={1}
-                    autoFocus
-                    value={editingQtyValue}
-                    onChange={(e) => setEditingQtyValue(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    onTouchEnd={(e) => e.stopPropagation()}
-                    onBlur={() => {
-                      const newQty = Math.max(1, parseInt(editingQtyValue) || 1);
-                      const item = pdv.cartItems.find(i => i.id === editingQtyItemId);
-                      if (item) {
-                        const delta = newQty - item.quantity;
-                        pdv.updateQuantity(editingQtyItemId!, delta);
-                      }
-                      setEditingQtyItemId(null);
-                    }}
-                    onKeyDown={(e) => {
-                      e.stopPropagation();
-                      if (e.key === "Enter") {
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 lg:relative lg:inset-auto lg:z-auto lg:bg-transparent lg:block">
+                <div className="bg-card rounded-2xl p-6 shadow-2xl w-[85vw] max-w-xs flex flex-col items-center gap-4 lg:flex-row lg:justify-between lg:items-center lg:py-2 lg:px-2 lg:-mx-2 lg:rounded lg:p-0 lg:shadow-none lg:w-auto lg:max-w-none lg:bg-muted/50 border border-border lg:border-b lg:border-t-0 lg:border-x-0">
+                  <span className="text-sm font-bold text-muted-foreground uppercase lg:text-xs">Nova Quantidade</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      data-no-barcode-capture="true"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      step={1}
+                      autoFocus
+                      value={editingQtyValue}
+                      onChange={(e) => setEditingQtyValue(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      onTouchEnd={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === "Enter") {
+                          const newQty = Math.max(1, parseInt(editingQtyValue) || 1);
+                          const item = pdv.cartItems.find(i => i.id === editingQtyItemId);
+                          if (item) {
+                            const delta = newQty - item.quantity;
+                            pdv.updateQuantity(editingQtyItemId!, delta);
+                          }
+                          setEditingQtyItemId(null);
+                        }
+                        if (e.key === "Escape") setEditingQtyItemId(null);
+                      }}
+                      className="w-24 px-3 py-3 rounded-xl bg-background border-2 border-primary text-xl font-mono text-center focus:outline-none focus:ring-2 focus:ring-primary lg:w-20 lg:px-2 lg:py-2 lg:text-base lg:text-right lg:rounded lg:border"
+                    />
+                  </div>
+                  <div className="flex gap-2 w-full lg:hidden">
+                    <button
+                      onClick={() => setEditingQtyItemId(null)}
+                      className="flex-1 py-3 rounded-xl bg-muted text-foreground font-bold text-sm"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => {
                         const newQty = Math.max(1, parseInt(editingQtyValue) || 1);
                         const item = pdv.cartItems.find(i => i.id === editingQtyItemId);
                         if (item) {
@@ -819,11 +868,12 @@ export default function PDV() {
                           pdv.updateQuantity(editingQtyItemId!, delta);
                         }
                         setEditingQtyItemId(null);
-                      }
-                      if (e.key === "Escape") setEditingQtyItemId(null);
-                    }}
-                    className="w-20 px-2 py-2 rounded bg-background border border-border text-base font-mono text-right focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
+                      }}
+                      className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm"
+                    >
+                      Aplicar
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
