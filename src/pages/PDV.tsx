@@ -586,7 +586,7 @@ export default function PDV() {
       <div className="flex flex-col lg:flex-row flex-1 min-h-0">
 
         {/* LEFT: Items Table (70%) */}
-        <div className="flex-1 lg:flex-[7] flex flex-col min-w-0 border-r border-border min-h-0 max-h-[35vh] lg:max-h-none">
+        <div className="flex-1 lg:flex-[7] flex flex-col min-w-0 border-r border-border min-h-0 max-h-[40vh] lg:max-h-none">
           <div className="flex-1 overflow-y-auto">
             <table className="w-full text-xs">
               <thead className="sticky top-0 z-10 bg-muted">
@@ -679,7 +679,7 @@ export default function PDV() {
         {/* RIGHT: Totals Sidebar (30%) */}
         <div className="shrink-0 lg:shrink lg:flex-[3] flex flex-col bg-card lg:min-w-[260px] lg:max-w-[400px]">
           {/* Info rows */}
-          <div className="flex-1 flex flex-col p-3 lg:p-4 gap-2 lg:gap-3">
+          <div className="flex-1 flex flex-col p-2 lg:p-4 gap-1 lg:gap-3">
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-xs font-bold text-muted-foreground uppercase">Itens</span>
               <span className="text-lg font-bold text-foreground font-mono">{totalItems}</span>
@@ -816,17 +816,17 @@ export default function PDV() {
 
           {/* TOTAL — BIG DISPLAY */}
           <div
-            className="p-3 lg:p-6 mt-auto border-t-4 transition-colors duration-300"
+            className="p-2 lg:p-6 mt-auto border-t-4 transition-colors duration-300"
             style={{
               backgroundColor: totalFinal > 0 ? "hsl(0, 72%, 40%)" : "hsl(142, 72%, 32%)",
               borderTopColor: totalFinal > 0 ? "hsl(0, 72%, 50%)" : "hsl(142, 72%, 45%)",
             }}
           >
             <div className="text-center">
-              <span className="text-xs font-bold uppercase tracking-[0.25em] block mb-1 lg:mb-2" style={{ color: "rgba(255,255,255,0.75)" }}>
+              <span className="text-[10px] lg:text-xs font-bold uppercase tracking-[0.25em] block mb-0.5 lg:mb-2" style={{ color: "rgba(255,255,255,0.75)" }}>
                 {totalFinal > 0 ? "TOTAL A PAGAR" : "TOTAL DA VENDA"}
               </span>
-              <span className="text-4xl lg:text-7xl font-black font-mono tracking-tight block" style={{ color: "#ffffff", textShadow: "0 3px 12px rgba(0,0,0,0.4)" }}>
+              <span className="text-3xl lg:text-7xl font-black font-mono tracking-tight block" style={{ color: "#ffffff", textShadow: "0 3px 12px rgba(0,0,0,0.4)" }}>
                 {formatCurrency(totalFinal)}
               </span>
             </div>
@@ -835,7 +835,7 @@ export default function PDV() {
       </div>
 
       {/* ════════ MOBILE ACTION BAR (visible only on mobile) ════════ */}
-      <div className="flex lg:hidden items-center gap-1.5 px-2 py-1.5 border-t-2 border-border bg-muted/50 overflow-x-auto scrollbar-none flex-shrink-0">
+      <div className="flex lg:hidden items-center gap-1 px-1.5 py-1 border-t border-border bg-muted/50 overflow-x-auto scrollbar-none flex-shrink-0">
         <button
           onClick={() => setShowProductList(true)}
           className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold whitespace-nowrap"
@@ -917,7 +917,7 @@ export default function PDV() {
       {/* ════════ BOTTOM PAYMENT BAR ════════ */}
       <div className="flex flex-col flex-shrink-0 border-t-2 border-border bg-card">
         {/* Payment method buttons */}
-        <div className="flex items-stretch gap-1.5 lg:gap-2 px-2 lg:px-3 py-2 lg:py-3 overflow-x-auto scrollbar-none">
+        <div className="flex items-stretch gap-1 lg:gap-2 px-1.5 lg:px-3 py-1.5 lg:py-3 overflow-x-auto scrollbar-none">
           {[
             { id: "dinheiro", label: "Dinheiro", icon: Banknote, shortcut: "F2", colorClass: "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30" },
             { id: "debito", label: "Débito", icon: CreditCard, shortcut: "", colorClass: "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30" },
@@ -931,10 +931,10 @@ export default function PDV() {
               key={id}
               onClick={() => handleDirectPayment(id)}
               disabled={pdv.cartItems.length === 0}
-              className={`flex-1 min-w-[60px] flex flex-col items-center justify-center gap-1 lg:gap-1.5 py-2.5 lg:py-4 rounded-xl text-sm font-extrabold tracking-wide transition-all disabled:opacity-30 disabled:cursor-not-allowed ${colorClass}`}
+              className={`flex-1 min-w-[52px] flex flex-col items-center justify-center gap-0.5 lg:gap-1.5 py-2 lg:py-4 rounded-xl text-sm font-extrabold tracking-wide transition-all disabled:opacity-30 disabled:cursor-not-allowed ${colorClass}`}
             >
-              <Icon className="w-5 h-5 lg:w-7 lg:h-7" />
-              <span className="text-[11px] lg:text-[13px]">{label}</span>
+              <Icon className="w-4 h-4 lg:w-7 lg:h-7" />
+              <span className="text-[10px] lg:text-[13px]">{label}</span>
             </button>
           ))}
         </div>
