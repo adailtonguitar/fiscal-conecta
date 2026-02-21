@@ -43,8 +43,7 @@ export class CashSessionService {
   }) {
     const terminalId = params.terminalId || "01";
 
-    if (!navigator.onLine) {
-      // Create offline session
+    const openOffline = () => {
       const offlineSession = {
         id: `offline_${Date.now()}`,
         company_id: params.companyId,
@@ -81,49 +80,58 @@ export class CashSessionService {
         created_at: new Date().toISOString(),
       });
       return offlineSession;
-    }
+    };
 
-    // Check if there's already an open session for this terminal
-    const { data: existing } = await supabase
-      .from("cash_sessions")
-      .select("id")
-      .eq("company_id", params.companyId)
-      .eq("terminal_id", terminalId)
-      .eq("status", "aberto")
-      .maybeSingle();
+    try {
+      // Check if there's already an open session for this terminal
+      const { data: existing } = await supabase
+        .from("cash_sessions")
+        .select("id")
+        .eq("company_id", params.companyId)
+        .eq("terminal_id", terminalId)
+        .eq("status", "aberto")
+        .maybeSingle();
 
-    if (existing) {
-      throw new Error(`Terminal ${terminalId} já possui um caixa aberto`);
-    }
+      if (existing) {
+        throw new Error(`Terminal ${terminalId} já possui um caixa aberto`);
+      }
 
-    const { data, error } = await supabase
-      .from("cash_sessions")
-      .insert({
+      const { data, error } = await supabase
+        .from("cash_sessions")
+        .insert({
+          company_id: params.companyId,
+          opened_by: params.userId,
+          opening_balance: params.openingBalance,
+          terminal_id: terminalId,
+          status: "aberto",
+        })
+        .select()
+        .single();
+
+      if (error) throw new Error(`Erro ao abrir caixa: ${error.message}`);
+
+      // Register opening movement
+      await supabase.from("cash_movements").insert({
         company_id: params.companyId,
-        opened_by: params.userId,
-        opening_balance: params.openingBalance,
-        terminal_id: terminalId,
-        status: "aberto",
-      })
-      .select()
-      .single();
+        session_id: data.id,
+        type: "abertura",
+        amount: params.openingBalance,
+        performed_by: params.userId,
+        description: "Abertura de caixa",
+      });
 
-    if (error) throw new Error(`Erro ao abrir caixa: ${error.message}`);
+      // Cache session locally for offline access
+      saveOfflineSession(data);
 
-    // Register opening movement
-    await supabase.from("cash_movements").insert({
-      company_id: params.companyId,
-      session_id: data.id,
-      type: "abertura",
-      amount: params.openingBalance,
-      performed_by: params.userId,
-      description: "Abertura de caixa",
-    });
-
-    // Cache session locally for offline access
-    saveOfflineSession(data);
-
-    return data;
+      return data;
+    } catch (err: any) {
+      // Network error → fallback to offline
+      if (err?.message?.includes("Failed to fetch") || err?.message?.includes("NetworkError") || err?.name === "TypeError") {
+        console.warn("[CashSession] Network error, opening offline", err.message);
+        return openOffline();
+      }
+      throw err;
+    }
   }
 
   /** Close current session with counted values */
@@ -137,8 +145,7 @@ export class CashSessionService {
     countedPix: number;
     notes?: string;
   }) {
-    if (!navigator.onLine) {
-      // Close offline session
+    const closeOffline = () => {
       const offlineSession = getOfflineSession();
       if (offlineSession && (offlineSession.id === params.sessionId || offlineSession.id.startsWith("offline_"))) {
         const totalCounted = params.countedDinheiro + params.countedDebito + params.countedCredito + params.countedPix;
@@ -166,61 +173,65 @@ export class CashSessionService {
         return offlineSession;
       }
       throw new Error("Sessão não encontrada offline");
+    };
+
+    try {
+      const { data: session, error: sErr } = await supabase
+        .from("cash_sessions")
+        .select("*")
+        .eq("id", params.sessionId)
+        .single();
+
+      if (sErr) throw new Error(`Sessão não encontrada: ${sErr.message}`);
+
+      const totalCounted = params.countedDinheiro + params.countedDebito + params.countedCredito + params.countedPix;
+      const totalExpected =
+        Number(session.opening_balance) +
+        Number(session.total_dinheiro || 0) +
+        Number(session.total_debito || 0) +
+        Number(session.total_credito || 0) +
+        Number(session.total_pix || 0) +
+        Number(session.total_suprimento || 0) -
+        Number(session.total_sangria || 0);
+
+      const { data, error } = await supabase
+        .from("cash_sessions")
+        .update({
+          status: "fechado",
+          closed_by: params.userId,
+          closed_at: new Date().toISOString(),
+          closing_balance: totalCounted,
+          counted_dinheiro: params.countedDinheiro,
+          counted_debito: params.countedDebito,
+          counted_credito: params.countedCredito,
+          counted_pix: params.countedPix,
+          difference: totalCounted - totalExpected,
+          notes: params.notes,
+        })
+        .eq("id", params.sessionId)
+        .select()
+        .single();
+
+      if (error) throw new Error(`Erro ao fechar caixa: ${error.message}`);
+
+      await supabase.from("cash_movements").insert({
+        company_id: params.companyId,
+        session_id: params.sessionId,
+        type: "fechamento",
+        amount: totalCounted,
+        performed_by: params.userId,
+        description: `Fechamento - Diferença: ${(totalCounted - totalExpected).toFixed(2)}`,
+      });
+
+      saveOfflineSession(null);
+      return data;
+    } catch (err: any) {
+      if (err?.message?.includes("Failed to fetch") || err?.message?.includes("NetworkError") || err?.name === "TypeError") {
+        console.warn("[CashSession] Network error on close, using offline", err.message);
+        return closeOffline();
+      }
+      throw err;
     }
-
-    // Get session totals
-    const { data: session, error: sErr } = await supabase
-      .from("cash_sessions")
-      .select("*")
-      .eq("id", params.sessionId)
-      .single();
-
-    if (sErr) throw new Error(`Sessão não encontrada: ${sErr.message}`);
-
-    const totalCounted = params.countedDinheiro + params.countedDebito + params.countedCredito + params.countedPix;
-    const totalExpected =
-      Number(session.opening_balance) +
-      Number(session.total_dinheiro || 0) +
-      Number(session.total_debito || 0) +
-      Number(session.total_credito || 0) +
-      Number(session.total_pix || 0) +
-      Number(session.total_suprimento || 0) -
-      Number(session.total_sangria || 0);
-
-    const { data, error } = await supabase
-      .from("cash_sessions")
-      .update({
-        status: "fechado",
-        closed_by: params.userId,
-        closed_at: new Date().toISOString(),
-        closing_balance: totalCounted,
-        counted_dinheiro: params.countedDinheiro,
-        counted_debito: params.countedDebito,
-        counted_credito: params.countedCredito,
-        counted_pix: params.countedPix,
-        difference: totalCounted - totalExpected,
-        notes: params.notes,
-      })
-      .eq("id", params.sessionId)
-      .select()
-      .single();
-
-    if (error) throw new Error(`Erro ao fechar caixa: ${error.message}`);
-
-    // Register closing movement
-    await supabase.from("cash_movements").insert({
-      company_id: params.companyId,
-      session_id: params.sessionId,
-      type: "fechamento",
-      amount: totalCounted,
-      performed_by: params.userId,
-      description: `Fechamento - Diferença: ${(totalCounted - totalExpected).toFixed(2)}`,
-    });
-
-    // Clear local cache
-    saveOfflineSession(null);
-
-    return data;
   }
 
   /** Register sangria or suprimento */
@@ -232,7 +243,7 @@ export class CashSessionService {
     amount: number;
     description?: string;
   }) {
-    if (!navigator.onLine) {
+    const moveOffline = () => {
       const offlineSession = getOfflineSession();
       if (offlineSession) {
         const field = params.type === "sangria" ? "total_sangria" : "total_suprimento";
@@ -242,76 +253,85 @@ export class CashSessionService {
         return { id: `offline_mv_${Date.now()}`, ...params };
       }
       throw new Error("Sessão offline não encontrada");
-    }
+    };
 
-    const { data, error } = await supabase
-      .from("cash_movements")
-      .insert({
-        company_id: params.companyId,
-        session_id: params.sessionId,
-        type: params.type,
-        amount: params.amount,
-        performed_by: params.userId,
-        description: params.description,
-      })
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("cash_movements")
+        .insert({
+          company_id: params.companyId,
+          session_id: params.sessionId,
+          type: params.type,
+          amount: params.amount,
+          performed_by: params.userId,
+          description: params.description,
+        })
+        .select()
+        .single();
 
-    if (error) throw new Error(`Erro na movimentação: ${error.message}`);
+      if (error) throw new Error(`Erro na movimentação: ${error.message}`);
 
-    // Update session totals
-    const field = params.type === "sangria" ? "total_sangria" : "total_suprimento";
-    const { data: session } = await supabase
-      .from("cash_sessions")
-      .select(field)
-      .eq("id", params.sessionId)
-      .single();
-
-    if (session) {
-      await supabase
+      const field = params.type === "sangria" ? "total_sangria" : "total_suprimento";
+      const { data: session } = await supabase
         .from("cash_sessions")
-        .update({ [field]: Number(session[field] || 0) + params.amount })
-        .eq("id", params.sessionId);
-    }
+        .select(field)
+        .eq("id", params.sessionId)
+        .single();
 
-    return data;
+      if (session) {
+        await supabase
+          .from("cash_sessions")
+          .update({ [field]: Number(session[field] || 0) + params.amount })
+          .eq("id", params.sessionId);
+      }
+
+      return data;
+    } catch (err: any) {
+      if (err?.message?.includes("Failed to fetch") || err?.message?.includes("NetworkError") || err?.name === "TypeError") {
+        console.warn("[CashSession] Network error on movement, using offline", err.message);
+        return moveOffline();
+      }
+      throw err;
+    }
   }
 
   /** Get the current open session for a company (optionally filtered by terminal) */
   static async getCurrentSession(companyId: string, terminalId?: string) {
-    // Check offline cache first when offline
-    if (!navigator.onLine) {
-      const offlineSession = getOfflineSession();
-      if (offlineSession && offlineSession.company_id === companyId && offlineSession.status === "aberto") {
-        if (!terminalId || offlineSession.terminal_id === terminalId) {
-          return offlineSession;
-        }
+    try {
+      let query = supabase
+        .from("cash_sessions")
+        .select("*")
+        .eq("company_id", companyId)
+        .eq("status", "aberto");
+
+      if (terminalId) {
+        query = query.eq("terminal_id", terminalId);
       }
-      return null;
+
+      const { data, error } = await query
+        .order("opened_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        saveOfflineSession(data);
+      }
+
+      return data;
+    } catch (err: any) {
+      if (err?.message?.includes("Failed to fetch") || err?.message?.includes("NetworkError") || err?.name === "TypeError") {
+        console.warn("[CashSession] Network error on getCurrentSession, using offline cache");
+        const offlineSession = getOfflineSession();
+        if (offlineSession && offlineSession.company_id === companyId && offlineSession.status === "aberto") {
+          if (!terminalId || offlineSession.terminal_id === terminalId) {
+            return offlineSession;
+          }
+        }
+        return null;
+      }
+      throw err;
     }
-
-    let query = supabase
-      .from("cash_sessions")
-      .select("*")
-      .eq("company_id", companyId)
-      .eq("status", "aberto");
-
-    if (terminalId) {
-      query = query.eq("terminal_id", terminalId);
-    }
-
-    const { data, error } = await query
-      .order("opened_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) throw error;
-
-    // Cache for offline use
-    if (data) {
-      saveOfflineSession(data);
-    }
-
-    return data;
   }
 }
