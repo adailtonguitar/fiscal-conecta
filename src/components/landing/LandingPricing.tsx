@@ -169,28 +169,9 @@ export function LandingPricing() {
         </div>
 
         {/* Formas de pagamento */}
-        <div className="mt-16">
-          <p className="text-center text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-8">
-            Formas de pagamento aceitas
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto">
-            {[
-              { label: "Pix", icon: "💠", sub: "5% de desconto", color: "border-primary bg-primary/15 text-primary ring-2 ring-primary/30 shadow-lg shadow-primary/15" },
-              { label: "Crédito", icon: "💳", sub: "Até 12x", color: "border-blue-500/50 bg-blue-500/15 text-blue-600 ring-2 ring-blue-500/20 shadow-lg shadow-blue-500/10" },
-              { label: "Débito", icon: "💳", sub: "À vista", color: "border-amber-500/50 bg-amber-500/15 text-amber-600 ring-2 ring-amber-500/20 shadow-lg shadow-amber-500/10" },
-              { label: "Boleto", icon: "🧾", sub: "Venc. 3 dias", color: "border-violet-500/50 bg-violet-500/15 text-violet-600 ring-2 ring-violet-500/20 shadow-lg shadow-violet-500/10" },
-            ].map((m) => (
-              <div
-                key={m.label}
-                className={`flex flex-col items-center gap-2 px-4 py-5 rounded-2xl border font-medium ${m.color}`}
-              >
-                <span className="text-3xl">{m.icon}</span>
-                <span className="text-base font-bold">{m.label}</span>
-                <span className="text-[11px] font-semibold opacity-80">{m.sub}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <p className="mt-10 text-center text-sm text-muted-foreground">
+          Pagamento via <span className="font-semibold text-primary">Pix (5% off)</span>, cartão de crédito/débito ou boleto.
+        </p>
       </div>
     </section>
   );
