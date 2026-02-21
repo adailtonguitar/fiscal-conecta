@@ -96,15 +96,44 @@ function calcDaysUntilExpiry(subscriptionEnd: string): number | null {
   return Math.ceil((endDate - now) / (24 * 60 * 60 * 1000));
 }
 
+const SUB_CACHE_KEY = "as_cached_subscription";
+
+function cacheSubState(s: SubscriptionState) {
+  try { localStorage.setItem(SUB_CACHE_KEY, JSON.stringify(s)); } catch { /* */ }
+}
+
+function getCachedSubState(): SubscriptionState | null {
+  try {
+    const raw = localStorage.getItem(SUB_CACHE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* */ }
+  return null;
+}
+
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [state, setState] = useState<SubscriptionState>(defaultState);
+  const [state, setState] = useState<SubscriptionState>(() => {
+    const cached = getCachedSubState();
+    return cached ? { ...cached, loading: false } : defaultState;
+  });
 
   const checkSubscription = useCallback(async () => {
     if (!user) {
       setState({ ...defaultState, loading: false });
       return;
     }
+
+    // If offline, use cached state
+    if (!navigator.onLine) {
+      const cached = getCachedSubState();
+      if (cached) {
+        setState({ ...cached, loading: false });
+      } else {
+        setState({ ...defaultState, loading: false });
+      }
+      return;
+    }
+
     // Always fetch company_users for trial calc, even if MP call fails
     let createdAt = user.created_at;
     try {
@@ -135,7 +164,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
       if (isSubscribed && subscriptionEnd) {
         const daysUntilExpiry = calcDaysUntilExpiry(subscriptionEnd);
-        setState({
+        const newState: SubscriptionState = {
           subscribed: true,
           planKey,
           subscriptionEnd,
@@ -150,10 +179,12 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
           daysUntilExpiry,
           blocked: false,
           blockReason: null,
-        });
+        };
+        setState(newState);
+        cacheSubState(newState);
       } else if (wasSubscriber && lastSubscriptionEnd) {
         const grace = calcGracePeriod(lastSubscriptionEnd);
-        setState({
+        const newState: SubscriptionState = {
           subscribed: false,
           planKey,
           subscriptionEnd: lastSubscriptionEnd,
@@ -166,10 +197,12 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
           daysUntilExpiry: null,
           blocked: false,
           blockReason: null,
-        });
+        };
+        setState(newState);
+        cacheSubState(newState);
       } else {
         const trial = calcTrial(createdAt);
-        setState({
+        const newState: SubscriptionState = {
           subscribed: false,
           planKey: null,
           subscriptionEnd: null,
@@ -182,7 +215,9 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
           daysUntilExpiry: null,
           blocked: false,
           blockReason: null,
-        });
+        };
+        setState(newState);
+        cacheSubState(newState);
       }
     } catch {
       const trial = calcTrial(createdAt);

@@ -2,6 +2,26 @@ import { useEffect, useState, createContext, useContext } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
+const AUTH_CACHE_KEY = "as_cached_user";
+
+function cacheUser(user: User | null) {
+  try {
+    if (user) {
+      localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify({ id: user.id, email: user.email, role: user.role }));
+    } else {
+      localStorage.removeItem(AUTH_CACHE_KEY);
+    }
+  } catch { /* quota */ }
+}
+
+function getCachedUser(): User | null {
+  try {
+    const raw = localStorage.getItem(AUTH_CACHE_KEY);
+    if (raw) return JSON.parse(raw) as User;
+  } catch { /* parse error */ }
+  return null;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -17,7 +37,8 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  // Restore cached user immediately so offline loads work
+  const [user, setUser] = useState<User | null>(() => getCachedUser());
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,17 +59,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setSession(session);
       setUser(session?.user ?? null);
+      cacheUser(session?.user ?? null);
       setLoading(false);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      cacheUser(session?.user ?? null);
       setLoading(false);
     }).catch((err) => {
       console.error("[useAuth] getSession failed:", err);
-      setSession(null);
-      setUser(null);
+      // Offline: keep cached user instead of clearing
+      if (!navigator.onLine && getCachedUser()) {
+        console.log("[useAuth] Offline — using cached user");
+      } else {
+        setSession(null);
+        setUser(null);
+        cacheUser(null);
+      }
       setLoading(false);
     });
 
@@ -70,6 +99,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    cacheUser(null);
+    localStorage.removeItem("as_cached_company");
     await supabase.auth.signOut();
   };
 

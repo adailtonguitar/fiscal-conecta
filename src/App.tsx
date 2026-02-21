@@ -113,6 +113,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading && !companyLoading && user && companyId === null && !hasSignedOut.current) {
+      // Skip network check when offline — rely on cached data
+      if (!navigator.onLine) {
+        setCompanyCheckDone(true);
+        return;
+      }
       const checkCompany = async () => {
         try {
           const { data } = await (await import("@/integrations/supabase/client")).supabase
