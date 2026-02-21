@@ -16,7 +16,7 @@ import { useQuotes } from "@/hooks/useQuotes";
 import { useCompany } from "@/hooks/useCompany";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { useTEFConfig } from "@/hooks/useTEFConfig";
-import { Wifi, WifiOff, Keyboard, X, Search, Monitor, FileText, User, PackageX, PackagePlus, Maximize, Minimize, Banknote, CreditCard, QrCode, Smartphone, Ticket, MoreHorizontal, Clock as ClockIcon } from "lucide-react";
+import { Wifi, WifiOff, Keyboard, X, Search, Monitor, FileText, User, PackageX, PackagePlus, Maximize, Minimize, Banknote, CreditCard, QrCode, Smartphone, Ticket, MoreHorizontal, Clock as ClockIcon, Trash2, Hash, Percent } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { PaymentResult } from "@/services/types";
@@ -832,6 +832,86 @@ export default function PDV() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ════════ MOBILE ACTION BAR (visible only on mobile) ════════ */}
+      <div className="flex lg:hidden items-center gap-1.5 px-2 py-1.5 border-t-2 border-border bg-muted/50 overflow-x-auto scrollbar-none flex-shrink-0">
+        <button
+          onClick={() => setShowProductList(true)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold whitespace-nowrap"
+        >
+          <Search className="w-3.5 h-3.5" /> Buscar
+        </button>
+        <button
+          onClick={() => {
+            if (pdv.cartItems.length > 0) {
+              const targetItem = selectedCartItemId
+                ? pdv.cartItems.find(i => i.id === selectedCartItemId)
+                : pdv.cartItems[pdv.cartItems.length - 1];
+              if (targetItem) {
+                setEditingQtyItemId(targetItem.id);
+                setEditingQtyValue(String(targetItem.quantity));
+              }
+            }
+          }}
+          disabled={pdv.cartItems.length === 0}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-purple-600 text-white text-xs font-bold whitespace-nowrap disabled:opacity-30"
+        >
+          <Hash className="w-3.5 h-3.5" /> Qtd
+        </button>
+        <button
+          onClick={() => {
+            if (pdv.cartItems.length > 0) {
+              const targetItem = selectedCartItemId
+                ? pdv.cartItems.find(i => i.id === selectedCartItemId)
+                : pdv.cartItems[pdv.cartItems.length - 1];
+              if (targetItem) setEditingItemDiscountId(targetItem.id);
+            }
+          }}
+          disabled={pdv.cartItems.length === 0}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-bold whitespace-nowrap disabled:opacity-30"
+        >
+          <Percent className="w-3.5 h-3.5" /> Desc.Item
+        </button>
+        <button
+          onClick={() => maxDiscountPercent > 0 && setEditingGlobalDiscount(true)}
+          disabled={pdv.cartItems.length === 0}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-orange-600 text-white text-xs font-bold whitespace-nowrap disabled:opacity-30"
+        >
+          <Percent className="w-3.5 h-3.5" /> Desc.Total
+        </button>
+        <button
+          onClick={() => {
+            if (pdv.cartItems.length > 0) {
+              const targetItem = selectedCartItemId
+                ? pdv.cartItems.find(i => i.id === selectedCartItemId)
+                : pdv.cartItems[pdv.cartItems.length - 1];
+              if (targetItem) {
+                pdv.removeItem(targetItem.id);
+                setSelectedCartItemId(null);
+                toast.info(`${targetItem.name} removido`);
+              }
+            }
+          }}
+          disabled={pdv.cartItems.length === 0}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-bold whitespace-nowrap disabled:opacity-30"
+        >
+          <Trash2 className="w-3.5 h-3.5" /> Remover
+        </button>
+        <button
+          onClick={() => {
+            if (pdv.cartItems.length > 0) {
+              pdv.clearCart();
+              setSelectedClient(null);
+              setSelectedCartItemId(null);
+              toast.info("Venda cancelada");
+            }
+          }}
+          disabled={pdv.cartItems.length === 0}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-600 text-white text-xs font-bold whitespace-nowrap disabled:opacity-30"
+        >
+          <X className="w-3.5 h-3.5" /> Cancelar
+        </button>
       </div>
 
       {/* ════════ BOTTOM PAYMENT BAR ════════ */}
