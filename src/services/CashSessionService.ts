@@ -97,6 +97,12 @@ export class CashSessionService {
       return offlineSession;
     };
 
+    // Quick offline check — skip network calls entirely
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      console.warn("[CashSession] navigator.onLine=false, opening offline");
+      return openOffline();
+    }
+
     try {
       // Check if there's already an open session for this terminal
       const { data: existing, error: checkErr } = await supabase
@@ -139,26 +145,27 @@ export class CashSessionService {
         throw new Error(`Erro ao abrir caixa: ${error.message}`);
       }
 
-      // Register opening movement
-      await supabase.from("cash_movements").insert({
-        company_id: params.companyId,
-        session_id: data.id,
-        type: "abertura",
-        amount: params.openingBalance,
-        performed_by: params.userId,
-        description: "Abertura de caixa",
-      });
+      // Register opening movement (ignore errors)
+      try {
+        await supabase.from("cash_movements").insert({
+          company_id: params.companyId,
+          session_id: data.id,
+          type: "abertura",
+          amount: params.openingBalance,
+          performed_by: params.userId,
+          description: "Abertura de caixa",
+        });
+      } catch { /* ignore movement insert failure */ }
 
       // Cache session locally for offline access
       saveOfflineSession(data);
 
       return data;
     } catch (err: any) {
-      if (isNetworkError(err)) {
-        console.warn("[CashSession] Network error caught, opening offline", err);
-        return openOffline();
-      }
-      throw err;
+      // CATCH-ALL: any error at all → open offline as last resort
+      // This includes TypeError: Failed to fetch, AbortError, etc.
+      console.warn("[CashSession] Unexpected error, forcing offline open", err?.message || err);
+      return openOffline();
     }
   }
 
@@ -343,6 +350,17 @@ export class CashSessionService {
 
   /** Get the current open session for a company (optionally filtered by terminal) */
   static async getCurrentSession(companyId: string, terminalId?: string) {
+    // Quick offline check
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      const offlineSession = getOfflineSession();
+      if (offlineSession && offlineSession.company_id === companyId && offlineSession.status === "aberto") {
+        if (!terminalId || offlineSession.terminal_id === terminalId) {
+          return offlineSession;
+        }
+      }
+      return null;
+    }
+
     try {
       let query = supabase
         .from("cash_sessions")
@@ -360,27 +378,7 @@ export class CashSessionService {
         .maybeSingle();
 
       if (error) {
-        if (isNetworkError(error)) {
-          console.warn("[CashSession] Network error on getCurrentSession, using offline cache");
-          const offlineSession = getOfflineSession();
-          if (offlineSession && offlineSession.company_id === companyId && offlineSession.status === "aberto") {
-            if (!terminalId || offlineSession.terminal_id === terminalId) {
-              return offlineSession;
-            }
-          }
-          return null;
-        }
-        throw error;
-      }
-
-      if (data) {
-        saveOfflineSession(data);
-      }
-
-      return data;
-    } catch (err: any) {
-      if (isNetworkError(err)) {
-        console.warn("[CashSession] Network error on getCurrentSession catch, using offline cache");
+        console.warn("[CashSession] getCurrentSession error, trying offline cache", error);
         const offlineSession = getOfflineSession();
         if (offlineSession && offlineSession.company_id === companyId && offlineSession.status === "aberto") {
           if (!terminalId || offlineSession.terminal_id === terminalId) {
@@ -389,7 +387,22 @@ export class CashSessionService {
         }
         return null;
       }
-      throw err;
+
+      if (data) {
+        saveOfflineSession(data);
+      }
+
+      return data;
+    } catch (err: any) {
+      // CATCH-ALL: any error → try offline cache
+      console.warn("[CashSession] getCurrentSession unexpected error, using offline cache", err?.message || err);
+      const offlineSession = getOfflineSession();
+      if (offlineSession && offlineSession.company_id === companyId && offlineSession.status === "aberto") {
+        if (!terminalId || offlineSession.terminal_id === terminalId) {
+          return offlineSession;
+        }
+      }
+      return null;
     }
   }
 }
