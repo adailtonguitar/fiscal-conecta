@@ -2,6 +2,30 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
+const COMPANY_CACHE_KEY = "as_cached_company";
+
+interface CachedCompany {
+  companyId: string;
+  companyName: string | null;
+  logoUrl: string | null;
+  slogan: string | null;
+  pixKey: string | null;
+  pixKeyType: string | null;
+  pixCity: string | null;
+}
+
+function cacheCompany(data: CachedCompany) {
+  try { localStorage.setItem(COMPANY_CACHE_KEY, JSON.stringify(data)); } catch { /* */ }
+}
+
+function getCachedCompany(): CachedCompany | null {
+  try {
+    const raw = localStorage.getItem(COMPANY_CACHE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* */ }
+  return null;
+}
+
 interface CompanyData {
   companyId: string | null;
   companyName: string | null;
@@ -15,13 +39,14 @@ interface CompanyData {
 
 export function useCompany(): CompanyData {
   const { user } = useAuth();
-  const [companyId, setCompanyId] = useState<string | null>(null);
-  const [companyName, setCompanyName] = useState<string | null>(null);
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [slogan, setSlogan] = useState<string | null>(null);
-  const [pixKey, setPixKey] = useState<string | null>(null);
-  const [pixKeyType, setPixKeyType] = useState<string | null>(null);
-  const [pixCity, setPixCity] = useState<string | null>(null);
+  const cached = getCachedCompany();
+  const [companyId, setCompanyId] = useState<string | null>(cached?.companyId ?? null);
+  const [companyName, setCompanyName] = useState<string | null>(cached?.companyName ?? null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(cached?.logoUrl ?? null);
+  const [slogan, setSlogan] = useState<string | null>(cached?.slogan ?? null);
+  const [pixKey, setPixKey] = useState<string | null>(cached?.pixKey ?? null);
+  const [pixKeyType, setPixKeyType] = useState<string | null>(cached?.pixKeyType ?? null);
+  const [pixCity, setPixCity] = useState<string | null>(cached?.pixCity ?? null);
   const [loading, setLoading] = useState(true);
   const retryCount = useRef(0);
   const retryTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -42,6 +67,20 @@ export function useCompany(): CompanyData {
       return;
     }
 
+    // If offline and we have cached data, use it immediately
+    if (!navigator.onLine && cached?.companyId) {
+      console.log("[useCompany] Offline — using cached company data");
+      setCompanyId(cached.companyId);
+      setCompanyName(cached.companyName);
+      setLogoUrl(cached.logoUrl);
+      setSlogan(cached.slogan);
+      setPixKey(cached.pixKey);
+      setPixKeyType(cached.pixKeyType);
+      setPixCity(cached.pixCity);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     const fetchCompany = async () => {
@@ -57,7 +96,6 @@ export function useCompany(): CompanyData {
         if (cancelled) return;
 
         if (cuError || !cuData?.company_id) {
-          // Retry up to 3 times with increasing delay
           if (retryCount.current < 3) {
             retryCount.current++;
             const delay = retryCount.current * 1500;
@@ -82,12 +120,30 @@ export function useCompany(): CompanyData {
 
         if (cancelled) return;
 
-        setCompanyName(company?.name ?? null);
-        setLogoUrl(company?.logo_url ?? null);
-        setSlogan((company as any)?.slogan ?? null);
-        setPixKey((company as any)?.pix_key ?? null);
-        setPixKeyType((company as any)?.pix_key_type ?? null);
-        setPixCity((company as any)?.pix_city || (company as any)?.address_city || null);
+        const name = company?.name ?? null;
+        const logo = company?.logo_url ?? null;
+        const s = (company as any)?.slogan ?? null;
+        const pk = (company as any)?.pix_key ?? null;
+        const pkt = (company as any)?.pix_key_type ?? null;
+        const pc = (company as any)?.pix_city || (company as any)?.address_city || null;
+
+        setCompanyName(name);
+        setLogoUrl(logo);
+        setSlogan(s);
+        setPixKey(pk);
+        setPixKeyType(pkt);
+        setPixCity(pc);
+
+        // Cache for offline use
+        cacheCompany({
+          companyId: cuData.company_id,
+          companyName: name,
+          logoUrl: logo,
+          slogan: s,
+          pixKey: pk,
+          pixKeyType: pkt,
+          pixCity: pc,
+        });
       } catch (err) {
         console.error("[useCompany] Failed to fetch company:", err);
         if (!cancelled && retryCount.current < 3) {
@@ -97,7 +153,12 @@ export function useCompany(): CompanyData {
           }, retryCount.current * 1500);
           return;
         }
-        setCompanyId(null);
+        // If offline and cached, keep cached values
+        if (!navigator.onLine && cached?.companyId) {
+          setCompanyId(cached.companyId);
+        } else {
+          setCompanyId(null);
+        }
       }
       if (!cancelled) setLoading(false);
     };
