@@ -1,7 +1,37 @@
 /**
  * CashSessionService — business logic for cash register sessions.
+ * Supports offline operation via localStorage fallback.
  */
 import { supabase } from "@/integrations/supabase/client";
+
+const LOCAL_SESSION_KEY = "as_offline_cash_session";
+const LOCAL_MOVEMENTS_KEY = "as_offline_cash_movements";
+
+function getOfflineSession(): any | null {
+  try {
+    const raw = localStorage.getItem(LOCAL_SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveOfflineSession(session: any | null) {
+  try {
+    if (session) {
+      localStorage.setItem(LOCAL_SESSION_KEY, JSON.stringify(session));
+    } else {
+      localStorage.removeItem(LOCAL_SESSION_KEY);
+    }
+  } catch { /* quota */ }
+}
+
+function queueOfflineMovement(movement: any) {
+  try {
+    const raw = localStorage.getItem(LOCAL_MOVEMENTS_KEY);
+    const movements = raw ? JSON.parse(raw) : [];
+    movements.push(movement);
+    localStorage.setItem(LOCAL_MOVEMENTS_KEY, JSON.stringify(movements));
+  } catch { /* quota */ }
+}
 
 export class CashSessionService {
   /** Open a new cash session */
@@ -12,6 +42,46 @@ export class CashSessionService {
     terminalId?: string;
   }) {
     const terminalId = params.terminalId || "01";
+
+    if (!navigator.onLine) {
+      // Create offline session
+      const offlineSession = {
+        id: `offline_${Date.now()}`,
+        company_id: params.companyId,
+        opened_by: params.userId,
+        opening_balance: params.openingBalance,
+        terminal_id: terminalId,
+        status: "aberto" as const,
+        opened_at: new Date().toISOString(),
+        closed_at: null,
+        closed_by: null,
+        closing_balance: null,
+        counted_dinheiro: null,
+        counted_debito: null,
+        counted_credito: null,
+        counted_pix: null,
+        difference: null,
+        notes: null,
+        sales_count: 0,
+        total_vendas: 0,
+        total_dinheiro: 0,
+        total_debito: 0,
+        total_credito: 0,
+        total_pix: 0,
+        total_voucher: 0,
+        total_outros: 0,
+        total_sangria: 0,
+        total_suprimento: 0,
+        created_at: new Date().toISOString(),
+      };
+      saveOfflineSession(offlineSession);
+      queueOfflineMovement({
+        action: "open",
+        params,
+        created_at: new Date().toISOString(),
+      });
+      return offlineSession;
+    }
 
     // Check if there's already an open session for this terminal
     const { data: existing } = await supabase
@@ -50,6 +120,9 @@ export class CashSessionService {
       description: "Abertura de caixa",
     });
 
+    // Cache session locally for offline access
+    saveOfflineSession(data);
+
     return data;
   }
 
@@ -64,6 +137,37 @@ export class CashSessionService {
     countedPix: number;
     notes?: string;
   }) {
+    if (!navigator.onLine) {
+      // Close offline session
+      const offlineSession = getOfflineSession();
+      if (offlineSession && (offlineSession.id === params.sessionId || offlineSession.id.startsWith("offline_"))) {
+        const totalCounted = params.countedDinheiro + params.countedDebito + params.countedCredito + params.countedPix;
+        const totalExpected =
+          Number(offlineSession.opening_balance) +
+          Number(offlineSession.total_dinheiro || 0) +
+          Number(offlineSession.total_debito || 0) +
+          Number(offlineSession.total_credito || 0) +
+          Number(offlineSession.total_pix || 0) +
+          Number(offlineSession.total_suprimento || 0) -
+          Number(offlineSession.total_sangria || 0);
+
+        offlineSession.status = "fechado" as const;
+        offlineSession.closed_by = params.userId;
+        offlineSession.closed_at = new Date().toISOString();
+        offlineSession.closing_balance = totalCounted;
+        offlineSession.counted_dinheiro = params.countedDinheiro;
+        offlineSession.counted_debito = params.countedDebito;
+        offlineSession.counted_credito = params.countedCredito;
+        offlineSession.counted_pix = params.countedPix;
+        offlineSession.difference = totalCounted - totalExpected;
+        offlineSession.notes = params.notes || null;
+        saveOfflineSession(null);
+        queueOfflineMovement({ action: "close", params, created_at: new Date().toISOString() });
+        return offlineSession;
+      }
+      throw new Error("Sessão não encontrada offline");
+    }
+
     // Get session totals
     const { data: session, error: sErr } = await supabase
       .from("cash_sessions")
@@ -113,6 +217,9 @@ export class CashSessionService {
       description: `Fechamento - Diferença: ${(totalCounted - totalExpected).toFixed(2)}`,
     });
 
+    // Clear local cache
+    saveOfflineSession(null);
+
     return data;
   }
 
@@ -125,6 +232,18 @@ export class CashSessionService {
     amount: number;
     description?: string;
   }) {
+    if (!navigator.onLine) {
+      const offlineSession = getOfflineSession();
+      if (offlineSession) {
+        const field = params.type === "sangria" ? "total_sangria" : "total_suprimento";
+        offlineSession[field] = Number(offlineSession[field] || 0) + params.amount;
+        saveOfflineSession(offlineSession);
+        queueOfflineMovement({ action: "movement", params, created_at: new Date().toISOString() });
+        return { id: `offline_mv_${Date.now()}`, ...params };
+      }
+      throw new Error("Sessão offline não encontrada");
+    }
+
     const { data, error } = await supabase
       .from("cash_movements")
       .insert({
@@ -160,6 +279,17 @@ export class CashSessionService {
 
   /** Get the current open session for a company (optionally filtered by terminal) */
   static async getCurrentSession(companyId: string, terminalId?: string) {
+    // Check offline cache first when offline
+    if (!navigator.onLine) {
+      const offlineSession = getOfflineSession();
+      if (offlineSession && offlineSession.company_id === companyId && offlineSession.status === "aberto") {
+        if (!terminalId || offlineSession.terminal_id === terminalId) {
+          return offlineSession;
+        }
+      }
+      return null;
+    }
+
     let query = supabase
       .from("cash_sessions")
       .select("*")
@@ -176,6 +306,12 @@ export class CashSessionService {
       .maybeSingle();
 
     if (error) throw error;
+
+    // Cache for offline use
+    if (data) {
+      saveOfflineSession(data);
+    }
+
     return data;
   }
 }
