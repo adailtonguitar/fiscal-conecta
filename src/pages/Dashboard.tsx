@@ -26,7 +26,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto min-w-0 overflow-hidden">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto min-w-0 overflow-x-hidden">
       {/* Trial banner */}
       {trialActive && !subscribed && !isSuperAdmin && trialDaysLeft !== null && (
         <div className="flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
@@ -41,7 +41,7 @@ export default function Dashboard() {
       )}
 
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-1">Resumo inteligente da sua empresa</p>
       </div>
 
@@ -128,7 +128,7 @@ export default function Dashboard() {
           </div>
 
           {/* Stats grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {[
               { title: "Vendas Hoje", value: formatCurrency(stats.salesToday), icon: DollarSign },
               { title: "Nº de Vendas", value: String(stats.salesCountToday), icon: ShoppingBag },
@@ -140,15 +140,13 @@ export default function Dashboard() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 + i * 0.05 }}
-                className="bg-card rounded-xl p-5 card-shadow border border-border"
+                className="bg-card rounded-xl p-3 sm:p-5 card-shadow border border-border"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-muted-foreground">{stat.title}</span>
-                   <div className="flex items-center justify-center">
-                    <stat.icon className="w-5 h-5 text-muted-foreground" />
-                  </div>
+                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                  <span className="text-xs sm:text-sm text-muted-foreground">{stat.title}</span>
+                  <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
                 </div>
-                <span className="text-2xl font-bold font-mono text-foreground">{stat.value}</span>
+                <span className="text-lg sm:text-2xl font-bold font-mono text-foreground">{stat.value}</span>
               </motion.div>
             ))}
           </div>
@@ -156,17 +154,47 @@ export default function Dashboard() {
           {/* AI Insight Widget */}
           <AiInsightWidget />
 
-          {/* Recent sales table */}
+          {/* Recent sales */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
             className="bg-card rounded-xl card-shadow border border-border overflow-hidden"
           >
-            <div className="px-5 py-4 border-b border-border">
-              <h2 className="text-base font-semibold text-foreground">Últimas Vendas</h2>
+            <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-border">
+              <h2 className="text-sm sm:text-base font-semibold text-foreground">Últimas Vendas</h2>
             </div>
-            <div className="overflow-x-auto">
+
+            {/* Mobile cards */}
+            <div className="sm:hidden divide-y divide-border">
+              {stats.recentSales.length === 0 ? (
+                <p className="px-3 py-8 text-center text-muted-foreground text-sm">Nenhuma venda registrada</p>
+              ) : (
+                stats.recentSales.map((sale) => (
+                  <div key={sale.id} className="px-3 py-2.5 flex items-center justify-between">
+                    <div className="min-w-0">
+                      <p className="text-sm font-mono text-foreground">
+                        #{sale.number ? String(sale.number).padStart(6, "0") : sale.id.slice(0, 8)}
+                      </p>
+                      <p className="text-xs text-muted-foreground capitalize">{sale.payment_method || "—"}</p>
+                    </div>
+                    <div className="text-right shrink-0 ml-3">
+                      <p className="text-sm font-mono font-semibold text-primary">{formatCurrency(Number(sale.total_value))}</p>
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
+                        sale.status === "autorizado" ? "bg-success/10 text-success"
+                          : sale.status === "rejeitado" ? "bg-destructive/10 text-destructive"
+                          : "bg-warning/10 text-warning"
+                      }`}>
+                        {sale.status === "autorizado" ? "Autorizado" : sale.status === "rejeitado" ? "Rejeitado" : "Pendente"}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border">
@@ -192,15 +220,11 @@ export default function Dashboard() {
                           {formatCurrency(Number(sale.total_value))}
                         </td>
                         <td className="px-5 py-3 text-center">
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                              sale.status === "autorizado"
-                                ? "bg-success/10 text-success"
-                                : sale.status === "rejeitado"
-                                ? "bg-destructive/10 text-destructive"
-                                : "bg-warning/10 text-warning"
-                            }`}
-                          >
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            sale.status === "autorizado" ? "bg-success/10 text-success"
+                              : sale.status === "rejeitado" ? "bg-destructive/10 text-destructive"
+                              : "bg-warning/10 text-warning"
+                          }`}>
                             {sale.status === "autorizado" ? "Autorizado" : sale.status === "rejeitado" ? "Rejeitado" : "Pendente"}
                           </span>
                         </td>
