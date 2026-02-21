@@ -26,7 +26,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto min-w-0 overflow-hidden">
       {/* Trial banner */}
       {trialActive && !subscribed && !isSuperAdmin && trialDaysLeft !== null && (
         <div className="flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
