@@ -556,7 +556,10 @@ export default function PDV() {
       </div>
 
       {/* ════════ BARCODE INPUT - LARGEST ELEMENT ════════ */}
-      <div className="flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 bg-card border-b-2 border-primary flex-shrink-0">
+      {/* Hide on mobile when editing qty/discount to prevent focus stealing */}
+      <div className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 bg-card border-b-2 border-primary flex-shrink-0 ${
+        (editingQtyItemId || editingItemDiscountId || editingGlobalDiscount) ? "hidden lg:flex" : "flex"
+      }`}>
         <span className="text-xs lg:text-sm font-bold text-muted-foreground whitespace-nowrap">CÓDIGO:</span>
         <input
           ref={barcodeInputRef}
