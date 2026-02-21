@@ -170,12 +170,12 @@ export default function FluxoCaixaProjetado() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl mx-auto">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Fluxo de Caixa Projetado</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Fluxo de Caixa Projetado</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Previsão de entradas e saídas para os próximos {range} dias
           </p>
         </div>
@@ -185,11 +185,12 @@ export default function FluxoCaixaProjetado() {
             size="sm"
             onClick={() => setShowPaid(!showPaid)}
           >
-            {showPaid ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-            {showPaid ? "Ocultar pagos" : "Mostrar pagos"}
+            {showPaid ? <EyeOff className="w-4 h-4 mr-1 sm:mr-2" /> : <Eye className="w-4 h-4 mr-1 sm:mr-2" />}
+            <span className="hidden sm:inline">{showPaid ? "Ocultar pagos" : "Mostrar pagos"}</span>
+            <span className="sm:hidden">{showPaid ? "Pagos" : "Pagos"}</span>
           </Button>
           <Button variant="outline" size="sm" onClick={handleExportCSV}>
-            <Download className="w-4 h-4 mr-2" />
+            <Download className="w-4 h-4 mr-1 sm:mr-2" />
             CSV
           </Button>
         </div>
@@ -211,48 +212,47 @@ export default function FluxoCaixaProjetado() {
 
       {/* Alerts */}
       {alerts.length > 0 && (
-        <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 flex items-start gap-3">
+        <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3 sm:p-4 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-destructive">Saldo negativo projetado</p>
             <p className="text-xs text-muted-foreground mt-1">
               O saldo ficará negativo em {alerts.length} dia(s). Primeiro dia: {alerts[0]}.
-              Considere antecipar recebimentos ou postergar pagamentos.
             </p>
           </div>
         </div>
       )}
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-card rounded-xl border border-border p-4 card-shadow">
-          <p className="text-xs text-muted-foreground mb-1">Saldo Atual</p>
-          <p className="text-xl font-bold font-mono text-foreground">
-            {isLoading ? <Skeleton className="h-7 w-28" /> : formatCurrency(currentBalance)}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-card rounded-xl border border-border p-3 sm:p-4 card-shadow">
+          <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Saldo Atual</p>
+          <p className="text-base sm:text-xl font-bold font-mono text-foreground">
+            {isLoading ? <Skeleton className="h-6 w-20" /> : formatCurrency(currentBalance)}
           </p>
         </div>
-        <div className="bg-card rounded-xl border border-border p-4 card-shadow">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp className="w-4 h-4 text-primary" />
-            <p className="text-xs text-muted-foreground">Entradas Previstas</p>
+        <div className="bg-card rounded-xl border border-border p-3 sm:p-4 card-shadow">
+          <div className="flex items-center gap-1.5 mb-1">
+            <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Entradas</p>
           </div>
-          <p className="text-xl font-bold font-mono text-primary">
-            {isLoading ? <Skeleton className="h-7 w-28" /> : formatCurrency(totals.entradas)}
+          <p className="text-base sm:text-xl font-bold font-mono text-primary">
+            {isLoading ? <Skeleton className="h-6 w-20" /> : formatCurrency(totals.entradas)}
           </p>
         </div>
-        <div className="bg-card rounded-xl border border-border p-4 card-shadow">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingDown className="w-4 h-4 text-destructive" />
-            <p className="text-xs text-muted-foreground">Saídas Previstas</p>
+        <div className="bg-card rounded-xl border border-border p-3 sm:p-4 card-shadow">
+          <div className="flex items-center gap-1.5 mb-1">
+            <TrendingDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-destructive" />
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Saídas</p>
           </div>
-          <p className="text-xl font-bold font-mono text-destructive">
-            {isLoading ? <Skeleton className="h-7 w-28" /> : formatCurrency(totals.saidas)}
+          <p className="text-base sm:text-xl font-bold font-mono text-destructive">
+            {isLoading ? <Skeleton className="h-6 w-20" /> : formatCurrency(totals.saidas)}
           </p>
         </div>
-        <div className="bg-card rounded-xl border border-border p-4 card-shadow">
-          <p className="text-xs text-muted-foreground mb-1">Saldo Projetado Final</p>
-          <p className={cn("text-xl font-bold font-mono", totals.saldoFinal >= 0 ? "text-primary" : "text-destructive")}>
-            {isLoading ? <Skeleton className="h-7 w-28" /> : formatCurrency(totals.saldoFinal)}
+        <div className="bg-card rounded-xl border border-border p-3 sm:p-4 card-shadow">
+          <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Saldo Final</p>
+          <p className={cn("text-base sm:text-xl font-bold font-mono", totals.saldoFinal >= 0 ? "text-primary" : "text-destructive")}>
+            {isLoading ? <Skeleton className="h-6 w-20" /> : formatCurrency(totals.saldoFinal)}
           </p>
         </div>
       </div>
@@ -261,14 +261,14 @@ export default function FluxoCaixaProjetado() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-card rounded-xl card-shadow border border-border p-5"
+        className="bg-card rounded-xl card-shadow border border-border p-3 sm:p-5"
       >
         <h3 className="text-sm font-semibold text-foreground mb-4">Projeção de Saldo</h3>
         {isLoading ? (
-          <Skeleton className="h-[300px] w-full" />
+          <Skeleton className="h-[250px] sm:h-[300px] w-full" />
         ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+          <ResponsiveContainer width="100%" height={250}>
+            <AreaChart data={chartData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
               <defs>
                 <linearGradient id="saldoGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
@@ -278,14 +278,15 @@ export default function FluxoCaixaProjetado() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                 tickLine={false}
                 interval="preserveStartEnd"
               />
               <YAxis
-                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                 tickLine={false}
                 tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                width={40}
               />
               <Tooltip content={<CustomTooltip />} />
               <ReferenceLine y={0} stroke="hsl(var(--destructive))" strokeDasharray="3 3" />
@@ -301,12 +302,54 @@ export default function FluxoCaixaProjetado() {
         )}
       </motion.div>
 
-      {/* Daily details table */}
+      {/* Daily details - Mobile cards */}
+      <div className="sm:hidden space-y-2">
+        <div className="px-1 py-2">
+          <h3 className="text-sm font-semibold text-foreground">Detalhamento por Dia</h3>
+        </div>
+        {isLoading ? (
+          [...Array(3)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
+        ) : dailyDetails.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground text-sm">
+            Nenhum lançamento pendente nos próximos {range} dias.
+          </div>
+        ) : (
+          dailyDetails.map((day) => (
+            <div key={day.date} className={cn("bg-card rounded-xl border border-border p-3 space-y-2", day.saldo < 0 && "border-destructive/30 bg-destructive/5")}>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-medium text-foreground">{day.label}</span>
+                <span className={cn("text-sm font-mono font-bold", day.saldo >= 0 ? "text-primary" : "text-destructive")}>
+                  {formatCurrency(day.saldo)}
+                </span>
+              </div>
+              <div className="space-y-1">
+                {day.items.map(item => (
+                  <div key={item.id} className="flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Badge variant={item.type === "receber" ? "default" : "destructive"} className="text-[10px] px-1 py-0 shrink-0">
+                        {item.type === "receber" ? "E" : "S"}
+                      </Badge>
+                      <span className="text-muted-foreground truncate">{item.description}</span>
+                    </div>
+                    <span className="font-mono text-foreground shrink-0">{formatCurrency(item.amount)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-4 text-[10px] text-muted-foreground pt-1 border-t border-border">
+                {day.entradas > 0 && <span className="text-primary">+{formatCurrency(day.entradas)}</span>}
+                {day.saidas > 0 && <span className="text-destructive">-{formatCurrency(day.saidas)}</span>}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Daily details - Desktop table */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-card rounded-xl card-shadow border border-border overflow-hidden"
+        className="hidden sm:block bg-card rounded-xl card-shadow border border-border overflow-hidden"
       >
         <div className="px-5 py-3 border-b border-border bg-muted/30">
           <h3 className="text-sm font-semibold text-foreground">Detalhamento por Dia</h3>
