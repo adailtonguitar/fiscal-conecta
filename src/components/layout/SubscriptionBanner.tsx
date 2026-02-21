@@ -24,7 +24,7 @@ export function SubscriptionBanner() {
   };
 
   if (adminLoading) return null;
-  if (dismissed) return null;
+  if (dismissed || isSuperAdmin) return null;
 
   // Show warning when subscription expires in 5 days or less
   if (subscribed && daysUntilExpiry !== null && daysUntilExpiry <= 5) {
