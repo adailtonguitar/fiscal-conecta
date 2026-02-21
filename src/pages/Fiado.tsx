@@ -353,29 +353,32 @@ export default function Fiado() {
                     </button>
                   ))}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <div className="flex-1">
                     <CurrencyInput
                       value={customAmount}
                       onChange={setCustomAmount}
                       placeholder="Valor a receber"
-                      className="text-foreground"
+                      className="text-foreground h-12 text-lg"
                     />
                   </div>
-                  <Button
-                    onClick={() => handleReceivePayment()}
-                    disabled={isProcessing || customAmount <= 0}
-                    className="px-6"
-                  >
-                    {isProcessing ? "..." : "Receber"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleReceivePayment(clientBalance)}
-                    disabled={isProcessing || clientBalance <= 0}
-                  >
-                    Receber Tudo
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => handleReceivePayment()}
+                      disabled={isProcessing || customAmount <= 0}
+                      className="flex-1 sm:flex-none px-6 h-12"
+                    >
+                      {isProcessing ? "..." : "Receber"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleReceivePayment(clientBalance)}
+                      disabled={isProcessing || clientBalance <= 0}
+                      className="flex-1 sm:flex-none h-12"
+                    >
+                      Receber Tudo
+                    </Button>
+                  </div>
                 </div>
               </div>
 
