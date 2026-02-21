@@ -281,7 +281,42 @@ export default function PedidosCompra() {
                 <p className="text-xs mt-1">Configure o "Ponto de Reposição" nos produtos para ativar sugestões.</p>
               </div>
             ) : (
-              <div className="border border-border rounded-xl overflow-hidden bg-card">
+              <>
+              {/* Mobile Cards */}
+              <div className="sm:hidden space-y-3">
+                {filteredSuggestions.map(p => {
+                  const isSelected = !!selectedItems[p.id];
+                  const suggestedQty = Number(p.reorder_quantity) || Number(p.reorder_point) * 2;
+                  const cost = Number(p.cost_price) || 0;
+                  return (
+                    <div
+                      key={p.id}
+                      className={`bg-card rounded-xl border p-4 space-y-2 cursor-pointer transition-colors ${
+                        isSelected ? "border-primary bg-primary/5" : "border-border"
+                      }`}
+                      onClick={() => toggleItem(p.id, suggestedQty, cost)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="min-w-0 mr-2">
+                          <p className="font-medium text-foreground text-sm truncate">{p.name}</p>
+                          <p className="text-xs text-muted-foreground font-mono">{p.sku}</p>
+                        </div>
+                        <input type="checkbox" checked={isSelected} readOnly className="rounded border-border flex-shrink-0" />
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Estoque: <strong className="text-destructive">{Number(p.stock_quantity)}</strong> / Mín: {Number(p.reorder_point)}</span>
+                        <span className="font-mono font-semibold text-foreground">Sugerido: {isSelected ? selectedItems[p.id].qty : suggestedQty}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Custo: <strong className="font-mono text-foreground">{formatCurrency(cost)}</strong>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden sm:block border border-border rounded-xl overflow-hidden bg-card">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/50">
@@ -338,6 +373,7 @@ export default function PedidosCompra() {
                   </tbody>
                 </table>
               </div>
+              </>
             )}
 
             {selectedCount > 0 && (
@@ -366,27 +402,27 @@ export default function PedidosCompra() {
                 const st = statusLabels[order.status] || statusLabels.rascunho;
                 const supplierName = (order as any).suppliers?.name || "Sem fornecedor";
                 return (
-                  <div
+                    <div
                     key={order.id}
-                    className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:shadow-sm transition-shadow"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-border bg-card hover:shadow-sm transition-shadow"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
                         <Package className="w-5 h-5 text-muted-foreground" />
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-semibold text-foreground">
                             Pedido #{order.id.slice(0, 8)}
                           </p>
                           <Badge className={st.color}>{st.label}</Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
                           {supplierName} • {format(new Date(order.created_at), "dd/MM/yyyy")}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3 ml-13 sm:ml-0">
                       <p className="text-sm font-bold font-mono text-foreground">
                         {formatCurrency(Number(order.total_value))}
                       </p>
@@ -418,7 +454,7 @@ export default function PedidosCompra() {
                           Receber
                         </Button>
                       )}
-                      <Button size="sm" variant="ghost" onClick={() => handlePrint(order)}>
+                      <Button size="sm" variant="ghost" onClick={() => handlePrint(order)} className="hidden sm:flex">
                         Imprimir
                       </Button>
                     </div>

@@ -79,8 +79,34 @@ export default function CurvaABC() {
         ))}
       </div>
 
-      {/* Table */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden">
+      {/* Mobile Cards */}
+      <div className="sm:hidden space-y-3">
+        {isLoading ? (
+          [...Array(4)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
+        ) : abcData.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">Nenhum produto cadastrado.</div>
+        ) : (
+          abcData.map((p, idx) => (
+            <div key={p.id} className="bg-card rounded-xl border border-border p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-foreground text-sm truncate mr-2">{idx + 1}. {p.name}</span>
+                <Badge variant={classColors[p.class]}>{p.class}</Badge>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="font-mono">{p.sku}</span>
+                <span>Estoque: <strong className="text-foreground">{p.stock_quantity}</strong></span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Valor: <strong className="font-mono text-foreground">{formatCurrency(p.stock_value)}</strong></span>
+                <span className="font-mono text-muted-foreground">{p.cumulative_pct.toFixed(1)}%</span>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="hidden sm:block bg-card rounded-xl card-shadow border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

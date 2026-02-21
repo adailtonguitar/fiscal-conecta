@@ -92,21 +92,21 @@ export default function AuditLogs() {
   const docTypes = [...new Set(logs.map((l) => l.doc_type).filter(Boolean))];
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Logs de Auditoria Fiscal</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Logs de Auditoria Fiscal</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Histórico completo de operações fiscais ({filtered.length} registros)
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="self-start sm:self-auto">
           <RefreshCw className="w-4 h-4 mr-1" /> Atualizar
         </Button>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -117,7 +117,7 @@ export default function AuditLogs() {
           />
         </div>
         <Select value={docTypeFilter} onValueChange={setDocTypeFilter}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <Filter className="w-4 h-4 mr-1" />
             <SelectValue />
           </SelectTrigger>
@@ -182,17 +182,17 @@ export default function AuditLogs() {
                   </div>
                 </div>
 
-                <div className="flex-1 bg-card rounded-xl border border-border p-4 card-shadow">
-                  <div className="flex items-start justify-between mb-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-foreground">{entry.action}</span>
+                <div className="flex-1 bg-card rounded-xl border border-border p-3 sm:p-4 card-shadow min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 mb-1">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
+                      <span className="text-sm font-semibold text-foreground break-all">{entry.action}</span>
                       {entry.doc_type && (
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground flex-shrink-0">
                           {entry.doc_type}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
                       <Clock className="w-3 h-3" />
                       {new Date(entry.created_at).toLocaleString("pt-BR")}
                     </div>
