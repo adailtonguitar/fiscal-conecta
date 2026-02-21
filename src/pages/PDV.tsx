@@ -1055,12 +1055,12 @@ export default function PDV() {
         {/* Payment method buttons */}
         <div className="flex items-stretch gap-1 lg:gap-2 px-1.5 lg:px-3 py-1.5 lg:py-3 overflow-x-auto scrollbar-none">
           {[
-            { id: "dinheiro", label: "Dinheiro", icon: Banknote, shortcut: "F2", colorClass: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border shadow-lg shadow-black/20" },
-            { id: "debito", label: "Débito", icon: CreditCard, shortcut: "", colorClass: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border shadow-lg shadow-black/20" },
-            { id: "credito", label: "Crédito", icon: CreditCard, shortcut: "", colorClass: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border shadow-lg shadow-black/20" },
-            { id: "pix", label: "PIX", icon: QrCode, shortcut: "", colorClass: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border shadow-lg shadow-black/20" },
-            { id: "voucher", label: "Voucher", icon: Ticket, shortcut: "", colorClass: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border shadow-lg shadow-black/20" },
-            { id: "prazo", label: "A Prazo", icon: ClockIcon, shortcut: "", colorClass: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border shadow-lg shadow-black/20" },
+            { id: "dinheiro", label: "Dinheiro", icon: Banknote, shortcut: "F2", colorClass: "bg-emerald-900/60 hover:bg-emerald-800/70 text-emerald-100 border border-emerald-700/40 shadow-lg shadow-black/20" },
+            { id: "debito", label: "Débito", icon: CreditCard, shortcut: "", colorClass: "bg-blue-900/60 hover:bg-blue-800/70 text-blue-100 border border-blue-700/40 shadow-lg shadow-black/20" },
+            { id: "credito", label: "Crédito", icon: CreditCard, shortcut: "", colorClass: "bg-violet-900/60 hover:bg-violet-800/70 text-violet-100 border border-violet-700/40 shadow-lg shadow-black/20" },
+            { id: "pix", label: "PIX", icon: QrCode, shortcut: "", colorClass: "bg-teal-900/60 hover:bg-teal-800/70 text-teal-100 border border-teal-700/40 shadow-lg shadow-black/20" },
+            { id: "voucher", label: "Voucher", icon: Ticket, shortcut: "", colorClass: "bg-amber-900/60 hover:bg-amber-800/70 text-amber-100 border border-amber-700/40 shadow-lg shadow-black/20" },
+            { id: "prazo", label: "A Prazo", icon: ClockIcon, shortcut: "", colorClass: "bg-orange-900/60 hover:bg-orange-800/70 text-orange-100 border border-orange-700/40 shadow-lg shadow-black/20" },
             { id: "outros", label: "Outros", icon: MoreHorizontal, shortcut: "", colorClass: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border shadow-lg shadow-black/20" },
           ].map(({ id, label, icon: Icon, shortcut, colorClass }, idx) => (
             <motion.button
