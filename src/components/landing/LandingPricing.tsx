@@ -48,13 +48,13 @@ const plans = [
   {
     name: "Rede",
     price: "Sob consulta",
-    desc: "Para redes e franquias",
+    desc: "Para redes de supermercados",
     icon: Star,
     features: [
       "Terminais ilimitados",
       "Multi-loja centralizada",
-      "API dedicada",
-      "Personalização avançada",
+      "Gestão unificada de estoque",
+      "Relatórios consolidados",
       "Gerente de conta exclusivo",
     ],
     highlighted: false,
