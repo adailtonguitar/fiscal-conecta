@@ -169,12 +169,7 @@ export function LandingPricing() {
         </div>
 
         {/* Formas de pagamento */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mt-16"
-        >
+        <div className="mt-16">
           <p className="text-center text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-8">
             Formas de pagamento aceitas
           </p>
@@ -195,7 +190,7 @@ export function LandingPricing() {
               </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
