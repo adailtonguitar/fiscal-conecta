@@ -586,7 +586,7 @@ export default function PDV() {
       <div className="flex flex-col lg:flex-row flex-1 min-h-0">
 
         {/* LEFT: Items Table (70%) */}
-        <div className="flex-1 lg:flex-[7] flex flex-col min-w-0 border-r border-border min-h-0 max-h-[40vh] lg:max-h-none">
+        <div className="flex-1 lg:flex-[7] flex flex-col min-w-0 border-r border-border min-h-0 max-h-[35vh] lg:max-h-none">
           <div className="flex-1 overflow-y-auto">
             <table className="w-full text-xs">
               <thead className="sticky top-0 z-10 bg-muted">
@@ -677,7 +677,7 @@ export default function PDV() {
         </div>
 
         {/* RIGHT: Totals Sidebar (30%) */}
-        <div className="flex-shrink-0 lg:flex-[3] flex flex-col bg-card lg:min-w-[260px] lg:max-w-[400px]">
+        <div className="shrink-0 lg:shrink lg:flex-[3] flex flex-col bg-card lg:min-w-[260px] lg:max-w-[400px]">
           {/* Info rows */}
           <div className="flex-1 flex flex-col p-3 lg:p-4 gap-2 lg:gap-3">
             <div className="flex justify-between items-center py-2 border-b border-border">
