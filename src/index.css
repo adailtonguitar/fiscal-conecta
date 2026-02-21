@@ -239,3 +239,14 @@
     font-size: 0.75rem;
   }
 }
+
+/* PDV flash animation for newly added items */
+@keyframes pulse-once {
+  0% { background-color: hsl(168, 72%, 36%, 0.3); }
+  50% { background-color: hsl(168, 72%, 36%, 0.15); }
+  100% { background-color: transparent; }
+}
+
+.animate-pulse-once {
+  animation: pulse-once 0.8s ease-out;
+}
