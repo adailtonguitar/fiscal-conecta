@@ -937,7 +937,7 @@ export default function PDV() {
 
           {/* TOTAL — BIG DISPLAY */}
           <div
-            className="p-2 lg:p-4 xl:p-6 mt-auto border-t-4 transition-colors duration-300 flex-shrink-0"
+            className="p-2 lg:p-4 xl:p-5 mt-auto border-t-4 transition-colors duration-300 flex-shrink-0 overflow-hidden"
             style={{
               backgroundColor: totalFinal > 0 ? "hsl(0, 72%, 40%)" : "hsl(142, 72%, 32%)",
               borderTopColor: totalFinal > 0 ? "hsl(0, 72%, 50%)" : "hsl(142, 72%, 45%)",
@@ -947,7 +947,7 @@ export default function PDV() {
               <span className="text-[10px] lg:text-sm font-bold uppercase tracking-[0.3em] block mb-0.5 lg:mb-2" style={{ color: "rgba(255,255,255,0.8)" }}>
                 {totalFinal > 0 ? "TOTAL A PAGAR" : "TOTAL DA VENDA"}
               </span>
-              <span className="text-3xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-black font-mono tracking-tight block leading-none" style={{ color: "#ffffff", textShadow: "0 4px 16px rgba(0,0,0,0.5)" }}>
+              <span className="text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-black font-mono tracking-tight block leading-none truncate" style={{ color: "#ffffff", textShadow: "0 4px 16px rgba(0,0,0,0.5)" }}>
                 {formatCurrency(totalFinal)}
               </span>
             </div>
