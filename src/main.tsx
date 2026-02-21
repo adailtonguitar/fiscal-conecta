@@ -2,15 +2,17 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Force clear old PWA cache with wrong name
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    registrations.forEach((reg) => reg.unregister());
-  });
-  caches.keys().then((names) => {
-    names.forEach((name) => caches.delete(name));
-  });
-}
+// Register PWA service worker for offline support
+import { registerSW } from "virtual:pwa-register";
+registerSW({
+  onRegistered(r) {
+    // Check for updates every 30 minutes
+    if (r) setInterval(() => r.update(), 30 * 60 * 1000);
+  },
+  onOfflineReady() {
+    console.log("[PWA] App ready for offline use");
+  },
+});
 
 // Global safety net: prevent unhandled promise rejections from crashing the app (white screen)
 window.addEventListener("unhandledrejection", (event) => {
