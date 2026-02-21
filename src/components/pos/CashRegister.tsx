@@ -20,6 +20,52 @@ import { toast } from "sonner";
 import { openCashDrawer } from "@/lib/escpos";
 import type { Tables } from "@/integrations/supabase/types";
 
+const OFFLINE_SESSION_KEY = "as_offline_cash_session";
+
+/** Proactive connectivity check — avoids Supabase auth-refresh crashes */
+async function canReachServer(): Promise<boolean> {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 3000);
+    await fetch(`${import.meta.env.VITE_SUPABASE_URL || ""}/rest/v1/`, {
+      method: "HEAD",
+      signal: ctrl.signal,
+      headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "" },
+    });
+    clearTimeout(t);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function makeOfflineSession(companyId: string, userId: string, openingBalance: number, terminalId: string) {
+  return {
+    id: `offline_${Date.now()}`,
+    company_id: companyId,
+    opened_by: userId,
+    opening_balance: openingBalance,
+    terminal_id: terminalId,
+    status: "aberto" as const,
+    opened_at: new Date().toISOString(),
+    closed_at: null, closed_by: null, closing_balance: null,
+    counted_dinheiro: null, counted_debito: null, counted_credito: null, counted_pix: null,
+    difference: null, notes: null,
+    sales_count: 0, total_vendas: 0, total_dinheiro: 0, total_debito: 0,
+    total_credito: 0, total_pix: 0, total_voucher: 0, total_outros: 0,
+    total_sangria: 0, total_suprimento: 0, created_at: new Date().toISOString(),
+  };
+}
+
+function getCachedSession(companyId: string): any | null {
+  try {
+    const raw = localStorage.getItem(OFFLINE_SESSION_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    return s?.company_id === companyId && s?.status === "aberto" ? s : null;
+  } catch { return null; }
+}
+
 type CashView = "status" | "open" | "close" | "movement";
 type CashSession = Tables<"cash_sessions">;
 
@@ -55,28 +101,28 @@ export function CashRegister({ onClose, terminalId = "01", preventClose = false,
 
   const loadSession = useCallback(async () => {
     if (!companyId) {
-      console.warn("[CashRegister] No companyId, skipping loadSession");
       setLoading(false);
       return;
     }
-    console.log("[CashRegister] loadSession start", { companyId, terminalId, online: navigator.onLine });
     setLoading(true);
+
+    // Proactive check: if server unreachable, use cache immediately
+    const online = await canReachServer();
+    if (!online) {
+      console.warn("[CashRegister] Server unreachable, using cached session");
+      const cached = getCachedSession(companyId);
+      if (cached) setSession(cached);
+      setLoading(false);
+      return;
+    }
+
     try {
       const data = await CashSessionService.getCurrentSession(companyId, terminalId);
-      console.log("[CashRegister] loadSession result:", data?.id ?? "no session");
       setSession(data);
     } catch (err) {
       console.error("[CashRegister] loadSession error:", err);
-      // On any error, try cached offline session
-      try {
-        const raw = localStorage.getItem("as_offline_cash_session");
-        if (raw) {
-          const cached = JSON.parse(raw);
-          if (cached.company_id === companyId && cached.status === "aberto") {
-            setSession(cached);
-          }
-        }
-      } catch {}
+      const cached = getCachedSession(companyId);
+      if (cached) setSession(cached);
     } finally {
       setLoading(false);
     }
@@ -107,9 +153,22 @@ export function CashRegister({ onClose, terminalId = "01", preventClose = false,
   const difference = totalCounted - totalExpected;
 
   const handleOpen = async () => {
-    console.log("[CashRegister] handleOpen", { companyId, userId: user?.id, online: navigator.onLine });
     if (!companyId || !user) return;
     setSubmitting(true);
+
+    // Proactive check: if server unreachable, open offline immediately
+    const online = await canReachServer();
+    if (!online) {
+      console.warn("[CashRegister] Server unreachable, opening offline directly");
+      const offlineSession = makeOfflineSession(companyId, user.id, Number(openingBalance) || 0, terminalId);
+      try { localStorage.setItem(OFFLINE_SESSION_KEY, JSON.stringify(offlineSession)); } catch {}
+      setSession(offlineSession as any);
+      setView("status");
+      setSubmitting(false);
+      toast.success("Caixa aberto offline (sem conexão)");
+      return;
+    }
+
     try {
       const data = await CashSessionService.open({
         companyId,
@@ -121,33 +180,13 @@ export function CashRegister({ onClose, terminalId = "01", preventClose = false,
       setView("status");
       toast.success("Caixa aberto com sucesso");
     } catch (err: any) {
-      const msg = String(err?.message || err || "");
-      const isNetErr = ["Failed to fetch", "NetworkError", "TypeError", "Load failed", "network"].some(p => msg.toLowerCase().includes(p.toLowerCase()));
-      if (isNetErr) {
-        // Force offline open at component level as last resort
-        console.warn("[CashRegister] Network error in handleOpen, forcing offline open", msg);
-        const offlineSession = {
-          id: `offline_${Date.now()}`,
-          company_id: companyId,
-          opened_by: user.id,
-          opening_balance: Number(openingBalance) || 0,
-          terminal_id: terminalId,
-          status: "aberto" as const,
-          opened_at: new Date().toISOString(),
-          closed_at: null, closed_by: null, closing_balance: null,
-          counted_dinheiro: null, counted_debito: null, counted_credito: null, counted_pix: null,
-          difference: null, notes: null,
-          sales_count: 0, total_vendas: 0, total_dinheiro: 0, total_debito: 0,
-          total_credito: 0, total_pix: 0, total_voucher: 0, total_outros: 0,
-          total_sangria: 0, total_suprimento: 0, created_at: new Date().toISOString(),
-        };
-        try { localStorage.setItem("as_offline_cash_session", JSON.stringify(offlineSession)); } catch {}
-        setSession(offlineSession as any);
-        setView("status");
-        toast.success("Caixa aberto offline (sem conexão)");
-        return;
-      }
-      toast.error(err.message);
+      // Fallback: if somehow the error still slips through
+      console.warn("[CashRegister] handleOpen error, forcing offline", err);
+      const offlineSession = makeOfflineSession(companyId, user.id, Number(openingBalance) || 0, terminalId);
+      try { localStorage.setItem(OFFLINE_SESSION_KEY, JSON.stringify(offlineSession)); } catch {}
+      setSession(offlineSession as any);
+      setView("status");
+      toast.success("Caixa aberto offline (sem conexão)");
     } finally {
       setSubmitting(false);
     }
