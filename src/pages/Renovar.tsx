@@ -64,7 +64,7 @@ export default function Renovar() {
   };
 
   return (
-    <div className="min-h-screen bg-background overflow-y-auto">
+    <div className="h-screen overflow-y-auto bg-background">
       {/* Header */}
       <div className="border-b border-border bg-card">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
