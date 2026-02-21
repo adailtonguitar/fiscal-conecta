@@ -170,7 +170,7 @@ export function LandingPricing() {
 
         {/* Formas de pagamento */}
         <p className="mt-10 text-center text-sm text-muted-foreground">
-          Pagamento via <span className="font-semibold text-primary">Pix (5% off)</span>, cartão de crédito/débito ou boleto.
+          Pagamento via Pix, cartão de crédito/débito ou boleto.
         </p>
       </div>
     </section>
