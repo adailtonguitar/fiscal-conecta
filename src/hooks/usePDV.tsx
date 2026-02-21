@@ -151,6 +151,7 @@ export function usePDV() {
   }, [loadProducts, sync.isOnline]);
 
   // Load current cash session — accepts optional terminalId for filtering
+  // Falls back to localStorage cache when offline
   const loadSession = useCallback(async (tid?: string) => {
     if (!companyId) {
       setCurrentSession(null);
@@ -159,14 +160,25 @@ export function usePDV() {
     }
     setLoadingSession(true);
     try {
-      if (navigator.onLine) {
-        const session = await CashSessionService.getCurrentSession(companyId, tid);
-        setCurrentSession(session);
-      } else {
+      const session = await CashSessionService.getCurrentSession(companyId, tid);
+      setCurrentSession(session);
+    } catch {
+      // Fallback: try to load offline cached session
+      try {
+        const raw = localStorage.getItem("as_offline_cash_session");
+        if (raw) {
+          const cached = JSON.parse(raw);
+          if (cached?.company_id === companyId && cached?.status === "aberto") {
+            setCurrentSession(cached);
+          } else {
+            setCurrentSession(null);
+          }
+        } else {
+          setCurrentSession(null);
+        }
+      } catch {
         setCurrentSession(null);
       }
-    } catch {
-      setCurrentSession(null);
     } finally {
       setLoadingSession(false);
       setSessionEverLoaded(true);
