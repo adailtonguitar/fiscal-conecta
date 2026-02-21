@@ -71,6 +71,7 @@ const PedidosCompra = lazy(() => import("./pages/PedidosCompra"));
 const Terminais = lazy(() => import("./pages/Terminais"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Ajuda = lazy(() => import("./pages/Ajuda"));
+const Renovar = lazy(() => import("./pages/Renovar"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -203,6 +204,9 @@ function AppRoutes() {
         <Route path="/privacidade" element={<Privacidade />} />
         <Route path="/trial-expirado" element={
           user ? <TrialExpirado /> : <Navigate to="/" replace />
+        } />
+        <Route path="/renovar" element={
+          user ? <Renovar /> : <Navigate to="/auth" replace />
         } />
         {/* PDV: full-screen, outside AppLayout */}
         <Route
