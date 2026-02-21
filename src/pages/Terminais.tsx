@@ -5,6 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Monitor, RefreshCw, Clock, DollarSign, ShoppingCart,
   AlertTriangle, Power, User, TrendingUp,
 } from "lucide-react";
@@ -127,8 +131,12 @@ export default function Terminais() {
   const totalSalesAll = openTerminals.reduce((a, s) => a + Number(s.total_vendas || 0), 0);
   const totalTransactions = openTerminals.reduce((a, s) => a + Number(s.sales_count || 0), 0);
 
-  const handleForceClose = async (session: TerminalSession) => {
-    if (!confirm(`Tem certeza que deseja forçar o fechamento do Terminal ${session.terminal_id}?`)) return;
+  const [forceCloseTarget, setForceCloseTarget] = useState<TerminalSession | null>(null);
+
+  const handleForceClose = async () => {
+    if (!forceCloseTarget) return;
+    const session = forceCloseTarget;
+    setForceCloseTarget(null);
     try {
       const { error } = await supabase
         .from("cash_sessions")
@@ -325,7 +333,7 @@ export default function Terminais() {
                         variant="destructive"
                         size="sm"
                         className="w-full mt-2"
-                        onClick={() => handleForceClose(session)}
+                        onClick={() => setForceCloseTarget(session)}
                       >
                         <Power className="w-4 h-4 mr-1" /> Forçar Fechamento
                       </Button>
@@ -341,6 +349,37 @@ export default function Terminais() {
           );
         })}
       </div>
+
+      {/* Force Close Confirmation Dialog */}
+      <AlertDialog open={!!forceCloseTarget} onOpenChange={(open) => !open && setForceCloseTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Forçar Fechamento
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Tem certeza que deseja forçar o fechamento do{" "}
+                <strong className="text-foreground">Terminal {forceCloseTarget?.terminal_id}</strong>?
+              </p>
+              <p className="text-xs">
+                Esta ação encerrará a sessão de caixa imediatamente. O operador não poderá mais registrar vendas neste terminal até abrir um novo caixa.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleForceClose}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              <Power className="w-4 h-4 mr-1.5" />
+              Forçar Fechamento
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
