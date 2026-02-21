@@ -218,14 +218,6 @@ export default function Fiscal() {
             <span className="hidden sm:inline">SPED Fiscal</span>
             <span className="sm:hidden">SPED</span>
           </button>
-          <button
-            onClick={() => toast.info("Para emitir NFC-e, finalize uma venda pelo PDV. O documento fiscal será gerado automaticamente.")}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-primary-foreground text-xs sm:text-sm font-medium hover:opacity-90 transition-all"
-          >
-            <Send className="w-4 h-4" />
-            <span className="hidden sm:inline">Emitir NFC-e</span>
-            <span className="sm:hidden">NFC-e</span>
-          </button>
         </div>
       </div>
 
