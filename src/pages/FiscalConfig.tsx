@@ -84,24 +84,25 @@ export default function FiscalConfig() {
           animate={{ opacity: 1, y: 0 }}
           className="bg-card rounded-xl card-shadow border border-border overflow-hidden"
         >
-          <div className="p-5 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-primary" />
+          <div className="p-4 sm:p-5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               </div>
-              <div>
-                <h2 className="text-base font-semibold text-foreground">
+              <div className="min-w-0">
+                <h2 className="text-sm sm:text-base font-semibold text-foreground truncate">
                   {company.trade_name || company.name}
                 </h2>
-                <p className="text-sm text-muted-foreground font-mono">{company.cnpj}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground font-mono truncate">{company.cnpj}</p>
               </div>
             </div>
             <button
               onClick={() => navigate("/fiscal/config/edit")}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all"
+              className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-primary text-primary-foreground text-xs sm:text-sm font-medium hover:opacity-90 transition-all flex-shrink-0"
             >
               <Pencil className="w-4 h-4" />
-              Editar Configuração
+              <span className="hidden sm:inline">Editar Configuração</span>
+              <span className="sm:hidden">Editar</span>
             </button>
           </div>
 
