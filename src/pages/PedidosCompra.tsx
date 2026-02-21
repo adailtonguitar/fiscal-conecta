@@ -170,10 +170,6 @@ export default function PedidosCompra() {
           <h1 className="text-2xl font-bold text-foreground">Pedidos de Compra</h1>
           <p className="text-sm text-muted-foreground mt-1">Sugestões automáticas e gestão de pedidos para fornecedores</p>
         </div>
-        <Button onClick={() => setTab("suggestions")}>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Pedido
-        </Button>
       </div>
 
       {/* Summary */}
