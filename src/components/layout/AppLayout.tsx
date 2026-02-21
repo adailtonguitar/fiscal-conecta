@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { UpdateNoticeModal } from "@/components/UpdateNoticeModal";
 import { SubscriptionBanner } from "./SubscriptionBanner";
 import { useWhatsAppSupport } from "@/hooks/useWhatsAppSupport";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Menu } from "lucide-react";
 
 const WhatsAppIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
@@ -31,13 +34,27 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  const isMobile = useIsMobile();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
     <div className="flex h-screen overflow-hidden">
       <UpdateNoticeModal />
-      <AppSidebar />
+      <AppSidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <SubscriptionBanner />
-        <header className="h-12 border-b border-border bg-card flex items-center justify-end px-2 sm:px-4 shrink-0 gap-2">
+        <header className="h-12 border-b border-border bg-card flex items-center justify-between px-2 sm:px-4 shrink-0 gap-2">
+          {isMobile ? (
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="p-2 rounded-lg text-foreground hover:bg-muted transition-colors"
+              aria-label="Abrir menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          ) : (
+            <div />
+          )}
           <HeaderWhatsAppButton />
         </header>
         <main className="flex-1 overflow-auto">{children}</main>

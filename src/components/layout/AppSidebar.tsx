@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import anthoLogo from "@/assets/logo-as.png";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -8,14 +8,14 @@ import {
   Users, Building2, ClipboardList, UserCheck, Factory, Truck, Tags, BarChart3, ArrowUpDown, User,
   Download, Tag, TrendingUp, AlertTriangle as AlertTriangleIcon, FileSpreadsheet, GitGraph,
   Percent, ArrowRightLeft, TrendingDown, Gift, Brain, Monitor, ShieldCheck, CreditCard, ChefHat,
-  HelpCircle,
+  HelpCircle, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useSync } from "@/hooks/useSync";
-
 import { useAdminRole } from "@/hooks/useAdminRole";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface NavItem {
   icon: any;
@@ -125,18 +125,21 @@ const navItems: NavEntry[] = [
   { icon: Download, label: "Instalar App", path: "/install" },
 ];
 
-
 const adminNavItem: NavItem = { icon: ShieldCheck, label: "Admin", path: "/admin" };
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export function AppSidebar({ mobileOpen, onMobileClose }: AppSidebarProps) {
   const location = useLocation();
+  const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
   const { isOnline, pendingCount, syncing, syncAll } = useSync();
   const { signOut, user } = useAuth();
-  
   const { isSuperAdmin } = useAdminRole();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
-    // Auto-open groups that have an active child on initial load
     const initial: Record<string, boolean> = {};
     navItems.forEach((entry) => {
       if (isGroup(entry)) {
@@ -145,6 +148,13 @@ export function AppSidebar() {
     });
     return initial;
   });
+
+  // Close mobile sidebar on navigation
+  useEffect(() => {
+    if (isMobile && onMobileClose) {
+      onMobileClose();
+    }
+  }, [location.pathname]);
 
   let visibleNavItems: NavEntry[] = navItems;
   if (isSuperAdmin) {
@@ -159,6 +169,139 @@ export function AppSidebar() {
   const isChildActive = (group: NavGroup) =>
     group.children.some((c) => location.pathname === c.path);
 
+  // On mobile: render as overlay
+  if (isMobile) {
+    return (
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-40"
+              onClick={onMobileClose}
+            />
+            {/* Sidebar drawer */}
+            <motion.aside
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="fixed top-0 left-0 bottom-0 w-[280px] bg-sidebar border-r border-sidebar-border z-50 flex flex-col"
+            >
+              <div className="flex items-center justify-between px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <img src={anthoLogo} alt="AnthoSystem" className="h-10 w-10 object-contain" />
+                  <span className="text-sm font-bold text-sidebar-foreground">AnthoSystem</span>
+                </div>
+                <button onClick={onMobileClose} className="p-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
+                {visibleNavItems.map((entry) => {
+                  if (isGroup(entry)) {
+                    const groupOpen = !!openGroups[entry.label];
+                    return (
+                      <div key={entry.label}>
+                        <button
+                          onClick={() => toggleGroup(entry.label)}
+                          className={cn(
+                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                            isChildActive(entry)
+                              ? "text-sidebar-primary"
+                              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          )}
+                        >
+                          <entry.icon className="w-5 h-5 flex-shrink-0" />
+                          <span className="whitespace-nowrap flex-1 text-left">{entry.label}</span>
+                          <ChevronDown className={cn("w-4 h-4 transition-transform", groupOpen && "rotate-180")} />
+                        </button>
+                        <AnimatePresence>
+                          {groupOpen && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="overflow-hidden ml-4 border-l border-sidebar-border pl-2 space-y-0.5"
+                            >
+                              {entry.children.map((child) => {
+                                const isActive = location.pathname === child.path;
+                                return (
+                                  <Link
+                                    key={child.path}
+                                    to={child.path}
+                                    className={cn(
+                                      "flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200",
+                                      isActive
+                                        ? "bg-sidebar-accent text-sidebar-primary"
+                                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                                    )}
+                                  >
+                                    <child.icon className={cn("w-4 h-4 flex-shrink-0", isActive && "text-sidebar-primary")} />
+                                    <span className="whitespace-nowrap">{child.label}</span>
+                                  </Link>
+                                );
+                              })}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  }
+
+                  const isActive = location.pathname === entry.path;
+                  return (
+                    <Link
+                      key={entry.path}
+                      to={entry.path}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                        isActive
+                          ? "bg-sidebar-accent text-sidebar-primary"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      )}
+                    >
+                      <entry.icon className={cn("w-5 h-5 flex-shrink-0", isActive && "text-sidebar-primary")} />
+                      <span className="whitespace-nowrap">{entry.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              <div className="px-2 pb-2 space-y-0.5 border-t border-sidebar-border pt-2">
+                <div className="flex items-center gap-2 px-2 py-1 rounded-lg">
+                  <User className="w-3.5 h-3.5 text-sidebar-foreground flex-shrink-0" />
+                  <span className="text-[11px] text-sidebar-foreground font-medium truncate">{user?.email}</span>
+                </div>
+                {pendingCount > 0 && (
+                  <button onClick={syncAll} disabled={syncing || !isOnline} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-sidebar-accent w-full">
+                    <RefreshCw className={cn("w-3.5 h-3.5 text-warning flex-shrink-0", syncing && "animate-spin")} />
+                    <span className="text-[11px] text-sidebar-foreground">{pendingCount} pendentes</span>
+                  </button>
+                )}
+                <div className="flex items-center gap-2 px-2 py-1 rounded-lg">
+                  {isOnline ? (
+                    <><Wifi className="w-3.5 h-3.5 status-online flex-shrink-0" /><span className="text-[11px] status-online font-medium">Online</span></>
+                  ) : (
+                    <><WifiOff className="w-3.5 h-3.5 status-offline flex-shrink-0" /><span className="text-[11px] status-offline font-medium">Offline</span></>
+                  )}
+                </div>
+                <button onClick={signOut} className="w-full flex items-center gap-2 px-2 py-1 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+                  <LogOut className="w-3.5 h-3.5 flex-shrink-0" /><span className="text-[11px]">Sair</span>
+                </button>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    );
+  }
+
+  // Desktop: original sidebar
   return (
     <aside
       className={cn(
@@ -257,7 +400,6 @@ export function AppSidebar() {
       </nav>
 
       <div className="px-2 pb-2 space-y-0.5 border-t border-sidebar-border pt-2">
-        {/* User info */}
         <div className={cn("flex items-center gap-2 px-2 py-1 rounded-lg", collapsed && "justify-center")}>
           <User className="w-3.5 h-3.5 text-sidebar-foreground flex-shrink-0" />
           {!collapsed && (
@@ -265,11 +407,7 @@ export function AppSidebar() {
           )}
         </div>
         {pendingCount > 0 && (
-          <button
-            onClick={syncAll}
-            disabled={syncing || !isOnline}
-            className={cn("flex items-center gap-2 px-2 py-1 rounded-lg bg-sidebar-accent w-full", collapsed && "justify-center")}
-          >
+          <button onClick={syncAll} disabled={syncing || !isOnline} className={cn("flex items-center gap-2 px-2 py-1 rounded-lg bg-sidebar-accent w-full", collapsed && "justify-center")}>
             <RefreshCw className={cn("w-3.5 h-3.5 text-warning flex-shrink-0", syncing && "animate-spin")} />
             {!collapsed && <span className="text-[11px] text-sidebar-foreground">{pendingCount} pendentes</span>}
           </button>
