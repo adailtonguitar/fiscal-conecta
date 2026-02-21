@@ -182,7 +182,7 @@ export function LandingPricing() {
             ].map((m) => (
               <div
                 key={m.label}
-                className={`flex flex-col items-center gap-2 px-4 py-5 rounded-2xl border font-medium transition-all hover:scale-105 ${m.color}`}
+                className={`flex flex-col items-center gap-2 px-4 py-5 rounded-2xl border font-medium ${m.color}`}
               >
                 <span className="text-3xl">{m.icon}</span>
                 <span className="text-base font-bold">{m.label}</span>
