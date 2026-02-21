@@ -217,9 +217,9 @@ export default function Lotes() {
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] flex flex-col">
           <DialogHeader><DialogTitle>Novo Lote</DialogTitle></DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto flex-1 pr-1">
             <div>
               <Label>Produto *</Label>
               <Select value={form.product_id} onValueChange={(v) => setForm({ ...form, product_id: v })}>
