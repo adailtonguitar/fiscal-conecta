@@ -701,18 +701,23 @@ export default function PDV() {
                 <span className="text-xs font-bold text-muted-foreground uppercase">Desc. Item (F7)</span>
                 <div className="flex items-center gap-1">
                   <input
+                    data-no-barcode-capture="true"
                     type="number"
+                    inputMode="decimal"
                     min={0}
                     max={maxDiscountPercent}
                     step={0.5}
                     autoFocus
                     defaultValue={pdv.itemDiscounts[editingItemDiscountId] || 0}
+                    onClick={(e) => e.stopPropagation()}
+                    onTouchEnd={(e) => e.stopPropagation()}
                     onBlur={(e) => {
                       const val = Math.min(Math.max(0, Number(e.target.value)), maxDiscountPercent);
                       pdv.setItemDiscount(editingItemDiscountId!, val);
                       setEditingItemDiscountId(null);
                     }}
                     onKeyDown={(e) => {
+                      e.stopPropagation();
                       if (e.key === "Enter") {
                         const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value)), maxDiscountPercent);
                         pdv.setItemDiscount(editingItemDiscountId!, val);
@@ -720,7 +725,7 @@ export default function PDV() {
                       }
                       if (e.key === "Escape") setEditingItemDiscountId(null);
                     }}
-                    className="w-16 px-2 py-1 rounded bg-background border border-border text-sm font-mono text-right focus:outline-none focus:ring-1 focus:ring-primary/40"
+                    className="w-20 px-2 py-2 rounded bg-background border border-border text-base font-mono text-right focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                   <span className="text-xs text-muted-foreground">%</span>
                 </div>
@@ -733,18 +738,23 @@ export default function PDV() {
               {editingGlobalDiscount ? (
                 <div className="flex items-center gap-1">
                   <input
+                    data-no-barcode-capture="true"
                     type="number"
+                    inputMode="decimal"
                     min={0}
                     max={maxDiscountPercent}
                     step={0.5}
                     autoFocus
                     defaultValue={pdv.globalDiscountPercent}
+                    onClick={(e) => e.stopPropagation()}
+                    onTouchEnd={(e) => e.stopPropagation()}
                     onBlur={(e) => {
                       const val = Math.min(Math.max(0, Number(e.target.value)), maxDiscountPercent);
                       pdv.setGlobalDiscountPercent(val);
                       setEditingGlobalDiscount(false);
                     }}
                     onKeyDown={(e) => {
+                      e.stopPropagation();
                       if (e.key === "Enter") {
                         const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value)), maxDiscountPercent);
                         pdv.setGlobalDiscountPercent(val);
@@ -752,7 +762,7 @@ export default function PDV() {
                       }
                       if (e.key === "Escape") setEditingGlobalDiscount(false);
                     }}
-                    className="w-16 px-2 py-1 rounded bg-background border border-border text-sm font-mono text-right focus:outline-none focus:ring-1 focus:ring-primary/40"
+                    className="w-20 px-2 py-2 rounded bg-background border border-border text-base font-mono text-right focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                   <span className="text-xs text-muted-foreground">%</span>
                 </div>
@@ -780,12 +790,16 @@ export default function PDV() {
                 <span className="text-xs font-bold text-muted-foreground uppercase">Nova Qtd (F9)</span>
                 <div className="flex items-center gap-1">
                   <input
+                    data-no-barcode-capture="true"
                     type="number"
+                    inputMode="numeric"
                     min={1}
                     step={1}
                     autoFocus
                     value={editingQtyValue}
                     onChange={(e) => setEditingQtyValue(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    onTouchEnd={(e) => e.stopPropagation()}
                     onBlur={() => {
                       const newQty = Math.max(1, parseInt(editingQtyValue) || 1);
                       const item = pdv.cartItems.find(i => i.id === editingQtyItemId);
@@ -796,6 +810,7 @@ export default function PDV() {
                       setEditingQtyItemId(null);
                     }}
                     onKeyDown={(e) => {
+                      e.stopPropagation();
                       if (e.key === "Enter") {
                         const newQty = Math.max(1, parseInt(editingQtyValue) || 1);
                         const item = pdv.cartItems.find(i => i.id === editingQtyItemId);
@@ -807,7 +822,7 @@ export default function PDV() {
                       }
                       if (e.key === "Escape") setEditingQtyItemId(null);
                     }}
-                    className="w-16 px-2 py-1 rounded bg-background border border-border text-sm font-mono text-right focus:outline-none focus:ring-1 focus:ring-primary/40"
+                    className="w-20 px-2 py-2 rounded bg-background border border-border text-base font-mono text-right focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
               </div>
