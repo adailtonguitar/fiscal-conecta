@@ -70,20 +70,18 @@ export function AdminCompanyUsers() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-          <span>Usuários por Empresa ({filtered.length})</span>
+      <CardHeader className="p-3 sm:p-6">
+        <CardTitle className="flex flex-col gap-2">
+          <span className="text-base sm:text-lg">Usuários por Empresa ({filtered.length})</span>
           <div className="flex gap-2 flex-wrap">
             <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48 text-sm">
                 <SelectValue placeholder="Todas empresas" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas empresas</SelectItem>
                 {companies.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -91,47 +89,73 @@ export function AdminCompanyUsers() {
               placeholder="Buscar nome ou email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-56"
+              className="w-full sm:w-56 text-sm"
             />
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
         {loading ? (
           <div className="flex justify-center py-8">
             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Empresa</TableHead>
-                <TableHead>Perfil</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            {/* Mobile cards */}
+            <div className="space-y-3 sm:hidden">
               {filtered.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell className="font-medium">{u.full_name}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{u.email}</TableCell>
-                  <TableCell className="text-sm">{u.company_name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{roleLabel[u.role] || u.role}</Badge>
-                  </TableCell>
-                  <TableCell>
+                <div key={u.id} className="border rounded-lg p-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-sm truncate">{u.full_name}</p>
                     {u.is_active ? (
-                      <Badge variant="outline" className="text-green-600 border-green-600">Ativo</Badge>
+                      <Badge variant="outline" className="text-green-600 border-green-600 shrink-0 ml-2">Ativo</Badge>
                     ) : (
-                      <Badge variant="destructive">Inativo</Badge>
+                      <Badge variant="destructive" className="shrink-0 ml-2">Inativo</Badge>
                     )}
-                  </TableCell>
-                </TableRow>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground truncate">{u.company_name}</span>
+                    <Badge variant="outline" className="shrink-0 ml-2">{roleLabel[u.role] || u.role}</Badge>
+                  </div>
+                </div>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden sm:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Empresa</TableHead>
+                    <TableHead>Perfil</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell className="font-medium">{u.full_name}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{u.email}</TableCell>
+                      <TableCell className="text-sm">{u.company_name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{roleLabel[u.role] || u.role}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {u.is_active ? (
+                          <Badge variant="outline" className="text-green-600 border-green-600">Ativo</Badge>
+                        ) : (
+                          <Badge variant="destructive">Inativo</Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
