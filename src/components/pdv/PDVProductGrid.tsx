@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { Search, X } from "lucide-react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { Search, X, AlertTriangle } from "lucide-react";
 import type { PDVProduct } from "@/hooks/usePDV";
 
 const formatCurrency = (value: number) =>
@@ -16,20 +16,31 @@ interface ProductGridProps {
 export function PDVProductGrid({ products, loading, onAddToCart, companyName, logoUrl }: ProductGridProps) {
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const categories = ["Todos", ...Array.from(new Set(products.map((p) => p.category).filter(Boolean))) as string[]];
+  // Debounce search by 200ms
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 200);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  const filtered = products.filter((p) => {
+  const categories = useMemo(
+    () => ["Todos", ...Array.from(new Set(products.map((p) => p.category).filter(Boolean))) as string[]],
+    [products]
+  );
+
+  const filtered = useMemo(() => products.filter((p) => {
     const matchCategory = selectedCategory === "Todos" || p.category === selectedCategory;
+    const q = debouncedSearch.toLowerCase();
     const matchSearch =
-      !search ||
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku.toLowerCase().includes(search.toLowerCase()) ||
-      p.barcode?.includes(search) ||
-      (p.ncm && p.ncm.includes(search));
+      !q ||
+      p.name.toLowerCase().includes(q) ||
+      p.sku.toLowerCase().includes(q) ||
+      p.barcode?.includes(debouncedSearch) ||
+      (p.ncm && p.ncm.includes(debouncedSearch));
     return matchCategory && matchSearch;
-  });
+  }), [products, selectedCategory, debouncedSearch]);
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -118,8 +129,11 @@ export function PDVProductGrid({ products, loading, onAddToCart, companyName, lo
                   {product.stock_quantity <= 0 && (
                     <span className="text-[8px] font-bold text-destructive uppercase">Sem estoque</span>
                   )}
-                  {product.stock_quantity > 0 && product.stock_quantity <= 5 && (
-                    <span className="text-[8px] font-bold text-warning uppercase">{product.stock_quantity} {product.unit}</span>
+                  {product.stock_quantity > 0 && product.stock_quantity <= (product.reorder_point || 5) && (
+                    <span className="flex items-center gap-0.5 text-[8px] font-bold text-warning uppercase">
+                      <AlertTriangle className="w-2.5 h-2.5" />
+                      {product.stock_quantity} {product.unit}
+                    </span>
                   )}
                 </div>
               </button>
