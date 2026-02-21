@@ -59,14 +59,14 @@ export default function Movimentacoes() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <ArrowUpDown className="w-6 h-6" />
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
+            <ArrowUpDown className="w-5 h-5 sm:w-6 sm:h-6" />
             Movimentações de Estoque
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Histórico completo de entradas, saídas e ajustes
           </p>
         </div>
@@ -77,7 +77,7 @@ export default function Movimentacoes() {
           </Button>
           <Button variant="outline" size="sm" onClick={() => setBatchMode(true)}>
             <ArrowUpDown className="w-4 h-4 mr-2" />
-            Movimentação em Lote
+            <span className="hidden sm:inline">Movimentação em </span>Lote
           </Button>
         </div>
       </div>
@@ -93,7 +93,43 @@ export default function Movimentacoes() {
         />
       </div>
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden">
+      {/* Mobile cards */}
+      <div className="sm:hidden space-y-2">
+        {isLoading ? (
+          [...Array(4)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground text-sm">Nenhuma movimentação encontrada.</div>
+        ) : (
+          filtered.map((m: any) => {
+            const info = typeLabels[m.type] || { label: m.type, variant: "secondary" as const };
+            return (
+              <div key={m.id} className="bg-card rounded-xl border border-border p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate flex items-center gap-1.5">
+                      <Package className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      {getProductName(m)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {new Date(m.created_at).toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+                  <Badge variant={info.variant} className="text-[10px] shrink-0">{info.label}</Badge>
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground pt-2 border-t border-border">
+                  <span>Qtd: <strong className="text-foreground font-mono">{m.quantity}</strong></span>
+                  <span>Ant: <strong className="text-foreground font-mono">{m.previous_stock}</strong></span>
+                  <span>Novo: <strong className="text-foreground font-mono">{m.new_stock}</strong></span>
+                </div>
+                {m.reason && <p className="text-xs text-muted-foreground truncate">{m.reason}</p>}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="hidden sm:block bg-card rounded-xl card-shadow border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
