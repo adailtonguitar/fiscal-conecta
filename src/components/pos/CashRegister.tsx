@@ -67,6 +67,16 @@ export function CashRegister({ onClose, terminalId = "01", preventClose = false,
       setSession(data);
     } catch (err) {
       console.error("[CashRegister] loadSession error:", err);
+      // On any error, try cached offline session
+      try {
+        const raw = localStorage.getItem("as_offline_cash_session");
+        if (raw) {
+          const cached = JSON.parse(raw);
+          if (cached.company_id === companyId && cached.status === "aberto") {
+            setSession(cached);
+          }
+        }
+      } catch {}
     } finally {
       setLoading(false);
     }
@@ -107,10 +117,36 @@ export function CashRegister({ onClose, terminalId = "01", preventClose = false,
         openingBalance: Number(openingBalance) || 0,
         terminalId,
       });
-      setSession(data);
+      setSession(data as CashSession);
       setView("status");
       toast.success("Caixa aberto com sucesso");
     } catch (err: any) {
+      const msg = String(err?.message || err || "");
+      const isNetErr = ["Failed to fetch", "NetworkError", "TypeError", "Load failed", "network"].some(p => msg.toLowerCase().includes(p.toLowerCase()));
+      if (isNetErr) {
+        // Force offline open at component level as last resort
+        console.warn("[CashRegister] Network error in handleOpen, forcing offline open", msg);
+        const offlineSession = {
+          id: `offline_${Date.now()}`,
+          company_id: companyId,
+          opened_by: user.id,
+          opening_balance: Number(openingBalance) || 0,
+          terminal_id: terminalId,
+          status: "aberto" as const,
+          opened_at: new Date().toISOString(),
+          closed_at: null, closed_by: null, closing_balance: null,
+          counted_dinheiro: null, counted_debito: null, counted_credito: null, counted_pix: null,
+          difference: null, notes: null,
+          sales_count: 0, total_vendas: 0, total_dinheiro: 0, total_debito: 0,
+          total_credito: 0, total_pix: 0, total_voucher: 0, total_outros: 0,
+          total_sangria: 0, total_suprimento: 0, created_at: new Date().toISOString(),
+        };
+        try { localStorage.setItem("as_offline_cash_session", JSON.stringify(offlineSession)); } catch {}
+        setSession(offlineSession as any);
+        setView("status");
+        toast.success("Caixa aberto offline (sem conexão)");
+        return;
+      }
       toast.error(err.message);
     } finally {
       setSubmitting(false);
