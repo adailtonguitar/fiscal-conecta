@@ -77,12 +77,12 @@ const navItems: NavEntry[] = [
     children: [
       { icon: ArrowUpDown, label: "Estoque", path: "/estoque/movimentacoes" },
       { icon: DollarSign, label: "Caixa", path: "/caixa" },
-      { icon: Landmark, label: "Financeiro", path: "/financeiro" },
+      { icon: Landmark, label: "Contas", path: "/financeiro" },
     ],
   },
   {
     icon: Landmark,
-    label: "Financeiro",
+    label: "Análise Financeira",
     children: [
       { icon: TrendingUp, label: "Lucro Diário", path: "/lucro-diario" },
       { icon: TrendingUp, label: "Painel de Lucro", path: "/painel-lucro" },
