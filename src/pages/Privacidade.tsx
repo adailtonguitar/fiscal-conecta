@@ -5,7 +5,7 @@ export default function Privacidade() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen h-screen overflow-y-auto bg-background">
       <div className="max-w-3xl mx-auto px-4 py-12">
         <button
           onClick={() => navigate(-1)}
