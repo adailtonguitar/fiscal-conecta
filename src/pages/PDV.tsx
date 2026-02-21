@@ -104,12 +104,27 @@ export default function PDV() {
   }, [pdv.sessionEverLoaded, pdv.loadingSession, pdv.currentSession]);
 
   // Always re-focus barcode input when no modal is open
+  const noModalOpen = !showTEF && !receipt && !showCashRegister && !showProductList && !showShortcuts && !showPriceLookup && !showLoyaltyClientSelector && !showQuickProduct && !showSaveQuote && !showTerminalPicker && !showClientSelector && !showReceiveCredit && !zeroStockProduct && !editingQtyItemId && !editingItemDiscountId && !editingGlobalDiscount;
+
   useEffect(() => {
-    if (!showTEF && !receipt && !showCashRegister && !showProductList && !showShortcuts && !showPriceLookup && !showLoyaltyClientSelector && !showQuickProduct && !showSaveQuote && !showTerminalPicker && !showClientSelector && !showReceiveCredit && !zeroStockProduct && !editingQtyItemId && !editingItemDiscountId && !editingGlobalDiscount) {
+    if (noModalOpen) {
       const t = setTimeout(() => barcodeInputRef.current?.focus(), 50);
       return () => clearTimeout(t);
     }
-  }, [showTEF, receipt, showCashRegister, showProductList, showShortcuts, showPriceLookup, showLoyaltyClientSelector, showQuickProduct, showSaveQuote, showTerminalPicker, showClientSelector, showReceiveCredit, zeroStockProduct, editingQtyItemId, editingItemDiscountId, editingGlobalDiscount]);
+  }, [noModalOpen]);
+
+  // Keep focus pinned to barcode input — re-focus every 500ms when idle
+  useEffect(() => {
+    if (!noModalOpen) return;
+    const interval = setInterval(() => {
+      const active = document.activeElement;
+      if (active && (active as HTMLElement).dataset?.noBarcodeFocus) return;
+      if (active !== barcodeInputRef.current) {
+        barcodeInputRef.current?.focus();
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [noModalOpen]);
 
   // Auto-scroll to last item
   useEffect(() => {
