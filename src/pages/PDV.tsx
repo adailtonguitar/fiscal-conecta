@@ -837,29 +837,29 @@ export default function PDV() {
       {/* ════════ BOTTOM PAYMENT BAR ════════ */}
       <div className="flex flex-col flex-shrink-0 border-t-2 border-border bg-card">
         {/* Payment method buttons */}
-        <div className="flex items-stretch gap-1.5 px-3 py-2">
+        <div className="flex items-stretch gap-2 px-3 py-3">
           {[
-            { id: "dinheiro", label: "Dinheiro", icon: Banknote, shortcut: "F2", colorClass: "bg-emerald-600 hover:bg-emerald-700 text-white" },
-            { id: "debito", label: "Débito", icon: CreditCard, shortcut: "", colorClass: "bg-blue-600 hover:bg-blue-700 text-white" },
-            { id: "credito", label: "Crédito", icon: CreditCard, shortcut: "", colorClass: "bg-purple-600 hover:bg-purple-700 text-white" },
-            { id: "pix", label: "PIX", icon: QrCode, shortcut: "", colorClass: "bg-teal-600 hover:bg-teal-700 text-white" },
-            { id: "voucher", label: "Voucher", icon: Ticket, shortcut: "", colorClass: "bg-amber-600 hover:bg-amber-700 text-white" },
-            { id: "prazo", label: "A Prazo", icon: ClockIcon, shortcut: "", colorClass: "bg-orange-600 hover:bg-orange-700 text-white" },
-            { id: "outros", label: "Outros", icon: MoreHorizontal, shortcut: "", colorClass: "bg-secondary hover:bg-secondary/80 text-secondary-foreground" },
+            { id: "dinheiro", label: "Dinheiro", icon: Banknote, shortcut: "F2", colorClass: "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30" },
+            { id: "debito", label: "Débito", icon: CreditCard, shortcut: "", colorClass: "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30" },
+            { id: "credito", label: "Crédito", icon: CreditCard, shortcut: "", colorClass: "bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/30" },
+            { id: "pix", label: "PIX", icon: QrCode, shortcut: "", colorClass: "bg-teal-600 hover:bg-teal-500 text-white shadow-lg shadow-teal-600/30" },
+            { id: "voucher", label: "Voucher", icon: Ticket, shortcut: "", colorClass: "bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-600/30" },
+            { id: "prazo", label: "A Prazo", icon: ClockIcon, shortcut: "", colorClass: "bg-orange-600 hover:bg-orange-500 text-white shadow-lg shadow-orange-600/30" },
+            { id: "outros", label: "Outros", icon: MoreHorizontal, shortcut: "", colorClass: "bg-secondary hover:bg-secondary/80 text-secondary-foreground shadow-lg shadow-black/10" },
           ].map(({ id, label, icon: Icon, shortcut, colorClass }) => (
             <button
               key={id}
               onClick={() => handleDirectPayment(id)}
               disabled={pdv.cartItems.length === 0}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 rounded-xl text-xs font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${colorClass}`}
+              className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl text-sm font-extrabold tracking-wide transition-all disabled:opacity-30 disabled:cursor-not-allowed ${colorClass}`}
             >
-              <Icon className="w-5 h-5" />
-              <span>{label}</span>
+              <Icon className="w-7 h-7" />
+              <span className="text-[13px]">{label}</span>
             </button>
           ))}
         </div>
         {/* Shortcut hints row */}
-        <div className="flex items-center justify-center gap-3 px-3 py-1 bg-muted/50 border-t border-border text-[10px]">
+        <div className="flex items-center justify-center gap-4 px-3 py-2 bg-muted/50 border-t border-border text-xs">
           {[
             { key: "F3", label: "Buscar" },
             { key: "F5", label: "Cliente" },
@@ -870,8 +870,8 @@ export default function PDV() {
              { key: "↑↓", label: "Navegar" },
              { key: "DEL", label: "Remover" },
           ].map(({ key, label }) => (
-            <span key={key} className="flex items-center gap-0.5 text-muted-foreground">
-              <span className="font-mono font-black bg-muted px-1 py-0.5 rounded text-[9px]">{key}</span>
+            <span key={key} className="flex items-center gap-1 text-muted-foreground font-medium">
+              <span className="font-mono font-black bg-muted px-1.5 py-1 rounded text-[11px] border border-border">{key}</span>
               {label}
             </span>
           ))}
