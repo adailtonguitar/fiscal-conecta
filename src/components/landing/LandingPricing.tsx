@@ -45,21 +45,6 @@ const plans = [
     highlighted: true,
     planKey: PLANS.profissional.key,
   },
-  {
-    name: "Rede",
-    price: "Sob consulta",
-    desc: "Para redes de supermercados",
-    icon: Star,
-    features: [
-      "Terminais ilimitados",
-      "Multi-loja centralizada",
-      "Gestão unificada de estoque",
-      "Relatórios consolidados",
-      "Gerente de conta exclusivo",
-    ],
-    highlighted: false,
-    planKey: null,
-  },
 ];
 
 export function LandingPricing() {
@@ -69,10 +54,6 @@ export function LandingPricing() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
   const handlePlanClick = async (plan: (typeof plans)[0]) => {
-    if (!plan.planKey) {
-      window.open("https://wa.me/5500000000000?text=Olá! Tenho interesse no plano Rede do AnthoSystem.", "_blank");
-      return;
-    }
     if (!user) {
       navigate("/auth");
       return;
@@ -106,7 +87,7 @@ export function LandingPricing() {
           </motion.div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-start">
+        <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto items-start">
           {plans.map((plan, i) => (
             <motion.div
               key={plan.name}
