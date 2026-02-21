@@ -634,7 +634,7 @@ export default function PDV() {
                         onClick={(e) => { e.stopPropagation(); setSelectedCartItemId(item.id); }}
                         className={`border-b border-border cursor-pointer ${
                           selectedCartItemId === item.id
-                            ? "bg-accent ring-1 ring-primary/40"
+                            ? "bg-primary/20 ring-2 ring-primary ring-inset font-bold"
                             : isLast && !selectedCartItemId
                             ? "bg-primary/10 font-bold"
                             : idx % 2 === 0
