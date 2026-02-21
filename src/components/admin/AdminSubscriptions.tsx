@@ -68,15 +68,15 @@ export function AdminSubscriptions() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Assinaturas ({filtered.length})</span>
+      <CardHeader className="p-3 sm:p-6">
+        <CardTitle className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between">
+          <span className="text-base sm:text-lg">Assinaturas ({filtered.length})</span>
           <div className="flex gap-2">
             <Input
               placeholder="Buscar empresa ou plano..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-64"
+              className="w-full sm:w-64 text-sm"
             />
             <Button variant="outline" size="sm" disabled>
               <Search className="h-4 w-4" />
@@ -84,7 +84,7 @@ export function AdminSubscriptions() {
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
         {loading ? (
           <div className="flex justify-center py-8">
             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -92,30 +92,51 @@ export function AdminSubscriptions() {
         ) : filtered.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-8">Nenhuma assinatura encontrada.</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Empresa</TableHead>
-                <TableHead>Plano</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Válida até</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            {/* Mobile cards */}
+            <div className="space-y-3 sm:hidden">
               {filtered.map((s) => (
-                <TableRow key={s.id}>
-                  <TableCell className="font-medium">{s.company_name}</TableCell>
-                  <TableCell>{planLabel(s.plan_key)}</TableCell>
-                  <TableCell>{statusBadge(s.status)}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {s.current_period_end
-                      ? new Date(s.current_period_end).toLocaleDateString("pt-BR")
-                      : "—"}
-                  </TableCell>
-                </TableRow>
+                <div key={s.id} className="border rounded-lg p-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-sm truncate">{s.company_name}</p>
+                    {statusBadge(s.status)}
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Plano: <span className="text-foreground font-medium">{planLabel(s.plan_key)}</span></span>
+                    <span>Até: {s.current_period_end ? new Date(s.current_period_end).toLocaleDateString("pt-BR") : "—"}</span>
+                  </div>
+                </div>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden sm:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Empresa</TableHead>
+                    <TableHead>Plano</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Válida até</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell className="font-medium">{s.company_name}</TableCell>
+                      <TableCell>{planLabel(s.plan_key)}</TableCell>
+                      <TableCell>{statusBadge(s.status)}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {s.current_period_end
+                          ? new Date(s.current_period_end).toLocaleDateString("pt-BR")
+                          : "—"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
