@@ -680,9 +680,9 @@ export default function PDV() {
         </div>
 
         {/* RIGHT: Totals Sidebar (30%) */}
-        <div className="shrink-0 lg:shrink lg:flex-[3] flex flex-col bg-card lg:min-w-[260px] lg:max-w-[400px]">
+        <div className="shrink-0 lg:shrink lg:flex-[3] flex flex-col bg-card lg:min-w-[240px] lg:max-w-[360px] min-h-0">
           {/* Info rows */}
-          <div className="flex-1 flex flex-col p-2 lg:p-4 gap-1 lg:gap-3">
+          <div className="flex-1 flex flex-col p-1.5 lg:p-3 gap-0.5 lg:gap-2 overflow-y-auto">
             <div className="flex justify-between items-center py-1.5 lg:py-2 border-b border-border">
               <span className="text-xs font-bold text-muted-foreground uppercase">Itens</span>
               <span className="text-base lg:text-lg font-bold text-foreground font-mono">{totalItems}</span>
@@ -884,17 +884,17 @@ export default function PDV() {
 
           {/* TOTAL — BIG DISPLAY */}
           <div
-            className="p-2 lg:p-4 xl:p-6 mt-auto border-t-4 transition-colors duration-300"
+            className="p-1.5 lg:p-3 xl:p-4 mt-auto border-t-4 transition-colors duration-300 flex-shrink-0"
             style={{
               backgroundColor: totalFinal > 0 ? "hsl(0, 72%, 40%)" : "hsl(142, 72%, 32%)",
               borderTopColor: totalFinal > 0 ? "hsl(0, 72%, 50%)" : "hsl(142, 72%, 45%)",
             }}
           >
             <div className="text-center">
-              <span className="text-[10px] lg:text-xs font-bold uppercase tracking-[0.25em] block mb-0.5 lg:mb-2" style={{ color: "rgba(255,255,255,0.75)" }}>
+              <span className="text-[9px] lg:text-xs font-bold uppercase tracking-[0.25em] block mb-0 lg:mb-1" style={{ color: "rgba(255,255,255,0.75)" }}>
                 {totalFinal > 0 ? "TOTAL A PAGAR" : "TOTAL DA VENDA"}
               </span>
-              <span className="text-3xl lg:text-6xl xl:text-7xl font-black font-mono tracking-tight block" style={{ color: "#ffffff", textShadow: "0 3px 12px rgba(0,0,0,0.4)" }}>
+              <span className="text-2xl lg:text-5xl xl:text-6xl font-black font-mono tracking-tight block" style={{ color: "#ffffff", textShadow: "0 3px 12px rgba(0,0,0,0.4)" }}>
                 {formatCurrency(totalFinal)}
               </span>
             </div>
@@ -1007,7 +1007,7 @@ export default function PDV() {
           ))}
         </div>
         {/* Shortcut hints row */}
-        <div className="hidden lg:flex items-center justify-center gap-3 px-3 py-3 bg-muted/70 border-t-2 border-border">
+        <div className="hidden lg:flex items-center justify-center gap-2 px-2 py-1.5 bg-muted/70 border-t border-border">
           {[
             { key: "F3", label: "Buscar", color: "bg-blue-600 text-white" },
             { key: "F5", label: "Cliente", color: "bg-teal-600 text-white" },
