@@ -1234,7 +1234,10 @@ export default function PDV() {
                 autoFocus
                 defaultValue={pdv.itemDiscounts[editingItemDiscountId] || 0}
                 className="flex-1 px-4 py-3 rounded-xl bg-background border-2 border-border text-xl font-mono text-center focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+                onClick={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
                 onKeyDown={(e) => {
+                  e.stopPropagation();
                   if (e.key === "Enter") {
                     const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value)), maxDiscountPercent);
                     pdv.setItemDiscount(editingItemDiscountId!, val);
@@ -1280,7 +1283,10 @@ export default function PDV() {
                 autoFocus
                 defaultValue={pdv.globalDiscountPercent}
                 className="flex-1 px-4 py-3 rounded-xl bg-background border-2 border-border text-xl font-mono text-center focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+                onClick={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
                 onKeyDown={(e) => {
+                  e.stopPropagation();
                   if (e.key === "Enter") {
                     const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value)), maxDiscountPercent);
                     pdv.setGlobalDiscountPercent(val);
@@ -1327,7 +1333,10 @@ export default function PDV() {
               value={editingQtyValue}
               onChange={(e) => setEditingQtyValue(e.target.value)}
               className="w-full px-4 py-3 rounded-xl bg-background border-2 border-border text-xl font-mono text-center focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+              onClick={(e) => e.stopPropagation()}
+              onFocus={(e) => e.stopPropagation()}
               onKeyDown={(e) => {
+                e.stopPropagation();
                 if (e.key === "Enter") {
                   const newQty = Math.max(1, parseInt(editingQtyValue) || 1);
                   const item = pdv.cartItems.find(i => i.id === editingQtyItemId);
