@@ -54,13 +54,19 @@ export function CashRegister({ onClose, terminalId = "01", preventClose = false,
   const [closingNotes, setClosingNotes] = useState("");
 
   const loadSession = useCallback(async () => {
-    if (!companyId) return;
+    if (!companyId) {
+      console.warn("[CashRegister] No companyId, skipping loadSession");
+      setLoading(false);
+      return;
+    }
+    console.log("[CashRegister] loadSession start", { companyId, terminalId, online: navigator.onLine });
     setLoading(true);
     try {
       const data = await CashSessionService.getCurrentSession(companyId, terminalId);
+      console.log("[CashRegister] loadSession result:", data?.id ?? "no session");
       setSession(data);
-    } catch {
-      // no session
+    } catch (err) {
+      console.error("[CashRegister] loadSession error:", err);
     } finally {
       setLoading(false);
     }
@@ -91,6 +97,7 @@ export function CashRegister({ onClose, terminalId = "01", preventClose = false,
   const difference = totalCounted - totalExpected;
 
   const handleOpen = async () => {
+    console.log("[CashRegister] handleOpen", { companyId, userId: user?.id, online: navigator.onLine });
     if (!companyId || !user) return;
     setSubmitting(true);
     try {
