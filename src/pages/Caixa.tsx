@@ -16,6 +16,7 @@ export default function Caixa() {
     queryKey: ["cash-sessions-history", companyId],
     queryFn: async () => {
       if (!companyId) return [];
+      if (!navigator.onLine) return [];
       const { data, error } = await supabase
         .from("cash_sessions")
         .select("*")
@@ -26,6 +27,7 @@ export default function Caixa() {
       return data;
     },
     enabled: !!companyId,
+    retry: navigator.onLine ? 1 : 0,
   });
 
   const handleCashRegisterClose = () => {
