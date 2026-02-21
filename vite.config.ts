@@ -23,9 +23,9 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "pwa-icon-512.png", "pwa-icon-192.png"],
       manifest: {
-        name: "AnthóSystem - Sistema de Vendas",
-        short_name: "AnthóSystem",
-        description: "AnthóSystem - Sistema completo de vendas com operação offline e sincronização em nuvem",
+        name: "AnthoSystem - Sistema de Vendas",
+        short_name: "AnthoSystem",
+        description: "AnthoSystem - Sistema completo de vendas com operação offline e sincronização em nuvem",
         theme_color: "#1e40af",
         background_color: "#0f172a",
         display: "standalone",
