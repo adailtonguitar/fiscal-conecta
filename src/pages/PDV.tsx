@@ -17,7 +17,7 @@ import { useQuotes } from "@/hooks/useQuotes";
 import { useCompany } from "@/hooks/useCompany";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { useTEFConfig } from "@/hooks/useTEFConfig";
-import { Wifi, WifiOff, Keyboard, X, Search, Monitor, FileText, User, PackageX, PackagePlus, Maximize, Minimize, Banknote, CreditCard, QrCode, Smartphone, Ticket, MoreHorizontal, Clock as ClockIcon, Trash2, Hash, Percent, AlertTriangle, Plus } from "lucide-react";
+import { Wifi, WifiOff, Keyboard, X, Search, Monitor, FileText, User, PackageX, PackagePlus, Maximize, Minimize, Banknote, CreditCard, QrCode, Smartphone, Ticket, MoreHorizontal, Clock as ClockIcon, Trash2, Hash, Percent, AlertTriangle, Plus, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { PaymentResult } from "@/services/types";
@@ -243,7 +243,6 @@ export default function PDV() {
       }
       for (let i = 0; i < multiplier; i++) pdv.addToCart(exactMatch);
       playAddSound();
-      toast.success(`${exactMatch.name}${multiplier > 1 ? ` x${multiplier}` : ""} adicionado`, { duration: 1200 });
       setBarcodeInput("");
       return;
     }
@@ -264,7 +263,6 @@ export default function PDV() {
       }
       for (let i = 0; i < multiplier; i++) pdv.addToCart(searchMatch);
       playAddSound();
-      toast.success(`${searchMatch.name}${multiplier > 1 ? ` x${multiplier}` : ""} adicionado`, { duration: 1200 });
     } else {
       playErrorSound();
       toast.error(`Produto não encontrado: ${query}`, {
@@ -286,7 +284,6 @@ export default function PDV() {
     const added = pdv.addToCart(product);
     if (added) {
       playAddSound();
-      toast.success(`${product.name} adicionado`, { duration: 1200 });
       // Show last added item highlight for 3s
       setLastAddedItem({ name: product.name, price: product.price });
       if (lastAddedTimerRef.current) clearTimeout(lastAddedTimerRef.current);
@@ -387,7 +384,6 @@ export default function PDV() {
             if (product) {
               pdv.addToCart(product);
               playAddSound();
-              toast.success(`+1 ${lastItem.name}`, { duration: 1200 });
             }
           }
       }
@@ -1057,7 +1053,7 @@ export default function PDV() {
           {[
             { id: "dinheiro", label: "Dinheiro", icon: Banknote, shortcut: "F2", colorClass: "bg-emerald-900/60 hover:bg-emerald-800/70 text-emerald-100 border border-emerald-700/40 shadow-lg shadow-black/20" },
             { id: "debito", label: "Débito", icon: CreditCard, shortcut: "", colorClass: "bg-blue-900/60 hover:bg-blue-800/70 text-blue-100 border border-blue-700/40 shadow-lg shadow-black/20" },
-            { id: "credito", label: "Crédito", icon: CreditCard, shortcut: "", colorClass: "bg-violet-900/60 hover:bg-violet-800/70 text-violet-100 border border-violet-700/40 shadow-lg shadow-black/20" },
+            { id: "credito", label: "Crédito", icon: Wallet, shortcut: "", colorClass: "bg-violet-900/60 hover:bg-violet-800/70 text-violet-100 border border-violet-700/40 shadow-lg shadow-black/20" },
             { id: "pix", label: "PIX", icon: QrCode, shortcut: "", colorClass: "bg-teal-900/60 hover:bg-teal-800/70 text-teal-100 border border-teal-700/40 shadow-lg shadow-black/20" },
             { id: "voucher", label: "Voucher", icon: Ticket, shortcut: "", colorClass: "bg-amber-900/60 hover:bg-amber-800/70 text-amber-100 border border-amber-700/40 shadow-lg shadow-black/20" },
             { id: "prazo", label: "A Prazo", icon: ClockIcon, shortcut: "", colorClass: "bg-orange-900/60 hover:bg-orange-800/70 text-orange-100 border border-orange-700/40 shadow-lg shadow-black/20" },
