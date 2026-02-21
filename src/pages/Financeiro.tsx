@@ -105,17 +105,17 @@ export default function Financeiro() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Financeiro</h1>
-          <p className="text-sm text-muted-foreground mt-1">Contas a pagar, receber e fluxo de caixa</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Financeiro</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Contas a pagar, receber e fluxo de caixa</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={() => setShowClosing(true)}>
             <BarChart3 className="w-4 h-4 mr-2" />
-            Fechamento Diário
+            <span className="hidden sm:inline">Fechamento </span>Diário
           </Button>
           <Button variant="outline" size="sm" onClick={() => handleNewEntry("receber")}>
             <ArrowDownCircle className="w-4 h-4 mr-2" />
@@ -138,14 +138,14 @@ export default function Financeiro() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <SummaryCard icon={TrendingDown} label="Total a Pagar" value={totalPagar} paid={totalPago} color="text-destructive" />
         <SummaryCard icon={TrendingUp} label="Total a Receber" value={totalReceber} paid={totalRecebido} color="text-primary" />
         <SummaryCard icon={Wallet} label="Saldo Realizado" value={saldo} color={saldo >= 0 ? "text-primary" : "text-destructive"} />
-        <div className="bg-card rounded-xl border border-border p-4 card-shadow">
-          <p className="text-xs text-muted-foreground mb-1">Lançamentos no mês</p>
-          <p className="text-2xl font-bold text-foreground">{allEntries.length}</p>
-          <p className="text-xs text-muted-foreground mt-1">
+        <div className="bg-card rounded-xl border border-border p-3 sm:p-4 card-shadow">
+          <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Lançamentos no mês</p>
+          <p className="text-lg sm:text-2xl font-bold text-foreground">{allEntries.length}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
             {allEntries.filter(e => e.status === "pendente").length} pendentes
           </p>
         </div>
@@ -156,7 +156,7 @@ export default function Financeiro() {
 
       {/* Entries list */}
       <div className="space-y-4">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
           <Tabs value={tab} onValueChange={setTab} className="flex-1">
             <TabsList>
               <TabsTrigger value="all">Todos</TabsTrigger>
@@ -164,7 +164,7 @@ export default function Financeiro() {
               <TabsTrigger value="receber">A Receber</TabsTrigger>
             </TabsList>
           </Tabs>
-          <div className="relative max-w-xs">
+          <div className="relative max-w-xs w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
@@ -176,7 +176,73 @@ export default function Financeiro() {
           </div>
         </div>
 
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-xl card-shadow border border-border overflow-hidden">
+        {/* Mobile cards */}
+        <div className="sm:hidden space-y-2">
+          {isLoading ? (
+            [...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground text-sm">Nenhum lançamento encontrado neste período.</div>
+          ) : (
+            filtered.map((entry) => {
+              const st = statusConfig[entry.status] || statusConfig.pendente;
+              const StIcon = st.icon;
+              return (
+                <div key={entry.id} className="bg-card rounded-xl border border-border p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        {entry.type === "pagar" ? (
+                          <ArrowUpCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
+                        ) : (
+                          <ArrowDownCircle className="w-3.5 h-3.5 text-primary shrink-0" />
+                        )}
+                        <p className="text-sm font-medium text-foreground truncate">{entry.description}</p>
+                      </div>
+                      {entry.counterpart && <p className="text-[10px] text-muted-foreground truncate">{entry.counterpart}</p>}
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {entry.status === "pendente" && (
+                          <DropdownMenuItem onClick={() => { setPayTarget(entry); setPayMethod("dinheiro"); }}>
+                            <CreditCard className="w-4 h-4 mr-2" />Marcar como pago
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={() => handleEdit(entry)}>
+                          <Edit className="w-4 h-4 mr-2" />Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTarget(entry)}>
+                          <Trash2 className="w-4 h-4 mr-2" />Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-border">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{categoryLabels[entry.category] || entry.category}</span>
+                      <span>·</span>
+                      <span className="font-mono">{format(parseISO(entry.due_date), "dd/MM/yy")}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-semibold text-sm text-foreground">{formatCurrency(entry.amount)}</span>
+                      <Badge variant={st.variant} className="text-[10px] gap-0.5">
+                        <StIcon className="w-2.5 h-2.5" />
+                        {st.label}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="hidden sm:block bg-card rounded-xl card-shadow border border-border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
