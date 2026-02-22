@@ -1047,34 +1047,34 @@ export default function PDV() {
       </div>
 
       {/* ════════ BOTTOM PAYMENT BAR ════════ */}
-      <div className="flex flex-col flex-shrink-0 border-t-2 border-border bg-card">
+      <div className="flex flex-col flex-shrink-0 border-t border-border bg-card">
         {/* Payment method buttons */}
-        <div className="flex items-stretch gap-1 lg:gap-2 px-1.5 lg:px-3 py-1.5 lg:py-3 overflow-x-auto scrollbar-none">
+        <div className="flex items-stretch gap-0.5 lg:gap-1 px-1 lg:px-2 py-1 lg:py-1.5 overflow-x-auto scrollbar-none">
           {[
-            { id: "dinheiro", label: "Dinheiro", icon: Banknote, shortcut: "F2", colorClass: "bg-emerald-900/60 hover:bg-emerald-800/70 text-emerald-100 border border-emerald-700/40 shadow-lg shadow-black/20" },
-            { id: "debito", label: "Débito", icon: CreditCard, shortcut: "", colorClass: "bg-blue-900/60 hover:bg-blue-800/70 text-blue-100 border border-blue-700/40 shadow-lg shadow-black/20" },
-            { id: "credito", label: "Crédito", icon: Wallet, shortcut: "", colorClass: "bg-violet-900/60 hover:bg-violet-800/70 text-violet-100 border border-violet-700/40 shadow-lg shadow-black/20" },
-            { id: "pix", label: "PIX", icon: QrCode, shortcut: "", colorClass: "bg-teal-900/60 hover:bg-teal-800/70 text-teal-100 border border-teal-700/40 shadow-lg shadow-black/20" },
-            { id: "voucher", label: "Voucher", icon: Ticket, shortcut: "", colorClass: "bg-amber-900/60 hover:bg-amber-800/70 text-amber-100 border border-amber-700/40 shadow-lg shadow-black/20" },
-            { id: "prazo", label: "A Prazo", icon: ClockIcon, shortcut: "", colorClass: "bg-orange-900/60 hover:bg-orange-800/70 text-orange-100 border border-orange-700/40 shadow-lg shadow-black/20" },
-            { id: "outros", label: "Outros", icon: MoreHorizontal, shortcut: "", colorClass: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border shadow-lg shadow-black/20" },
-          ].map(({ id, label, icon: Icon, shortcut, colorClass }, idx) => (
+            { id: "dinheiro", label: "Dinheiro", icon: Banknote, colorClass: "bg-emerald-900/60 hover:bg-emerald-800/70 text-emerald-100 border border-emerald-700/40" },
+            { id: "debito", label: "Débito", icon: CreditCard, colorClass: "bg-blue-900/60 hover:bg-blue-800/70 text-blue-100 border border-blue-700/40" },
+            { id: "credito", label: "Crédito", icon: Wallet, colorClass: "bg-violet-900/60 hover:bg-violet-800/70 text-violet-100 border border-violet-700/40" },
+            { id: "pix", label: "PIX", icon: QrCode, colorClass: "bg-teal-900/60 hover:bg-teal-800/70 text-teal-100 border border-teal-700/40" },
+            { id: "voucher", label: "Voucher", icon: Ticket, colorClass: "bg-amber-900/60 hover:bg-amber-800/70 text-amber-100 border border-amber-700/40" },
+            { id: "prazo", label: "A Prazo", icon: ClockIcon, colorClass: "bg-orange-900/60 hover:bg-orange-800/70 text-orange-100 border border-orange-700/40" },
+            { id: "outros", label: "Outros", icon: MoreHorizontal, colorClass: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border" },
+          ].map(({ id, label, icon: Icon, colorClass }, idx) => (
             <motion.button
               key={id}
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05, duration: 0.25 }}
+              transition={{ delay: idx * 0.03, duration: 0.2 }}
               onClick={() => handleDirectPayment(id)}
               disabled={pdv.cartItems.length === 0}
-              className={`flex-1 min-w-[56px] flex flex-col items-center justify-center gap-1 lg:gap-1.5 xl:gap-2 py-2.5 lg:py-4 xl:py-5 rounded-xl text-sm font-extrabold tracking-wide transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed ${colorClass}`}
+              className={`flex-1 min-w-[48px] flex flex-col items-center justify-center gap-0.5 py-1.5 lg:py-2 xl:py-2.5 rounded-lg text-sm font-extrabold tracking-wide transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed ${colorClass}`}
             >
-              <Icon className="w-5 h-5 lg:w-6 lg:h-6 xl:w-8 xl:h-8" />
-              <span className="text-[11px] lg:text-xs xl:text-sm font-bold">{label}</span>
+              <Icon className="w-4 h-4 lg:w-5 lg:h-5 xl:w-6 xl:h-6" />
+              <span className="text-[10px] lg:text-[11px] xl:text-xs font-bold">{label}</span>
             </motion.button>
           ))}
         </div>
         {/* Shortcut hints row */}
-        <div className="hidden lg:flex items-center justify-center gap-3 xl:gap-4 px-3 py-2 xl:py-2.5 bg-muted/70 border-t border-border flex-wrap">
+        <div className="hidden lg:flex items-center justify-center gap-1.5 xl:gap-2 px-2 py-1 xl:py-1.5 bg-muted/70 border-t border-border flex-wrap">
           {[
             { key: "F3", label: "Buscar", color: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border", action: () => setShowProductList((p) => !p) },
             { key: "F5", label: "Cliente", color: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border", action: () => setShowLoyaltyClientSelector(true) },
@@ -1088,8 +1088,8 @@ export default function PDV() {
             { key: "F11", label: "Rep.Venda", color: "bg-sidebar-background hover:bg-sidebar-accent text-sidebar-foreground border border-sidebar-border", action: () => pdv.repeatLastSale() },
             { key: "F12", label: "Finalizar", color: "bg-primary hover:bg-primary/90 text-primary-foreground border border-primary/50", action: () => handleCheckout() },
           ].map(({ key, label, color, action }) => (
-            <button key={key} onClick={action} className={`flex items-center gap-2 font-bold text-sm xl:text-base cursor-pointer rounded-lg px-2 py-1.5 transition-all active:scale-95 ${color} shadow-md hover:shadow-lg`}>
-              <span className="font-mono font-black px-2 py-1 rounded bg-black/20 text-xs xl:text-sm border border-white/30">{key}</span>
+            <button key={key} onClick={action} className={`flex items-center gap-1 font-bold text-xs cursor-pointer rounded px-1.5 py-1 transition-all active:scale-95 ${color}`}>
+              <span className="font-mono font-black px-1.5 py-0.5 rounded bg-black/20 text-[10px] border border-white/30">{key}</span>
               {label}
             </button>
           ))}
