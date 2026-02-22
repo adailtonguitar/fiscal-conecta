@@ -30,5 +30,11 @@
   "linux": {
     "target": ["AppImage"],
     "icon": "public/pwa-icon-512.png"
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "adailtonguitar",
+    "repo": "fiscal-conecta",
+    "releaseType": "release"
   }
 }
