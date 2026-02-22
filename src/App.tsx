@@ -77,7 +77,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 min — avoid refetch on every mount
-      gcTime: 10 * 60 * 1000,   // 10 min cache retention
+      gcTime: 10 * 60 * 1000, // 10 min cache retention
       refetchOnWindowFocus: false,
       retry: 1,
     },
@@ -105,7 +105,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const timer = setTimeout(() => {
       setTimedOut(true);
       console.warn("[ProtectedRoute] Loading timeout reached", {
-        loading, companyLoading, subLoading, adminLoading, companyId, companyCheckDone
+        loading,
+        companyLoading,
+        subLoading,
+        adminLoading,
+        companyId,
+        companyCheckDone,
       });
     }, 12000);
     return () => clearTimeout(timer);
@@ -125,7 +130,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
             .select("id")
             .eq("user_id", user.id)
             .limit(1);
-          
+
           if (!data || data.length === 0) {
             setShowOnboarding(true);
           } else if (!companyId) {
@@ -193,26 +198,25 @@ function AppRoutes() {
     <Suspense fallback={<PageSpinner />}>
       <Routes>
         {/* Public landing page for unauthenticated users */}
-        <Route path="/" element={
-          user ? <Navigate to="/dashboard" replace /> : <LandingPage />
-        } />
-        <Route path="/auth" element={
-          user && !window.location.hash.includes("type=") && sessionStorage.getItem("needs-password-setup") !== "true"
-            ? <Navigate to="/dashboard" replace /> 
-            : <Auth />
-        } />
-        <Route path="/landing" element={
-          user ? <Navigate to="/dashboard" replace /> : <LandingPage />
-        } />
+        <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
+        <Route
+          path="/auth"
+          element={
+            user &&
+            !window.location.hash.includes("type=") &&
+            sessionStorage.getItem("needs-password-setup") !== "true" ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <Auth />
+            )
+          }
+        />
+        <Route path="/landing" element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
         <Route path="/install" element={<Instalar />} />
         <Route path="/termos" element={<Termos />} />
         <Route path="/privacidade" element={<Privacidade />} />
-        <Route path="/trial-expirado" element={
-          user ? <TrialExpirado /> : <Navigate to="/" replace />
-        } />
-        <Route path="/renovar" element={
-          user ? <Renovar /> : <Navigate to="/auth" replace />
-        } />
+        <Route path="/trial-expirado" element={user ? <TrialExpirado /> : <Navigate to="/" replace />} />
+        <Route path="/renovar" element={user ? <Renovar /> : <Navigate to="/auth" replace />} />
         {/* PDV: full-screen, outside AppLayout */}
         <Route
           path="/pdv"
@@ -230,9 +234,23 @@ function AppRoutes() {
                 <Suspense fallback={<PageSpinner />}>
                   <Routes>
                     <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/painel-lucro" element={<PlanGate feature="hasProfitPanel" featureName="Painel de Lucro"><PainelLucro /></PlanGate>} />
+                    <Route
+                      path="/painel-lucro"
+                      element={
+                        <PlanGate feature="hasProfitPanel" featureName="Painel de Lucro">
+                          <PainelLucro />
+                        </PlanGate>
+                      }
+                    />
                     <Route path="/lucro-diario" element={<LucroDiario />} />
-                    <Route path="/alertas" element={<PlanGate feature="hasFinancialAlerts" featureName="Alertas Financeiros"><AlertaFinanceiro /></PlanGate>} />
+                    <Route
+                      path="/alertas"
+                      element={
+                        <PlanGate feature="hasFinancialAlerts" featureName="Alertas Financeiros">
+                          <AlertaFinanceiro />
+                        </PlanGate>
+                      }
+                    />
                     <Route path="/produtos" element={<Produtos />} />
                     <Route path="/vendas" element={<Vendas />} />
                     <Route path="/relatorio-vendas" element={<RelatorioVendas />} />
@@ -244,14 +262,49 @@ function AppRoutes() {
                     <Route path="/fiscal/auditoria" element={<AuditLogs />} />
                     <Route path="/fiscal/comparar-xml" element={<CompararXML />} />
                     <Route path="/financeiro" element={<Financeiro />} />
-                    <Route path="/dre" element={<PlanGate feature="hasDre" featureName="DRE"><DRE /></PlanGate>} />
-                    <Route path="/fluxo-caixa" element={<PlanGate feature="hasCashFlow" featureName="Fluxo de Caixa Projetado"><FluxoCaixaProjetado /></PlanGate>} />
-                    <Route path="/centro-custo" element={<PlanGate feature="hasCostCenter" featureName="Centro de Custo"><CentroCusto /></PlanGate>} />
-                    <Route path="/comissoes" element={<PlanGate feature="hasCommissions" featureName="Comissões"><Comissoes /></PlanGate>} />
-                    <Route path="/conciliacao" element={<PlanGate feature="hasBankReconciliation" featureName="Conciliação Bancária"><ConciliacaoBancaria /></PlanGate>} />
+                    <Route
+                      path="/dre"
+                      element={
+                        <PlanGate feature="hasDre" featureName="DRE">
+                          <DRE />
+                        </PlanGate>
+                      }
+                    />
+                    <Route
+                      path="/fluxo-caixa"
+                      element={
+                        <PlanGate feature="hasCashFlow" featureName="Fluxo de Caixa Projetado">
+                          <FluxoCaixaProjetado />
+                        </PlanGate>
+                      }
+                    />
+                    <Route
+                      path="/centro-custo"
+                      element={
+                        <PlanGate feature="hasCostCenter" featureName="Centro de Custo">
+                          <CentroCusto />
+                        </PlanGate>
+                      }
+                    />
+                    <Route
+                      path="/comissoes"
+                      element={
+                        <PlanGate feature="hasCommissions" featureName="Comissões">
+                          <Comissoes />
+                        </PlanGate>
+                      }
+                    />
+                    <Route
+                      path="/conciliacao"
+                      element={
+                        <PlanGate feature="hasBankReconciliation" featureName="Conciliação Bancária">
+                          <ConciliacaoBancaria />
+                        </PlanGate>
+                      }
+                    />
                     <Route path="/configuracoes" element={<Configuracoes />} />
                     <Route path="/usuarios" element={<Usuarios />} />
-                    
+
                     <Route path="/cadastro/empresas" element={<Empresas />} />
                     <Route path="/cadastro/clientes" element={<Clientes />} />
                     <Route path="/cadastro/fornecedores" element={<Fornecedores />} />
@@ -261,14 +314,42 @@ function AppRoutes() {
                     <Route path="/cadastro/categorias" element={<Categorias />} />
                     <Route path="/estoque/movimentacoes" element={<Movimentacoes />} />
                     <Route path="/estoque/inventario" element={<Inventario />} />
-                    <Route path="/estoque/curva-abc" element={<PlanGate feature="hasAbcCurve" featureName="Curva ABC"><CurvaABC /></PlanGate>} />
+                    <Route
+                      path="/estoque/curva-abc"
+                      element={
+                        <PlanGate feature="hasAbcCurve" featureName="Curva ABC">
+                          <CurvaABC />
+                        </PlanGate>
+                      }
+                    />
                     <Route path="/estoque/lotes" element={<Lotes />} />
                     <Route path="/estoque/perdas" element={<Perdas />} />
                     <Route path="/producao" element={<Producao />} />
-                    <Route path="/fidelidade" element={<PlanGate feature="hasLoyalty" featureName="Programa de Fidelidade"><Fidelidade /></PlanGate>} />
-                    <Route path="/relatorios-ia" element={<PlanGate feature="hasAiReports" featureName="Relatórios com IA"><RelatoriosIA /></PlanGate>} />
+                    <Route
+                      path="/fidelidade"
+                      element={
+                        <PlanGate feature="hasLoyalty" featureName="Programa de Fidelidade">
+                          <Fidelidade />
+                        </PlanGate>
+                      }
+                    />
+                    <Route
+                      path="/relatorios-ia"
+                      element={
+                        <PlanGate feature="hasAiReports" featureName="Relatórios com IA">
+                          <RelatoriosIA />
+                        </PlanGate>
+                      }
+                    />
                     <Route path="/etiquetas" element={<Etiquetas />} />
-                    <Route path="/orcamentos" element={<PlanGate feature="hasQuotes" featureName="Orçamentos"><Orcamentos /></PlanGate>} />
+                    <Route
+                      path="/orcamentos"
+                      element={
+                        <PlanGate feature="hasQuotes" featureName="Orçamentos">
+                          <Orcamentos />
+                        </PlanGate>
+                      }
+                    />
                     <Route path="/promocoes" element={<Promocoes />} />
                     <Route path="/fiado" element={<Fiado />} />
                     <Route path="/pedidos-compra" element={<PedidosCompra />} />
@@ -308,4 +389,4 @@ const App = () => (
   </ErrorBoundary>
 );
 
-export default App;
+export default App; // rebuild
