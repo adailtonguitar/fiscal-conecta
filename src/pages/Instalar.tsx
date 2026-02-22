@@ -150,27 +150,36 @@ export default function Instalar() {
                 </ol>
               </div>
 
-              {/* Desktop */}
+              {/* Desktop PWA */}
               <div className="rounded-xl border p-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
                     <Monitor className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm">Computador</p>
-                    <p className="text-xs text-muted-foreground">Chrome, Edge ou Brave</p>
+                    <p className="font-semibold text-sm">Versão Web (Leve)</p>
+                    <p className="text-xs text-muted-foreground">Instalação rápida pelo navegador, sem download pesado</p>
                   </div>
                 </div>
                 <ol className="space-y-2 text-sm text-muted-foreground pl-1">
                   <li className="flex items-start gap-2">
                     <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</span>
-                    <span>Clique no ícone <Download className="inline h-4 w-4 text-primary mx-0.5 -mt-0.5" /> na <strong className="text-foreground">barra de endereço</strong> do navegador</span>
+                    <span>Abra no <strong className="text-foreground">Chrome, Edge ou Brave</strong></span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</span>
-                    <span>Clique em <strong className="text-foreground">Instalar</strong> na janela que aparecer</span>
+                    <span>Clique no ícone <Download className="inline h-4 w-4 text-primary mx-0.5 -mt-0.5" /> na <strong className="text-foreground">barra de endereço</strong></span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</span>
+                    <span>Clique em <strong className="text-foreground">Instalar</strong></span>
                   </li>
                 </ol>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <span className="text-xs bg-muted px-2 py-1 rounded-full">✨ Sem download</span>
+                  <span className="text-xs bg-muted px-2 py-1 rounded-full">⚡ Instalação instantânea</span>
+                  <span className="text-xs bg-muted px-2 py-1 rounded-full">🔄 Sempre atualizado</span>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -181,9 +190,9 @@ export default function Instalar() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Monitor className="h-5 w-5 text-primary" />
-              Instalador Windows
+              Versão Desktop (Completa)
             </CardTitle>
-            <CardDescription>Baixe e instale o aplicativo completo para Windows com atualização automática</CardDescription>
+            <CardDescription>Aplicativo nativo para Windows com ícone na área de trabalho</CardDescription>
           </CardHeader>
           <CardContent>
             <Button
@@ -200,8 +209,13 @@ export default function Instalar() {
                 Baixar para Windows (.exe)
               </a>
             </Button>
-            <p className="text-xs text-muted-foreground text-center mt-3">
-              Compatível com Windows 10 e 11 • Atualizações automáticas
+            <div className="flex flex-wrap gap-2 mt-3 justify-center">
+              <span className="text-xs bg-muted px-2 py-1 rounded-full">🖥️ App nativo</span>
+              <span className="text-xs bg-muted px-2 py-1 rounded-full">🔄 Atualização automática</span>
+              <span className="text-xs bg-muted px-2 py-1 rounded-full">📌 Ícone na área de trabalho</span>
+            </div>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              Compatível com Windows 10 e 11
             </p>
           </CardContent>
         </Card>
