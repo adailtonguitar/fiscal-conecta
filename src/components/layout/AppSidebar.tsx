@@ -193,7 +193,7 @@ export function AppSidebar({ mobileOpen, onMobileClose }: AppSidebarProps) {
             >
               <div className="flex items-center justify-between px-3 py-2">
                 <div className="flex items-center gap-2">
-                  <img src={anthoLogo} alt="AnthoSystem" className="h-10 w-10 object-contain rounded-lg bg-primary/10 p-1" />
+                  <img src={anthoLogo} alt="AnthoSystem" className="h-10 w-10 object-contain" />
                   <span className="text-sm font-bold text-sidebar-foreground">AnthoSystem</span>
                 </div>
                 <button onClick={onMobileClose} className="p-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent">
@@ -310,7 +310,7 @@ export function AppSidebar({ mobileOpen, onMobileClose }: AppSidebarProps) {
       )}
     >
       <div className="flex flex-col items-center justify-center px-2 py-2 overflow-visible">
-        <img src={anthoLogo} alt="AnthoSystem" className={cn("object-contain rounded-lg bg-primary/10 p-1", collapsed ? "w-8 h-8" : "h-20 w-full -mb-3")} style={collapsed ? undefined : { marginTop: '0px', marginBottom: '-12px' }} />
+        <img src={anthoLogo} alt="AnthoSystem" className={cn("object-contain", collapsed ? "w-8 h-8" : "h-20 w-full -mb-3")} style={collapsed ? undefined : { marginTop: '0px', marginBottom: '-12px' }} />
         {!collapsed && <span className="text-sm font-bold text-sidebar-foreground tracking-wide -mt-1">AnthoSystem</span>}
       </div>
 
