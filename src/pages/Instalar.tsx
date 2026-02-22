@@ -176,6 +176,36 @@ export default function Instalar() {
           </Card>
         )}
 
+        {/* Windows Installer Download */}
+        <Card className="border-primary/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Monitor className="h-5 w-5 text-primary" />
+              Instalador Windows
+            </CardTitle>
+            <CardDescription>Baixe e instale o aplicativo completo para Windows com atualização automática</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              asChild
+              size="lg"
+              className="w-full text-base"
+            >
+              <a
+                href="https://github.com/adailtonguitar/fiscal-conecta/releases/latest/download/AnthoSystem.Setup.0.0.0.exe"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Download className="mr-2 h-5 w-5" />
+                Baixar para Windows (.exe)
+              </a>
+            </Button>
+            <p className="text-xs text-muted-foreground text-center mt-3">
+              Compatível com Windows 10 e 11 • Atualizações automáticas
+            </p>
+          </CardContent>
+        </Card>
+
         <div className={`flex items-center gap-2 p-3 rounded-lg ${isOnline ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400" : "bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-400"}`}>
           {isOnline ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
           <span className="text-sm font-medium">
