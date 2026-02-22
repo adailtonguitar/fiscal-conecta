@@ -28,7 +28,7 @@ async function canReachServer(): Promise<boolean> {
   if (typeof navigator !== "undefined" && !navigator.onLine) return false;
   try {
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 2500);
+    const t = setTimeout(() => ctrl.abort(), 1000);
     const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL || ""}/rest/v1/`, {
       method: "HEAD",
       signal: ctrl.signal,
