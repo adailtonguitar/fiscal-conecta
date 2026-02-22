@@ -6,6 +6,75 @@ app.disableHardwareAcceleration();
 
 let mainWindow;
 
+// ── Auto-Updater ──────────────────────────────────────────────
+function setupAutoUpdater() {
+  try {
+    const { autoUpdater } = require('electron-updater');
+
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+
+    autoUpdater.on('update-available', (info) => {
+      if (mainWindow) {
+        mainWindow.webContents.executeJavaScript(`
+          (function() {
+            var d = document.createElement('div');
+            d.id = 'electron-update-banner';
+            d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#1d4ed8;color:#fff;text-align:center;padding:6px 12px;font:bold 13px sans-serif;';
+            d.textContent = '⬇️ Nova versão ${info.version || ""} disponível. Baixando atualização...';
+            document.body.appendChild(d);
+          })();
+        `).catch(() => {});
+      }
+    });
+
+    autoUpdater.on('update-downloaded', (info) => {
+      if (mainWindow) {
+        mainWindow.webContents.executeJavaScript(`
+          (function() {
+            var el = document.getElementById('electron-update-banner');
+            if (el) {
+              el.style.background = '#15803d';
+              el.textContent = '✅ Atualização pronta! Reinicie o app para aplicar.';
+              el.style.cursor = 'pointer';
+              el.onclick = function() { window.__electronRestart && window.__electronRestart(); };
+            }
+          })();
+        `).catch(() => {});
+      }
+
+      // Show native dialog as fallback
+      const response = dialog.showMessageBoxSync(mainWindow, {
+        type: 'info',
+        title: 'Atualização disponível',
+        message: `Versão ${info.version || 'nova'} foi baixada. Deseja reiniciar agora para aplicar?`,
+        buttons: ['Reiniciar agora', 'Mais tarde'],
+        defaultId: 0,
+      });
+      if (response === 0) {
+        autoUpdater.quitAndInstall(false, true);
+      }
+    });
+
+    autoUpdater.on('error', (err) => {
+      console.log('[AutoUpdater] Erro:', err.message);
+    });
+
+    // Check for updates after a short delay
+    setTimeout(() => {
+      autoUpdater.checkForUpdatesAndNotify().catch(() => {});
+    }, 5000);
+
+    // Check periodically (every 4 hours)
+    setInterval(() => {
+      autoUpdater.checkForUpdatesAndNotify().catch(() => {});
+    }, 4 * 60 * 60 * 1000);
+
+  } catch (err) {
+    console.log('[AutoUpdater] electron-updater não disponível:', err.message);
+  }
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -24,8 +93,6 @@ function createWindow() {
 
   const publishedURL = 'https://cloud-ponto-magico.lovable.app';
 
-  // Remove only service workers via JS after load instead of clearStorageData
-  // clearStorageData can wipe localStorage (auth session) on some Electron versions
   loadApp();
 
   function loadApp() {
@@ -73,11 +140,9 @@ function createWindow() {
       'Erro ao carregar',
       'Não foi possível conectar ao servidor.\nErro: ' + errorDescription + ' (' + errorCode + ')\n\nVerifique sua conexão com a internet.'
     );
-    // Try local fallback
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html')).catch(function() {});
   });
 
-  // Render process crashed
   mainWindow.webContents.on('render-process-gone', (event, details) => {
     dialog.showErrorBox('Erro', 'O processo de renderização falhou: ' + details.reason);
   });
@@ -93,7 +158,11 @@ app.on('ready', () => {
   }
   createWindow();
 
-  // Register F12 and Ctrl+Shift+I to open DevTools in production
+  // Start auto-updater (only in production)
+  if (app.isPackaged) {
+    setupAutoUpdater();
+  }
+
   globalShortcut.register('F12', () => {
     if (mainWindow && mainWindow.webContents) {
       mainWindow.webContents.toggleDevTools();
@@ -104,7 +173,6 @@ app.on('ready', () => {
       mainWindow.webContents.toggleDevTools();
     }
   });
-
 });
 
 app.on('window-all-closed', () => {
