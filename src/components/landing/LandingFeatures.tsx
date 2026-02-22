@@ -46,8 +46,8 @@ const features = [
   },
   {
     icon: WifiOff,
-    title: "Modo Offline",
-    desc: "Venda e emita notas mesmo sem internet. Sincroniza tudo quando reconectar.",
+    title: "Funciona Sem Internet",
+    desc: "Continue vendendo mesmo quando a internet cair. O sistema opera offline e sincroniza tudo automaticamente ao reconectar.",
     color: "bg-orange-500/10 text-orange-600",
   },
   {
